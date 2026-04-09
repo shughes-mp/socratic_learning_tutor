@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Socratic Tutor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f7f7f5; --bg3: #efefec;
+    --text: #1a1a1a; --text2: #555; --text3: #999;
+    --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+    --accent: #1a1a1a; --accent-text: #fff;
+    --info-bg: #e8f0fe; --info-text: #1a56db;
+    --warn-bg: #fef3c7; --warn-text: #92400e;
+    --success-bg: #d1fae5; --success-text: #065f46;
+    --danger-bg: #fee2e2; --danger-text: #991b1b;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+      --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+      --accent: #f2f2f7; --accent-text: #1c1c1e;
+      --info-bg: #1c3557; --info-text: #93c5fd;
+      --warn-bg: #3d2e00; --warn-text: #fcd34d;
+      --success-bg: #052e16; --success-text: #6ee7b7;
+      --danger-bg: #2d0a0a; --danger-text: #fca5a5;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; color: var(--text); background: var(--bg); min-height: 100vh; }
+  .app { max-width: 820px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  header { margin-bottom: 1.5rem; }
+  header h1 { font-size: 20px; font-weight: 500; }
+  header p { font-size: 13px; color: var(--text3); margin-top: 2px; }
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .tab { padding: 9px 18px; font-size: 14px; border: none; background: none; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .section { margin-bottom: 1.25rem; }
+  input[type=text], input[type=email] {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    font-size: 14px; font-family: inherit; background: var(--bg); color: var(--text);
+  }
+  input[type=text]:focus, input[type=email]:focus { outline: none; border-color: var(--text2); }
+  .upload-zone {
+    border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 1.25rem;
+    text-align: center; cursor: pointer; transition: background 0.15s;
+  }
+  .upload-zone:hover { background: var(--bg2); }
+  .upload-zone p { font-size: 14px; color: var(--text2); }
+  .upload-zone p a { color: var(--info-text); text-decoration: underline; cursor: pointer; }
+  .upload-zone small { font-size: 12px; color: var(--text3); }
+  .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+  .file-item { display: flex; align-items: center; gap: 10px; padding: 7px 12px; background: var(--bg2); border-radius: var(--radius-sm); font-size: 13px; }
+  .file-item .fname { flex: 1; color: var(--text); }
+  .file-tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+  .file-tag.reading { background: var(--info-bg); color: var(--info-text); }
+  .file-tag.assessment { background: var(--warn-bg); color: var(--warn-text); }
+  .file-item .rm { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; font-family: inherit; }
+  .file-item .rm:hover { color: var(--danger-text); }
+  .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+  .status { padding: 9px 13px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 1rem; }
+  .status.warn { background: var(--warn-bg); color: var(--warn-text); }
+  .status.ready { background: var(--success-bg); color: var(--success-text); }
+  .status.info { background: var(--info-bg); color: var(--info-text); }
+  .status.error { background: var(--danger-bg); color: var(--danger-text); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; font-size: 14px; font-family: inherit; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border2); background: var(--bg); color: var(--text); transition: background 0.15s; }
+  .btn:hover { background: var(--bg2); }
+  .btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .btn.primary:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* chat */
+
+  .chat-area { background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border); padding: 1rem; min-height: 340px; max-height: 480px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+  .msg { max-width: 80%; }
+  .msg.tutor { align-self: flex-start; }
+  .msg.student { align-self: flex-end; }
+  .bubble { padding: 9px 13px; border-radius: var(--radius); font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .msg.tutor .bubble { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+  .msg.student .bubble { background: var(--accent); color: var(--accent-text); }
+  .empty-state { text-align: center; color: var(--text3); font-size: 14px; margin: auto; }
+  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  textarea#student-input {
+    flex: 1; resize: none; font-family: inherit; font-size: 14px;
+    padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--bg); color: var(--text); min-height: 42px; max-height: 140px; overflow-y: auto;
+  }
+  textarea#student-input:focus { outline: none; border-color: var(--text2); }
+  .send-btn { padding: 9px 18px; background: var(--accent); color: var(--accent-text); border: none; border-radius: var(--radius-sm); font-size: 14px; font-family: inherit; cursor: pointer; white-space: nowrap; }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chat-meta { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  /* report */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .stat { background: var(--bg2); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+  .stat .num { font-size: 26px; font-weight: 500; }
+  .stat .lbl { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .report-body { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; font-size: 14px; line-height: 1.75; min-height: 200px; white-space: pre-wrap; color: var(--text2); }
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border2); border-top-color: var(--text2); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 5px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Socratic Tutor</h1>
+    <p>Upload readings, then open a student session to begin.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('instructor')">Instructor setup</button>
+    <button class="tab" onclick="switchTab('student')">Student session</button>
+    <button class="tab" onclick="switchTab('report')">Instructor report</button>
+  </div>
+
+  <!-- INSTRUCTOR -->
+  <div class="panel active" id="panel-instructor">
+    <div class="section">
+      <div class="label">Session name</div>
+      <input type="text" id="session-name" placeholder="e.g. Week 3 — Organizational behavior" oninput="saveConfig()">
+    </div>
+
+    <div class="section">
+      <div class="label">Readings</div>
+      <div class="upload-zone" onclick="document.getElementById('r-upload').click()">
+        <input type="file" id="r-upload" multiple accept=".pdf,.txt,.md,.csv" style="display:none" onchange="handleUpload(event,'reading')">
+        <p>Drop files or <a>browse</a></p>
+        <small>PDF, TXT, MD — the readings students will work from</small>
+      </div>
+      <div class="file-list" id="reading-list"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="label">Assessments <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--text3)">— tutor will never answer these directly</span></div>
+      <div class="upload-zone" onclick="document.getElementById('a-upload').click()">
+        <input type="file" id="a-upload" multiple accept=".pdf,.txt,.md" style="display:none" onchange="handleUpload(event,'assessment')">
+        <p>Drop files or <a>browse</a></p>
+        <small>Quizzes, discussion questions, exams</small>
+      </div>
+      <div class="file-list" id="assessment-list"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="inst-status" class="status warn">Upload at least one reading to enable the student session.</div>
+    <button class="btn primary" id="open-student-btn" onclick="switchTab('student')" disabled>Open student session →</button>
+  </div>
+
+  <!-- STUDENT -->
+  <div class="panel" id="panel-student">
+    <div class="section">
+      <div class="label">Your name <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--text3)">(optional — used in the instructor report)</span></div>
+      <input type="text" id="student-name" placeholder="First name or leave blank">
+    </div>
+
+    <div id="no-readings-warn" class="status warn" style="display:none">No readings loaded. Go to Instructor setup first.</div>
+
+    <div id="chat-ui">
+      <div class="chat-area" id="chat-area">
+        <div class="empty-state">Send a message to begin your session.</div>
+      </div>
+      <div class="input-row">
+        <textarea id="student-input" placeholder="Ask a question or share your understanding of a concept…" rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+      <div class="chat-meta" id="chat-meta"></div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="panel" id="panel-report">
+    <div class="stats-row">
+      <div class="stat"><div class="num" id="s-exchanges">—</div><div class="lbl">Exchanges</div></div>
+      <div class="stat"><div class="num" id="s-misc">—</div><div class="lbl">Misconceptions</div></div>
+      <div class="stat"><div class="num" id="s-direct">—</div><div class="lbl">Direct answers</div></div>
+    </div>
+    <div class="section">
+      <div class="label">Session debrief</div>
+      <div class="report-body" id="report-body">No session data yet.</div>
+    </div>
+    <div class="btn-row" style="margin-top:1rem;">
+      <button class="btn" onclick="loadReport()">Refresh</button>
+      <button class="btn primary" onclick="downloadReport()">Download .txt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';  // same origin
+let sessionId = null;
+let attemptCount = 0;
+let greeted = false;
+let exchangeCount = 0;
+let totalMisc = 0;
+let totalDirect = 0;
+
+async function init() {
+  const res = await fetch(`${API}/api/session/new`, { method: 'POST' });
+  const data = await res.json();
+  sessionId = data.session_id;
+}
+
+async function saveConfig() {
+  if (!sessionId) return;
+  const name = document.getElementById('session-name').value;
+  await fetch(`${API}/api/session/${sessionId}/config`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_name: name })
+  });
+}
+
+async function handleUpload(event, type) {
+  const files = Array.from(event.target.files);
+  for (const file of files) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('type', type);
+    await fetch(`${API}/api/session/${sessionId}/upload`, { method: 'POST', body: fd });
+    addFileItem(file.name, type);
+  }
+  event.target.value = '';
+  updateStatus();
+}
+
+function addFileItem(name, type) {
+  const list = document.getElementById(type + '-list');
+  const div = document.createElement('div');
+  div.className = 'file-item';
+  div.id = 'f-' + encodeURIComponent(name + type);
+  div.innerHTML = `<span class="fname">${name}</span><span class="file-tag ${type}">${type}</span><button class="rm" onclick="removeFile('${name}','${type}',this)" title="Remove">×</button>`;
+  list.appendChild(div);
+}
+
+async function removeFile(name, type, btn) {
+  await fetch(`${API}/api/session/${sessionId}/remove`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, type })
+  });
+  btn.closest('.file-item').remove();
+  updateStatus();
+}
+
+async function updateStatus() {
+  const res = await fetch(`${API}/api/session/${sessionId}/files`);
+  const data = await res.json();
+  const el = document.getElementById('inst-status');
+  const btn = document.getElementById('open-student-btn');
+  if (data.readings.length === 0) {
+    el.textContent = 'Upload at least one reading to enable the student session.';
+    el.className = 'status warn';
+    btn.disabled = true;
+  } else {
+    el.textContent = `Ready: ${data.readings.length} reading(s)${data.assessments.length ? ', ' + data.assessments.length + ' assessment(s) loaded' : ''}.`;
+    el.className = 'status ready';
+    btn.disabled = false;
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['instructor','student','report'][i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'student') checkStudentReady();
+  if (name === 'report') loadReport();
+}
+
+async function checkStudentReady() {
+  const res = await fetch(`${API}/api/session/${sessionId}/files`);
+  const data = await res.json();
+  const hasReadings = data.readings.length > 0;
+  document.getElementById('no-readings-warn').style.display = hasReadings ? 'none' : '';
+  document.getElementById('chat-ui').style.display = hasReadings ? '' : 'none';
+  if (hasReadings && !greeted) {
+    greeted = true;
+    await doGreet();
+  }
+}
+
+async function doGreet() {
+  const name = document.getElementById('student-name').value.trim();
+  setSending(true);
+  try {
+    const res = await fetch(`${API}/api/session/${sessionId}/greet`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_name: name })
+    });
+    const data = await res.json();
+    appendMsg('tutor', data.reply);
+  } catch(e) {
+    appendMsg('tutor', 'Hello! I\'m ready to help you explore the course readings. What would you like to discuss?');
+  }
+  setSending(false);
+}
+
+async function sendMessage() {
+  const input = document.getElementById('student-input');
+  const text = input.value.trim();
+  if (!text || !sessionId) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  appendMsg('student', text);
+
+  const isNewQuestion = /[?]$/.test(text) || /^(what|how|why|can you|could you|explain|tell me|describe)/i.test(text);
+  if (isNewQuestion) {
+    attemptCount = 0;
+  } else {
+    attemptCount = Math.min(attemptCount + 1, 3);
+  }
+
+  setSending(true);
+  const name = document.getElementById('student-name').value.trim();
+
+  try {
+    const res = await fetch(`${API}/api/session/${sessionId}/chat`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, attempt_count: attemptCount, student_name: name })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    appendMsg('tutor', data.reply);
+    exchangeCount++;
+    if (data.misconception) totalMisc++;
+    if (data.direct_answer) totalDirect++;
+    document.getElementById('chat-meta').textContent = `${exchangeCount} exchange${exchangeCount !== 1 ? 's' : ''} this session`;
+  } catch(e) {
+    appendMsg('tutor', 'There was an issue reaching the tutor. Please try again.');
+    console.error(e);
+  }
+  setSending(false);
+}
+
+function appendMsg(role, text) {
+  const area = document.getElementById('chat-area');
+  const empty = area.querySelector('.empty-state');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  div.appendChild(bubble);
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+
+
+function setSending(active) {
+  const btn = document.getElementById('send-btn');
+  const input = document.getElementById('student-input');
+  btn.disabled = active;
+  input.disabled = active;
+  if (active) {
+    btn.innerHTML = '<span class="spinner"></span>';
+  } else {
+    btn.textContent = 'Send';
+    input.focus();
+  }
+}
+
+async function loadReport() {
+  if (!sessionId) return;
+  document.getElementById('report-body').innerHTML = '<span class="spinner"></span> Generating…';
+  try {
+    const res = await fetch(`${API}/api/session/${sessionId}/report`);
+    const data = await res.json();
+    document.getElementById('s-exchanges').textContent = data.stats.exchanges;
+    document.getElementById('s-misc').textContent = data.stats.misconceptions;
+    document.getElementById('s-direct').textContent = data.stats.direct_answers;
+    document.getElementById('report-body').textContent = data.report || 'No session data yet.';
+  } catch(e) {
+    document.getElementById('report-body').textContent = 'Error loading report.';
+  }
+}
+
+function downloadReport() {
+  const text = document.getElementById('report-body').textContent;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tutor-report.txt';
+  a.click();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+init();
+</script>
+</body>
+</html>
