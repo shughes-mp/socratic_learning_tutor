@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 interface MessageBubbleProps {
   role: "user" | "assistant" | "system" | "data";
   content: string;
@@ -38,7 +40,24 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
         }`}
       >
         <div className="chat-prose max-w-none">
-          {displayContent || (
+          {displayContent ? (
+            isUser || isSystem ? (
+              displayContent
+            ) : (
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => (
+                    <p className="tutor-paragraph">{children}</p>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="tutor-question">{children}</strong>
+                  ),
+                }}
+              >
+                {displayContent}
+              </ReactMarkdown>
+            )
+          ) : (
             <span className="inline-block h-4 w-2 animate-pulse rounded-sm bg-[var(--light-grey)]" />
           )}
         </div>

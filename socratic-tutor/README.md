@@ -32,6 +32,7 @@ In short: the app is designed to support learning, not shortcut it.
 - Optional assessment upload with answer-protection behavior
 - Student chat sessions with message limits
 - Prior-knowledge opening prompts and guided onboarding
+- Tutor responses that render as readable prose with the Socratic question visually separated
 - Attempt tracking, confidence checks, and misconception logging
 - Topic mastery tracking and revisit prompts for shaky concepts
 - Instructor monitoring view with student replay
@@ -159,7 +160,7 @@ Once the app is running:
 3. Open the student link in a second browser window.
 4. Enter a student name and begin the tutoring conversation.
 5. Expand the "About this session" panel if you want to see the session description and instructor framing.
-6. Have a short tutoring conversation.
+6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
 7. End the session and review the summary.
 8. Return to the instructor area to monitor activity and generate a report.
 
