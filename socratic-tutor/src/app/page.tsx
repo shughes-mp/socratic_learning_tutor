@@ -2,18 +2,18 @@ import Link from "next/link";
 
 const quickFacts = [
   {
-    label: "Primary User",
+    label: "Who uses it",
     value: "Instructors running reading-based or discussion-based courses",
     color: "var(--teal)",
   },
   {
-    label: "Student Experience",
-    value: "Guided reasoning before direct explanations",
+    label: "What students do",
+    value: "Explain their thinking and work through guided questions before class",
     color: "var(--olive)",
   },
   {
-    label: "Instructor Output",
-    value: "Replay, misconceptions, confidence, and report summaries",
+    label: "What instructors see",
+    value: "Replay, misconceptions, confidence ratings, and session summaries",
     color: "var(--rose)",
   },
 ];
@@ -85,7 +85,7 @@ export default function HomePage() {
           </div>
           <div className="px-4 py-5 md:px-8 md:text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
-              Instructor-Facing Learning Tool
+              Learning System
             </p>
           </div>
         </header>
@@ -94,7 +94,7 @@ export default function HomePage() {
           <div className="hidden border-r border-[var(--rule)] md:block" />
 
           <aside className="px-4 py-12 md:px-8 md:py-16">
-            <p className="eyebrow eyebrow-teal">Best For</p>
+            <p className="eyebrow eyebrow-teal">At a Glance</p>
             <div className="mt-8 space-y-0">
               {quickFacts.map((fact) => (
                 <div
@@ -144,8 +144,8 @@ export default function HomePage() {
             </div>
 
             <p className="mt-5 text-[13px] leading-6 text-[var(--dim-grey)]">
-              Students join with a shared link. Instructors manage the setup and
-              review the results.
+              Setup takes under five minutes. Upload a reading, set a goal,
+              share a link — students join with an access code, no account required.
             </p>
 
             <div className="proof-grid mt-10 grid grid-cols-1 md:grid-cols-3">
@@ -165,7 +165,7 @@ export default function HomePage() {
             </div>
 
             <div className="minerva-card mt-8 max-w-[48rem] p-6">
-              <p className="eyebrow eyebrow-teal">Immediate Product Proof</p>
+              <p className="eyebrow eyebrow-teal">What&rsquo;s Included</p>
               <div className="mt-5 space-y-4">
                 {proofRows.map((row, index) => (
                   <div
@@ -204,9 +204,9 @@ export default function HomePage() {
               <div className="md:border-r md:border-[var(--rule)] md:pr-8">
                 <p className="eyebrow eyebrow-teal">For Students</p>
                 <p className="body-copy mt-5 max-w-[29rem]">
-                  Students begin by stating what they already know, then move
-                  into guided questions tied to the uploaded reading. The tutor
-                  pushes for reasoning before it gives explanations.
+                  Students begin by stating what they already know, then work through
+                  questions tied to the uploaded reading. The tutor asks for reasoning
+                  first — students can&apos;t skip straight to the answer.
                 </p>
               </div>
               <div className="md:pl-8">
@@ -262,8 +262,8 @@ export default function HomePage() {
                 </p>
                 <p className="body-copy muted-copy mt-6 max-w-[38rem]">
                   Start with one reading, one instructor goal, and one session.
-                  The app is strongest when it makes student preparation legible
-                  enough to shape what happens next.
+                  The app is most useful when student preparation is visible
+                  enough to shape what actually happens in class.
                 </p>
               </div>
               <div className="md:justify-self-end">
