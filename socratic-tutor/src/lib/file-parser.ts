@@ -66,16 +66,20 @@ async function parsePdf(buffer: Buffer): Promise<string> {
     const text = data.text.trim();
     if (!text || text.length < 20) {
       throw new Error(
-        "This PDF appears to contain scanned images rather than text. Please upload a text-based PDF."
+        "This PDF looks like a scanned or image-based file. Please upload a text-based PDF, DOCX, TXT, or Markdown file instead."
       );
     }
     return text;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("scanned images")) {
+    if (
+      error instanceof Error &&
+      (error.message.includes("scanned images") ||
+        error.message.includes("scanned or image-based file"))
+    ) {
       throw error;
     }
     throw new Error(
-      "Failed to parse PDF. Please ensure the file is a valid, text-based PDF document."
+      "Failed to parse PDF. Please upload a text-based PDF, DOCX, TXT, or Markdown file instead."
     );
   }
 }

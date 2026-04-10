@@ -508,7 +508,10 @@ export default function SessionManagementPage() {
               {uploading ? "Uploading..." : "Drag and drop files here, or click to browse"}
             </p>
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              .pdf, .docx, .txt, .md (max 10MB)
+              PDF, DOCX, TXT, or Markdown up to 10MB
+            </p>
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
+              Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
             </p>
           </div>
 
@@ -585,7 +588,10 @@ export default function SessionManagementPage() {
               {uploading ? "Uploading..." : "Drag and drop files here, or click to browse"}
             </p>
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              .pdf, .docx, .txt, .md (max 10MB)
+              PDF, DOCX, TXT, or Markdown up to 10MB
+            </p>
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
+              Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
             </p>
           </div>
 
