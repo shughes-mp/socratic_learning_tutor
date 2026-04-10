@@ -5,6 +5,8 @@ export type FileCategory = "reading" | "assessment";
 export interface CreateSessionRequest {
   name: string;
   description?: string;
+  courseContext?: string;
+  learningGoal?: string;
 }
 
 export interface CreateSessionResponse {
@@ -29,6 +31,9 @@ export interface SessionDetails {
   id: string;
   name: string;
   description: string | null;
+  courseContext: string | null;
+  learningGoal: string | null;
+  prerequisiteMap: string | null;
   accessCode: string;
   createdAt: string;
   maxExchanges: number;
@@ -40,6 +45,8 @@ export interface StudentEntryData {
   sessionId: string;
   sessionName: string;
   description: string | null;
+  courseContext?: string | null;
+  learningGoal?: string | null;
 }
 
 export interface ApiError {

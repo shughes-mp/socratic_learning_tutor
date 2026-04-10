@@ -12,6 +12,8 @@ export default function SessionManagementPage() {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [generatingMap, setGeneratingMap] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [dragActive, setDragActive] = useState<"reading" | "assessment" | null>(null);
@@ -38,6 +40,9 @@ export default function SessionManagementPage() {
           id: configData.id,
           name: configData.name,
           description: configData.description,
+          courseContext: configData.courseContext,
+          learningGoal: configData.learningGoal,
+          prerequisiteMap: configData.prerequisiteMap,
           accessCode: configData.accessCode,
           createdAt: "",
           maxExchanges: configData.maxExchanges,
@@ -127,6 +132,62 @@ export default function SessionManagementPage() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function saveTeachingContext() {
+    if (!session) return;
+
+    setSavingConfig(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/config`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseContext: session.courseContext,
+          learningGoal: session.learningGoal,
+          prerequisiteMap: session.prerequisiteMap,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save teaching context.");
+      }
+
+      await fetchSession();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save teaching context.");
+    } finally {
+      setSavingConfig(false);
+    }
+  }
+
+  async function generateSuggestedMap() {
+    setGeneratingMap(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/suggest-prerequisite-map`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to generate prerequisite map.");
+      }
+      const data = await res.json();
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              prerequisiteMap: JSON.stringify(data.map, null, 2),
+            }
+          : prev
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate prerequisite map.");
+    } finally {
+      setGeneratingMap(false);
+    }
   }
 
   const readings = files.filter((f) => f.category === "reading");
@@ -236,6 +297,91 @@ export default function SessionManagementPage() {
             {error}
           </div>
         )}
+
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Teaching Context
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Guide the tutor&apos;s opening, transfer checks, and prerequisite prompts.
+              </p>
+            </div>
+            <button
+              onClick={saveTeachingContext}
+              disabled={savingConfig}
+              className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
+            >
+              {savingConfig ? "Saving..." : "Save Context"}
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Course Context
+            </label>
+            <textarea
+              value={session.courseContext ?? ""}
+              onChange={(e) =>
+                setSession((prev) =>
+                  prev ? { ...prev, courseContext: e.target.value } : prev
+                )
+              }
+              rows={3}
+              placeholder="How this reading fits the broader course arc..."
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Session Learning Goal
+            </label>
+            <textarea
+              value={session.learningGoal ?? ""}
+              onChange={(e) =>
+                setSession((prev) =>
+                  prev ? { ...prev, learningGoal: e.target.value } : prev
+                )
+              }
+              rows={3}
+              placeholder="What students should be able to explain or apply by the end of the session..."
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Prerequisite Map JSON
+                </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Optional advanced map for prerequisite-aware scaffolding.
+                </p>
+              </div>
+              <button
+                onClick={generateSuggestedMap}
+                disabled={generatingMap || readings.length === 0}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50"
+              >
+                {generatingMap ? "Generating..." : "Generate Suggested Map"}
+              </button>
+            </div>
+            <textarea
+              value={session.prerequisiteMap ?? ""}
+              onChange={(e) =>
+                setSession((prev) =>
+                  prev ? { ...prev, prerequisiteMap: e.target.value } : prev
+                )
+              }
+              rows={10}
+              placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-y font-mono text-xs"
+            />
+          </div>
+        </div>
 
         {/* Readings section */}
         <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm space-y-4">

@@ -126,12 +126,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
       `attachment; filename="Report-${session.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf"`
     );
 
-    return new NextResponse(pdfBuffer, { status: 200, headers });
+    return new NextResponse(Buffer.from(pdfBuffer), { status: 200, headers });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error("PDF generation error:", error);
     return NextResponse.json(
-      { error: "Failed to export PDF", details: error.message },
+      { error: "Failed to export PDF", details: message },
       { status: 500 }
     );
   }

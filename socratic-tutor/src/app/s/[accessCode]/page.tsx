@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
 import StudentEntryForm from "./student-entry-form";
 
 interface PageProps {

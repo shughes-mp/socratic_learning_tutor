@@ -1,10 +1,15 @@
 import { useEffect, useRef } from "react";
 import { MessageBubble } from "./message-bubble";
 import { TypingIndicator } from "./typing-indicator";
-import type { Message } from "ai";
+
+interface ChatAreaMessage {
+  id: string;
+  role: "user" | "assistant" | "system" | "data";
+  content: string;
+}
 
 interface ChatAreaProps {
-  messages: Message[];
+  messages: ChatAreaMessage[];
   isLoading: boolean;
 }
 

@@ -7,6 +7,8 @@ export default function InstructorCreatePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [courseContext, setCourseContext] = useState("");
+  const [learningGoal, setLearningGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,7 +26,12 @@ export default function InstructorCreatePage() {
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          courseContext: courseContext.trim() || undefined,
+          learningGoal: learningGoal.trim() || undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -43,7 +50,7 @@ export default function InstructorCreatePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-xl">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -91,6 +98,42 @@ export default function InstructorCreatePage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief context for students about this session's focus..."
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="course-context"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Course Context{" "}
+              <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              id="course-context"
+              value={courseContext}
+              onChange={(e) => setCourseContext(e.target.value)}
+              placeholder="How this reading fits the course arc or broader unit..."
+              rows={3}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="learning-goal"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            >
+              Session Learning Goal{" "}
+              <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <textarea
+              id="learning-goal"
+              value={learningGoal}
+              onChange={(e) => setLearningGoal(e.target.value)}
+              placeholder="What students should be able to explain or apply after this session..."
               rows={3}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
             />

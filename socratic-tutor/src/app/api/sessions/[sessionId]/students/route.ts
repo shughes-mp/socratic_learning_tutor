@@ -21,10 +21,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
 
     return NextResponse.json(studentSessions);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to fetch student sessions:", error);
     return NextResponse.json(
-      { error: "Failed to fetch student sessions", details: error.message },
+      { error: "Failed to fetch student sessions", details: message },
       { status: 500 }
     );
   }

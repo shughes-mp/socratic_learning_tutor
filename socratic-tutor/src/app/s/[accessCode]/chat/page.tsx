@@ -14,6 +14,9 @@ export default async function ChatPage({ params }: PageProps) {
     select: {
       id: true,
       name: true,
+      description: true,
+      courseContext: true,
+      learningGoal: true,
       maxExchanges: true,
       closesAt: true,
     },
@@ -48,6 +51,9 @@ export default async function ChatPage({ params }: PageProps) {
     <ClientChat 
       accessCode={accessCode} 
       sessionName={session.name} 
+      sessionDescription={session.description}
+      courseContext={session.courseContext}
+      learningGoal={session.learningGoal}
       maxExchanges={session.maxExchanges} 
     />
   );

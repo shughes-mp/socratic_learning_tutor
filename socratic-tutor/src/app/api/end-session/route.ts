@@ -17,6 +17,7 @@ export async function POST(req: Request) {
         messages: {
           orderBy: { createdAt: "asc" },
         },
+        misconceptions: true,
       },
     });
 
@@ -32,6 +33,9 @@ export async function POST(req: Request) {
     const transcript = studentSession.messages
       .map((m) => `${m.role === "user" ? "Student" : "Tutor"}: ${m.content}`)
       .join("\n\n");
+    const unresolvedMisconceptions = studentSession.misconceptions.filter(
+      (item) => !item.resolved || item.persistentlyUnresolved
+    );
 
     const prompt = `The student is ending their session. Below is the transcript of their session with the tutor.
 Provide a brief session summary with these four sections:
@@ -42,6 +46,11 @@ Provide a brief session summary with these four sections:
 4. ONE QUESTION TO THINK ABOUT: A thought-provoking question the student can take into the class session.
 
 Label the summary at the very beginning: "Here's a summary of your session that you may want to save or share with your instructor."
+
+If there are unresolved misconceptions, name them specifically in AREAS TO REVISIT.
+
+Unresolved misconceptions:
+${unresolvedMisconceptions.map((item) => `- ${item.topicThread}: ${item.description}`).join("\n") || "None"}
 
 Transcript:
 ${transcript}`;

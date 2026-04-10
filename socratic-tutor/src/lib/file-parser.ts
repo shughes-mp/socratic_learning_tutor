@@ -1,4 +1,4 @@
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 
 export type SupportedFileType = "pdf" | "docx" | "txt" | "md";
@@ -62,7 +62,8 @@ export async function parseFile(
 
 async function parsePdf(buffer: Buffer): Promise<string> {
   try {
-    const data = await pdfParse(buffer);
+    const parser = new PDFParse({ data: buffer });
+    const data = await parser.getText();
     const text = data.text.trim();
     if (!text || text.length < 20) {
       throw new Error(

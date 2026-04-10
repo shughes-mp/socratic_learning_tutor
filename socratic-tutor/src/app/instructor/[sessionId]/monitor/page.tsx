@@ -4,15 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ExchangeReplay } from "@/components/instructor/exchange-replay";
+import type { ConfidenceCheck, Message, Misconception } from "@prisma/client";
 
 interface StudentSessionData {
   id: string;
   studentName: string;
-  startedAt: string;
-  endedAt: string | null;
-  messages: any[];
-  misconceptions: any[];
-  confidenceChecks: any[];
+  startedAt: string | Date;
+  endedAt: string | Date | null;
+  messages: Array<Message & { createdAt: string | Date }>;
+  misconceptions: Misconception[];
+  confidenceChecks: ConfidenceCheck[];
 }
 
 export default function StudentMonitorPage() {

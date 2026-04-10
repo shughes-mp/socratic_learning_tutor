@@ -26,6 +26,12 @@ export async function PATCH(
     if (body.name !== undefined) updateData.name = body.name.trim();
     if (body.description !== undefined)
       updateData.description = body.description?.trim() || null;
+    if (body.courseContext !== undefined)
+      updateData.courseContext = body.courseContext?.trim() || null;
+    if (body.learningGoal !== undefined)
+      updateData.learningGoal = body.learningGoal?.trim() || null;
+    if (body.prerequisiteMap !== undefined)
+      updateData.prerequisiteMap = body.prerequisiteMap?.trim() || null;
     if (body.maxExchanges !== undefined)
       updateData.maxExchanges = Math.max(1, Math.min(100, body.maxExchanges));
     if (body.opensAt !== undefined)
@@ -42,6 +48,9 @@ export async function PATCH(
       id: updated.id,
       name: updated.name,
       description: updated.description,
+      courseContext: updated.courseContext,
+      learningGoal: updated.learningGoal,
+      prerequisiteMap: updated.prerequisiteMap,
       accessCode: updated.accessCode,
       maxExchanges: updated.maxExchanges,
     });

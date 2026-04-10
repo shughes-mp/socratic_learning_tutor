@@ -14,6 +14,13 @@ interface ReportData {
   generatedAt: string;
 }
 
+interface ReportStats {
+  studentsCount: number;
+  exchanges: number;
+  misconceptions: number;
+  directAnswers: number;
+}
+
 export default function ReportPage() {
   const params = useParams() as { sessionId: string };
   const [report, setReport] = useState<ReportData | null>(null);
@@ -31,10 +38,10 @@ export default function ReportPage() {
       if (!res.ok) {
         throw new Error("Failed to generate or fetch report");
       }
-      const data = await res.json();
+      const data = (await res.json()) as ReportData;
       setReport(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load report");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -73,7 +80,7 @@ export default function ReportPage() {
 
   if (!report) return null;
 
-  const stats = JSON.parse(report.stats);
+  const stats = JSON.parse(report.stats) as ReportStats;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12">

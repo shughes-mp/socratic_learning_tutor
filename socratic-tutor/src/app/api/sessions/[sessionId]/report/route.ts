@@ -33,10 +33,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
     const newReport = await generateInstructorReport(sessionId);
     return NextResponse.json(newReport);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Report generation error:", error);
     return NextResponse.json(
-      { error: "Failed to generate report", details: error.message },
+      { error: "Failed to generate report", details: message },
       { status: 500 }
     );
   }

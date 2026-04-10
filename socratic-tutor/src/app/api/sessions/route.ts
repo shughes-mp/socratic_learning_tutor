@@ -20,6 +20,8 @@ export async function POST(request: Request) {
       data: {
         name: body.name.trim(),
         description: body.description?.trim() || null,
+        courseContext: body.courseContext?.trim() || null,
+        learningGoal: body.learningGoal?.trim() || null,
         accessCode,
       },
     });
