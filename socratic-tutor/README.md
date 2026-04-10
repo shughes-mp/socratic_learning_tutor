@@ -111,6 +111,12 @@ The app uses two database modes:
 
 Important detail: Prisma CLI schema commands run against the local SQLite database. The production app runtime connects to Turso.
 
+This split is intentional:
+
+- Prisma CLI uses the local SQLite URL from `LOCAL_DATABASE_URL` or `DATABASE_URL`
+- The deployed app uses `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`
+- The SQLite adapter is loaded lazily so Vercel does not try to load the native local-development driver in production
+
 ## Production Deployment
 
 This project is set up for deployment on Vercel.
@@ -127,6 +133,18 @@ The production build runs:
 ```bash
 prisma generate && next build
 ```
+
+### Schema changes in production
+
+Do not rely on `prisma db push` during the Vercel build for Turso schema creation.
+
+In this project:
+
+- `npm run db:push` is for local SQLite schema sync during development
+- Vercel builds only generate Prisma and build the app
+- Turso schema rollout should be handled as a separate operational step
+
+That keeps Prisma CLI on the path Prisma documents for Turso while still allowing the deployed app to use Turso at runtime.
 
 ## Quick Test Flow
 
