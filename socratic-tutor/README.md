@@ -25,10 +25,12 @@ In short: the app is designed to support learning, not shortcut it.
 ## Core Features
 
 - Instructor session creation with shareable student access links
+- A simple create flow: session name first, student-facing note second
+- Instructor setup progress that makes the next step obvious: create, upload, share
 - Upload support for `.pdf`, `.docx`, `.txt`, and `.md` files
 - Reading-grounded tutoring conversations
 - Optional assessment upload with answer-protection behavior
-- Student chat sessions with exchange limits
+- Student chat sessions with message limits
 - Prior-knowledge opening prompts and guided onboarding
 - Attempt tracking, confidence checks, and misconception logging
 - Topic mastery tracking and revisit prompts for shaky concepts
@@ -47,19 +49,21 @@ In short: the app is designed to support learning, not shortcut it.
 ### Instructor flow
 
 1. Create a session.
-2. Add a title, description, and optional course context or learning goal.
+2. Add a title and an optional note students will see before they begin.
 3. Upload one or more readings.
 4. Optionally upload assessments the tutor should treat as protected.
-5. Share the student link and access code.
-6. Monitor student activity and generate a report afterward.
+5. Add optional tutor configuration to improve how the tutor opens, probes, and checks understanding.
+6. Share the student link and access code.
+7. Monitor student activity and generate a report afterward.
 
 ### Student flow
 
 1. Open the shared session link.
-2. Enter a name and begin the chat.
-3. Answer opening prompts about prior knowledge and confidence.
-4. Work through the reading with guided questions and feedback.
-5. Leave with a clearer understanding of the material and where they were confused.
+2. If the instructor has not uploaded a reading yet, see a clear "Session Not Ready Yet" message instead of entering a broken session.
+3. Enter a name and begin the chat with no account required.
+4. Start by sharing prior knowledge before the tutor moves into the reading.
+5. Work through the material with guided questions, confidence checks, and targeted feedback.
+6. End the session and receive a short reflection summary.
 
 ## Local Development Setup
 
@@ -153,13 +157,17 @@ Once the app is running:
 1. Create an instructor session.
 2. Upload a reading.
 3. Open the student link in a second browser window.
-4. Have a short tutoring conversation.
-5. Return to the instructor area to monitor activity and generate a report.
+4. Enter a student name and begin the tutoring conversation.
+5. Expand the "About this session" panel if you want to see the session description and instructor framing.
+6. Have a short tutoring conversation.
+7. End the session and review the summary.
+8. Return to the instructor area to monitor activity and generate a report.
 
 ## Caveats
 
 - This is still an MVP and should be treated as an early production prototype.
 - PDF extraction works best with text-based PDFs, not scanned-image PDFs.
+- Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - The app depends on Anthropic API availability and valid credentials.
 - Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.

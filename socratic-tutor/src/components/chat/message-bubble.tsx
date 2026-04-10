@@ -31,7 +31,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-4 ${
           isUser
-            ? "border border-[rgba(223,47,38,0.25)] bg-[rgba(223,47,38,0.92)] text-white shadow-[0_20px_35px_rgba(223,47,38,0.12)] rounded-tr-sm"
+            ? "border border-[rgba(17,120,144,0.25)] bg-[rgba(17,120,144,0.92)] text-white shadow-[0_20px_35px_rgba(17,120,144,0.12)] rounded-tr-sm"
             : isSystem
               ? "border border-[rgba(17,120,144,0.24)] bg-[rgba(17,120,144,0.08)] text-[var(--charcoal)] shadow-sm rounded-xl"
               : "border border-[var(--rule)] bg-[rgba(255,255,255,0.7)] text-[var(--charcoal)] shadow-sm rounded-tl-sm"

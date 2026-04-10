@@ -9,6 +9,7 @@ interface Message {
   id: string;
   role: "user" | "assistant" | "system" | "data";
   content: string;
+  hidden?: boolean;
 }
 
 interface ClientChatProps {
@@ -34,6 +35,8 @@ export function ClientChat({
   const [isEnded, setIsEnded] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [isEnding, setIsEnding] = useState(false);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const [orientationOpen, setOrientationOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +44,7 @@ export function ClientChat({
   const initialized = useRef(false);
 
   const exchangeCount = Math.ceil(
-    messages.filter((message) => message.role === "user").length
+    messages.filter((message) => message.role === "user" && !message.hidden).length
   );
 
   useEffect(() => {
@@ -66,7 +69,8 @@ OPENING SEQUENCE INSTRUCTION: This is the opening exchange.
 3. Do NOT ask about the reading content yet.
 4. Wait for my response before bridging to the reading and asking the first Socratic question.
 If course context is available, use it naturally in the first three exchanges.`,
-        sid
+        sid,
+        true
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,7 +101,8 @@ If course context is available, use it naturally in the first three exchanges.`,
 
   const sendMessage = async (
     contentToSend: string,
-    sid: string | null = studentSessionId
+    sid: string | null = studentSessionId,
+    hidden = false
   ) => {
     if (!sid || !contentToSend.trim() || isLoading) return;
 
@@ -108,6 +113,7 @@ If course context is available, use it naturally in the first three exchanges.`,
       id: Math.random().toString(),
       role: "user",
       content: contentToSend,
+      hidden,
     };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -182,12 +188,20 @@ If course context is available, use it naturally in the first three exchanges.`,
   };
 
   const handleEndClick = () => {
-    if (
-      studentSessionId &&
-      confirm("Are you sure you want to end this tutoring session?")
-    ) {
+    if (!isEnding) {
+      setConfirmingEnd(true);
+    }
+  };
+
+  const handleConfirmEnd = () => {
+    setConfirmingEnd(false);
+    if (studentSessionId) {
       triggerEndSession(studentSessionId);
     }
+  };
+
+  const handleCancelEnd = () => {
+    setConfirmingEnd(false);
   };
 
   if (!studentSessionId) return null;
@@ -223,23 +237,40 @@ If course context is available, use it naturally in the first three exchanges.`,
         <header className="top-rule bottom-rule grid grid-cols-1 md:grid-cols-[156px_1fr_220px]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-5 md:px-8">
-            <p className="eyebrow eyebrow-teal">Socratic Session</p>
+            <p className="eyebrow eyebrow-teal">Reading Session</p>
             <h1 className="mt-2 font-serif text-[34px] leading-[0.96] tracking-[-0.03em]">
               {sessionName}
             </h1>
-            <p className="mt-2 text-[12px] text-[var(--dim-grey)]">
-              Access code {accessCode}
-            </p>
           </div>
           <div className="px-4 py-5 md:px-8 md:text-right">
             {!isEnded && (
-              <button
-                onClick={handleEndClick}
-                disabled={isEnding || isLoading}
-                className="minerva-button minerva-button-secondary"
-              >
-                {isEnding ? "Ending..." : "End Session"}
-              </button>
+              confirmingEnd ? (
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="text-[13px] text-[var(--charcoal)]">End this session?</span>
+                  <button
+                    onClick={handleConfirmEnd}
+                    className="minerva-button"
+                    style={{ minHeight: "36px", padding: "0 14px", fontSize: "12px" }}
+                  >
+                    Yes, end it
+                  </button>
+                  <button
+                    onClick={handleCancelEnd}
+                    className="minerva-button minerva-button-secondary"
+                    style={{ minHeight: "36px", padding: "0 14px", fontSize: "12px" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleEndClick}
+                  disabled={isEnding || isLoading}
+                  className="minerva-button minerva-button-secondary"
+                >
+                  {isEnding ? "Ending..." : "End Session"}
+                </button>
+              )
             )}
           </div>
         </header>
@@ -247,52 +278,76 @@ If course context is available, use it naturally in the first three exchanges.`,
         <div className="grid flex-1 grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
           <aside className="hidden border-r border-[var(--rule)] md:block" />
           <div className="flex min-h-0 flex-col">
-            <div className="border-b border-[var(--rule)] px-4 py-6 md:px-8">
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_300px]">
-                <div>
-                  <p className="eyebrow eyebrow-teal">Session Orientation</p>
-                  {sessionDescription && (
-                    <p className="body-copy mt-4 max-w-[40rem]">
-                      {sessionDescription}
-                    </p>
+            <div className="border-b border-[var(--rule)]">
+              <button
+                type="button"
+                onClick={() => setOrientationOpen((v) => !v)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left md:px-8 hover:bg-[rgba(0,0,0,0.02)] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                    About this session
+                  </span>
+                  {studentName && (
+                    <span className="text-[12px] text-[var(--dim-grey)]">
+                      · {studentName}
+                    </span>
                   )}
-                  <p className="mt-4 max-w-[40rem] text-[14px] leading-7 text-[var(--dim-grey)]">
-                    This tutor is designed to help you articulate your thinking,
-                    test your assumptions, and build stronger understanding from
-                    the uploaded materials.
-                  </p>
                 </div>
+                <svg
+                  className={`w-4 h-4 text-[var(--dim-grey)] transition-transform ${orientationOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-                <div className="minerva-panel p-5">
-                  <div className="space-y-4 text-[13px] leading-6">
-                    {courseContext && (
-                      <div>
-                        <p className="eyebrow eyebrow-olive">Why This Matters</p>
-                        <p className="mt-2 text-[var(--charcoal)]">
-                          {courseContext}
+              {orientationOpen && (
+                <div className="px-4 pb-6 pt-2 md:px-8">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_300px]">
+                    <div>
+                      {sessionDescription && (
+                        <p className="body-copy max-w-[40rem]">
+                          {sessionDescription}
                         </p>
-                      </div>
-                    )}
-                    {learningGoal && (
-                      <div>
-                        <p className="eyebrow eyebrow-rose">Goal For This Session</p>
-                        <p className="mt-2 text-[var(--charcoal)]">
-                          {learningGoal}
-                        </p>
-                      </div>
-                    )}
-                    {studentName && (
-                      <p className="border-t border-[var(--rule)] pt-4 text-[var(--dim-grey)]">
-                        You are participating as <strong>{studentName}</strong>.
+                      )}
+                      <p className="mt-3 max-w-[40rem] text-[14px] leading-7 text-[var(--dim-grey)]">
+                        Start by sharing what you already know about the topic.
+                        The tutor will ask questions — not give you answers.
+                        Work toward understanding before explanations are offered.
                       </p>
-                    )}
+                    </div>
+
+                    <div className="minerva-panel p-5">
+                      <div className="space-y-4 text-[13px] leading-6">
+                        {courseContext && (
+                          <div>
+                            <p className="eyebrow eyebrow-olive">Why This Matters</p>
+                            <p className="mt-2 text-[var(--charcoal)]">{courseContext}</p>
+                          </div>
+                        )}
+                        {learningGoal && (
+                          <div>
+                            <p className="eyebrow eyebrow-rose">Goal For This Session</p>
+                            <p className="mt-2 text-[var(--charcoal)]">{learningGoal}</p>
+                          </div>
+                        )}
+                        {studentName && (
+                          <p className="border-t border-[var(--rule)] pt-4 text-[var(--dim-grey)]">
+                            Participating as <strong>{studentName}</strong>.
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="min-h-0 flex-1">
-              <ChatArea messages={messages} isLoading={isLoading} />
+              <ChatArea messages={messages.filter((m) => !m.hidden)} isLoading={isLoading} />
             </div>
 
             <div className="border-t border-[var(--rule)] px-4 py-4 pb-6 md:px-8">
@@ -317,18 +372,17 @@ If course context is available, use it naturally in the first three exchanges.`,
 
               <div className="mt-3 flex flex-col gap-2 text-[12px] font-medium text-[var(--dim-grey)] md:flex-row md:items-center md:justify-between">
                 <span>
-                  This conversation is grounded in the instructor&apos;s uploaded
-                  materials.
+                  Your tutor is based only on the materials your instructor uploaded.
                 </span>
                 <span>
-                  {exchangeCount} of {maxExchanges} exchanges used
+                  {exchangeCount} of {maxExchanges} messages used
                 </span>
               </div>
 
               {exchangeCount >= maxExchanges && !isLoading && !isEnded && (
                 <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <p className="text-[13px] font-semibold text-[var(--signal)]">
-                    You have reached the exchange limit for this session.
+                    You have reached the message limit for this session.
                   </p>
                   <button
                     onClick={() => triggerEndSession(studentSessionId)}
