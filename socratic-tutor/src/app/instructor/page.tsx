@@ -7,8 +7,6 @@ export default function InstructorCreatePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [courseContext, setCourseContext] = useState("");
-  const [learningGoal, setLearningGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,8 +27,6 @@ export default function InstructorCreatePage() {
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
-          courseContext: courseContext.trim() || undefined,
-          learningGoal: learningGoal.trim() || undefined,
         }),
       });
 
@@ -54,14 +50,13 @@ export default function InstructorCreatePage() {
         <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_360px_minmax(0,1fr)]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-12 md:px-8 md:py-16">
-            <p className="eyebrow eyebrow-teal">Session Design</p>
+            <p className="eyebrow eyebrow-teal">New Session</p>
             <h1 className="section-title mt-5 max-w-[10ch]">
-              Build a guided learning environment.
+              Create a reading session.
             </h1>
             <p className="body-copy muted-copy mt-6 max-w-[25rem]">
-              Define the reading context, the learning goal, and the boundaries
-              for the tutoring conversation. You can upload files immediately
-              after the session is created.
+              Name your session and add an optional note for students. After
+              you create it, upload your reading and share the link.
             </p>
           </div>
 
@@ -88,42 +83,17 @@ export default function InstructorCreatePage() {
                     htmlFor="session-description"
                     className="minerva-label"
                   >
-                    Description
+                    What should students know before they begin?
                   </label>
+                  <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                    Optional. This is shown to students on the session entry page.
+                  </p>
                   <textarea
                     id="session-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What should students understand about this session before they begin?"
+                    placeholder="e.g. Read the first three chapters before starting. Focus on how the author defines feedback loops."
                     rows={3}
-                    className="minerva-textarea"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="course-context" className="minerva-label">
-                    Course Context
-                  </label>
-                  <textarea
-                    id="course-context"
-                    value={courseContext}
-                    onChange={(e) => setCourseContext(e.target.value)}
-                    placeholder="How does this reading fit the broader arc of the course or unit?"
-                    rows={4}
-                    className="minerva-textarea"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="learning-goal" className="minerva-label">
-                    Learning Goal
-                  </label>
-                  <textarea
-                    id="learning-goal"
-                    value={learningGoal}
-                    onChange={(e) => setLearningGoal(e.target.value)}
-                    placeholder="What should students be able to explain, analyze, or apply after the session?"
-                    rows={4}
                     className="minerva-textarea"
                   />
                 </div>
@@ -136,8 +106,7 @@ export default function InstructorCreatePage() {
 
                 <div className="flex flex-col gap-3 border-t border-[var(--rule)] pt-5 md:flex-row md:items-center md:justify-between">
                   <p className="text-[12px] text-[var(--dim-grey)]">
-                    After creation, you can upload readings, add protected
-                    assessments, and share the student link.
+                    Next: upload a reading, then share the link with your students.
                   </p>
                   <button
                     type="submit"

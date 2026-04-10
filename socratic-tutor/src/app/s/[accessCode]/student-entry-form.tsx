@@ -52,7 +52,7 @@ export default function StudentEntryForm({ sessionId, accessCode }: StudentEntry
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <label htmlFor="student-name" className="minerva-label">
-          Your Name
+          What&apos;s your name?
         </label>
         <input
           id="student-name"
@@ -86,9 +86,12 @@ export default function StudentEntryForm({ sessionId, accessCode }: StudentEntry
             Starting...
           </span>
         ) : (
-          "Start Session"
+          "Begin"
         )}
       </button>
+      <p className="text-center text-[11px] text-[var(--dim-grey)]">
+        No account needed. Your responses are only visible to your instructor.
+      </p>
     </form>
   );
 }

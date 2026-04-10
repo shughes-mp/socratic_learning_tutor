@@ -307,6 +307,45 @@ export default function SessionManagementPage() {
           </div>
         </div>
 
+        {/* Setup progress strip */}
+        <div className="minerva-card px-6 py-4 md:px-8">
+          <ol className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-0">
+            {[
+              { label: "Session created", done: true },
+              { label: "Upload a reading", done: isActive },
+              { label: "Share with students", done: isActive },
+            ].map((step, i, arr) => (
+              <li key={step.label} className="flex items-center gap-3 sm:flex-1">
+                <span
+                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                    step.done
+                      ? "bg-[var(--teal)] text-white"
+                      : "border-2 border-[var(--light-grey)] text-[var(--dim-grey)]"
+                  }`}
+                >
+                  {step.done ? (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span
+                  className={`text-[13px] font-medium ${
+                    step.done ? "text-[var(--charcoal)]" : "text-[var(--dim-grey)]"
+                  }`}
+                >
+                  {step.label}
+                </span>
+                {i < arr.length - 1 && (
+                  <span className="hidden sm:block flex-1 border-t border-dashed border-[var(--rule)] mx-3" />
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+
         {/* Status bar */}
         <div className={`px-4 py-3 text-sm ${
           readings.length === 0
@@ -372,16 +411,17 @@ export default function SessionManagementPage() {
         <div className="minerva-card space-y-4 p-6 md:p-8">
           <div>
             <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-              Teaching Context
+              Tutor Configuration
             </h2>
             <p className="mt-2 text-sm text-[var(--dim-grey)]">
-              Guide the tutor&apos;s opening, transfer checks, and prerequisite prompts.
+              What you write here shapes how the tutor opens the session, checks for
+              understanding, and identifies gaps. Optional, but improves response quality.
             </p>
           </div>
 
           <div className="space-y-2">
             <label className="minerva-label">
-              Course Context
+              Where this fits in your course
             </label>
             <textarea
               value={session.courseContext ?? ""}
@@ -391,14 +431,14 @@ export default function SessionManagementPage() {
                 )
               }
               rows={3}
-              placeholder="How this reading fits the broader course arc..."
+              placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Students have read Meadows chapters 1–3 and are familiar with stocks and flows, but have not yet covered feedback loops."
               className="minerva-textarea"
             />
           </div>
 
           <div className="space-y-2">
             <label className="minerva-label">
-              Session Learning Goal
+              What you want students to be able to do
             </label>
             <textarea
               value={session.learningGoal ?? ""}
@@ -408,7 +448,7 @@ export default function SessionManagementPage() {
                 )
               }
               rows={3}
-              placeholder="What students should be able to explain or apply by the end of the session..."
+              placeholder="e.g. Explain the difference between reinforcing and balancing feedback loops, and identify at least one example of each in the reading."
               className="minerva-textarea"
             />
           </div>
@@ -471,7 +511,7 @@ export default function SessionManagementPage() {
               disabled={savingConfig}
               className="minerva-button"
             >
-              {savingConfig ? "Saving..." : "Save Context"}
+              {savingConfig ? "Saving..." : "Save Configuration"}
             </button>
           </div>
         </div>
