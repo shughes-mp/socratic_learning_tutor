@@ -1,31 +1,28 @@
 import Link from "next/link";
 
-const pillars = [
+const quickFacts = [
   {
-    label: "Guided Reasoning",
+    label: "Primary User",
+    value: "Instructors running reading-based or discussion-based courses",
     color: "var(--teal)",
-    description:
-      "Students respond to structured prompts before the tutor offers direct explanations.",
   },
   {
-    label: "Faculty Oversight",
+    label: "Student Experience",
+    value: "Guided reasoning before direct explanations",
     color: "var(--olive)",
-    description:
-      "Instructors create sessions, upload materials, and review progress with replay and reports.",
   },
   {
-    label: "Impact Signals",
+    label: "Instructor Output",
+    value: "Replay, misconceptions, confidence, and report summaries",
     color: "var(--rose)",
-    description:
-      "Confidence, misconceptions, and topic mastery become visible as students work.",
   },
 ];
 
 const workflow = [
   {
     step: "01",
-    title: "Create a session",
-    body: "Set the learning goal, add context, and define the reading experience you want students to enter.",
+    title: "Create the session",
+    body: "Add the title, context, learning goal, and the reading students should work through.",
   },
   {
     step: "02",
@@ -35,22 +32,51 @@ const workflow = [
   {
     step: "03",
     title: "Review the evidence",
-    body: "See where reasoning was strong, where misconceptions persisted, and what should be revisited in class.",
+    body: "See how students reasoned, where they got stuck, and what should be revisited in class.",
   },
 ];
 
-const proofPoints = [
-  "Instructor-created sessions",
-  "Reading-grounded AI tutoring",
-  "Protected assessment support",
-  "Replay, reports, and mastery signals",
+const capabilities = [
+  {
+    label: "Grounded tutoring",
+    color: "var(--teal)",
+    description:
+      "The tutor works from instructor-uploaded readings instead of improvising from generic knowledge.",
+  },
+  {
+    label: "Assessment protection",
+    color: "var(--olive)",
+    description:
+      "Protected assessment materials can be uploaded so the tutor avoids directly giving away answers.",
+  },
+  {
+    label: "Learning signals",
+    color: "var(--rose)",
+    description:
+      "Confidence checks, misconceptions, revisit prompts, and topic mastery make preparation more visible.",
+  },
+];
+
+const proofRows = [
+  {
+    title: "What instructors control",
+    detail: "session framing, readings, assessments, learning goals, prerequisite context",
+  },
+  {
+    title: "What students experience",
+    detail: "prior-knowledge prompts, guided questioning, follow-up checks, reflection",
+  },
+  {
+    title: "What the app reveals",
+    detail: "misunderstandings, confidence patterns, activity replay, and session summaries",
+  },
 ];
 
 export default function HomePage() {
   return (
     <main className="minerva-page">
       <div className="minerva-shell">
-        <header className="top-rule bottom-rule grid min-h-[74px] grid-cols-1 items-center gap-4 px-0 md:grid-cols-[156px_1fr_160px]">
+        <header className="top-rule bottom-rule grid min-h-[74px] grid-cols-1 items-center gap-4 px-0 md:grid-cols-[156px_1fr_220px]">
           <div className="hidden md:block" />
           <div className="px-4 py-5 md:px-8">
             <p className="text-[12px] font-extrabold tracking-[0.01em]">
@@ -59,155 +85,136 @@ export default function HomePage() {
           </div>
           <div className="px-4 py-5 md:px-8 md:text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
-              Learning System
+              Instructor-Facing Learning Tool
             </p>
           </div>
         </header>
 
-        <section className="relative overflow-hidden">
-          <div className="hero-orb" />
-          <div className="grid grid-cols-1 md:grid-cols-[156px_256px_minmax(0,1fr)]">
-            <div className="hidden border-r border-[var(--rule)] md:block" />
+        <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_280px_minmax(0,1fr)]">
+          <div className="hidden border-r border-[var(--rule)] md:block" />
 
-            <div className="px-4 py-12 md:px-8 md:py-16">
-              <p className="eyebrow eyebrow-teal">For Instructors</p>
-              <div className="mt-14 w-fit">
-                <div className="mb-5 flex h-18 w-18 items-center justify-center rounded-full border border-[var(--rule)] bg-white/70 text-[28px] font-semibold">
-                  S
-                </div>
-                <p className="font-serif text-[46px] leading-[0.9] tracking-[-0.04em]">
-                  Socratic
-                  <br />
-                  Tutor
-                </p>
-              </div>
-
-              <div className="mt-12 space-y-0">
-                {proofPoints.map((point, index) => (
-                  <div
-                    key={point}
-                    className="border-y border-[var(--rule)] px-0 py-4"
+          <aside className="px-4 py-12 md:px-8 md:py-16">
+            <p className="eyebrow eyebrow-teal">Best For</p>
+            <div className="mt-8 space-y-0">
+              {quickFacts.map((fact) => (
+                <div
+                  key={fact.label}
+                  className="border-y border-[var(--rule)] px-0 py-4"
+                >
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                    {fact.label}
+                  </p>
+                  <p
+                    className="mt-2 text-[16px] font-bold leading-snug"
+                    style={{ color: fact.color }}
                   >
-                    <p
-                      className="text-[17px] font-bold leading-tight"
-                      style={{
-                        color:
-                          index === 0
-                            ? "var(--teal)"
-                            : index === 1
-                              ? "var(--olive)"
-                              : index === 2
-                                ? "var(--rose)"
-                                : "var(--charcoal)",
-                      }}
-                    >
-                      {point}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                    {fact.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          <div className="px-4 py-12 md:px-8 md:py-16">
+            <p className="eyebrow eyebrow-teal">What This Product Does</p>
+            <h1 className="lead-copy mt-5 max-w-[10.5ch]">
+              Create guided reading sessions that show how students think.
+            </h1>
+
+            <p className="body-copy mt-7 max-w-[38rem]">
+              Socratic Tutor is a web app for instructors. Upload a reading,
+              invite students into a guided tutoring conversation, and review
+              where they were confident, confused, or still incomplete before
+              class begins.
+            </p>
+
+            <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Link
+                href="/instructor"
+                className="minerva-button min-h-[56px] px-8 text-[14px]"
+              >
+                Create a Session
+              </Link>
+              <a
+                href="#how-it-works"
+                className="minerva-button minerva-button-secondary min-h-[56px] px-8 text-[14px]"
+              >
+                See How It Works
+              </a>
             </div>
 
-            <div className="hero-copy px-4 pb-14 pt-12 md:px-8 md:pb-20 md:pt-20">
-              <h1 className="lead-copy max-w-[12ch]">
-                Create guided reading sessions that make student thinking
-                visible.
-              </h1>
-              <p className="body-copy mt-8 max-w-[37rem]">
-                Socratic Tutor is a live web app for instructors. Upload
-                readings, invite students into a guided chat, and review where
-                they were confident, confused, or still incomplete before class.
-              </p>
+            <p className="mt-5 text-[13px] leading-6 text-[var(--dim-grey)]">
+              Students join with a shared link. Instructors manage the setup and
+              review the results.
+            </p>
 
-              <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <Link
-                  href="/instructor"
-                  className="minerva-button min-h-[56px] px-8 text-[14px]"
-                >
-                  Create a Session
-                </Link>
-                <div className="text-[13px] leading-6 text-[var(--dim-grey)]">
-                  Students join with a shared link.
-                  <br />
-                  Instructors manage readings, reports, and activity.
+            <div className="proof-grid mt-10 grid grid-cols-1 md:grid-cols-3">
+              {workflow.map((item) => (
+                <div key={item.step} className="px-5 py-5">
+                  <p className="text-[11px] font-extrabold tracking-[0.12em] text-[var(--dim-grey)]">
+                    STEP {item.step}
+                  </p>
+                  <p className="mt-3 text-[18px] font-bold leading-tight text-[var(--charcoal)]">
+                    {item.title}
+                  </p>
+                  <p className="mt-3 text-[14px] leading-6 text-[var(--dim-grey)]">
+                    {item.body}
+                  </p>
                 </div>
-              </div>
+              ))}
+            </div>
 
-              <div className="proof-grid mt-10 grid grid-cols-1 md:grid-cols-3">
-                {workflow.map((item) => (
-                  <div key={item.step} className="px-5 py-5">
-                    <p className="text-[11px] font-extrabold tracking-[0.12em] text-[var(--dim-grey)]">
-                      {item.step}
+            <div className="minerva-card mt-8 max-w-[48rem] p-6">
+              <p className="eyebrow eyebrow-teal">Immediate Product Proof</p>
+              <div className="mt-5 space-y-4">
+                {proofRows.map((row, index) => (
+                  <div
+                    key={row.title}
+                    className={`grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr] ${
+                      index < proofRows.length - 1
+                        ? "border-b border-[var(--rule)] pb-4"
+                        : ""
+                    }`}
+                  >
+                    <p className="text-[15px] font-bold text-[var(--charcoal)]">
+                      {row.title}
                     </p>
-                    <p className="mt-3 text-[18px] font-bold leading-tight text-[var(--charcoal)]">
-                      {item.title}
-                    </p>
-                    <p className="mt-3 text-[14px] leading-6 text-[var(--dim-grey)]">
-                      {item.body}
+                    <p className="text-[14px] leading-6 text-[var(--dim-grey)]">
+                      {row.detail}
                     </p>
                   </div>
                 ))}
-              </div>
-
-              <div className="minerva-card mt-8 max-w-[44rem] p-5 md:p-6">
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_1fr]">
-                  <div className="border-b border-[var(--rule)] pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
-                    <p className="eyebrow eyebrow-teal">What You Get</p>
-                    <p className="mt-4 font-serif text-[30px] leading-[1.02] tracking-[-0.03em]">
-                      Product proof, not just positioning.
-                    </p>
-                  </div>
-                  <div className="space-y-3 text-[14px] leading-6 text-[var(--charcoal)]">
-                    <div className="flex items-start justify-between gap-4 border-b border-[var(--rule)] pb-3">
-                      <span className="font-semibold">Session setup</span>
-                      <span className="text-[var(--dim-grey)]">
-                        title, context, readings, assessments
-                      </span>
-                    </div>
-                    <div className="flex items-start justify-between gap-4 border-b border-[var(--rule)] pb-3">
-                      <span className="font-semibold">Student experience</span>
-                      <span className="text-[var(--dim-grey)]">
-                        prior knowledge, guided prompts, reflection
-                      </span>
-                    </div>
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="font-semibold">Instructor review</span>
-                      <span className="text-[var(--dim-grey)]">
-                        replay, misconception signals, summary reports
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+        <section
+          id="how-it-works"
+          className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]"
+        >
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-14 md:px-8 md:py-20">
-            <p className="eyebrow eyebrow-teal">Why It Works</p>
+            <p className="eyebrow eyebrow-teal">How It Works</p>
             <h2 className="section-title mt-5 max-w-[11ch]">
-              The interface is built around reasoning, not answer retrieval.
+              The workflow is designed around preparation you can actually use.
             </h2>
 
             <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-0">
               <div className="md:border-r md:border-[var(--rule)] md:pr-8">
-                <p className="eyebrow eyebrow-teal">Learning Design</p>
-                <p className="body-copy mt-5 max-w-[28rem]">
-                  Sessions begin by asking students what they think before the
-                  tutor moves into the reading itself. The system tracks genuine
-                  attempts, confidence checks, and revisit opportunities so the
-                  conversation becomes more diagnostic over time.
+                <p className="eyebrow eyebrow-teal">For Students</p>
+                <p className="body-copy mt-5 max-w-[29rem]">
+                  Students begin by stating what they already know, then move
+                  into guided questions tied to the uploaded reading. The tutor
+                  pushes for reasoning before it gives explanations.
                 </p>
               </div>
               <div className="md:pl-8">
-                <p className="eyebrow eyebrow-teal">Teaching Value</p>
-                <p className="body-copy mt-5 max-w-[33rem]">
-                  Instead of guessing whether students completed the work,
-                  instructors can review traces of understanding: where students
-                  stalled, where they improved, and which concepts need more
-                  attention in live teaching.
+                <p className="eyebrow eyebrow-teal">For Instructors</p>
+                <p className="body-copy mt-5 max-w-[32rem]">
+                  Instructors don&apos;t just see whether students logged in.
+                  They see how students reasoned, where misconceptions appeared,
+                  and what topics need follow-up in live discussion.
                 </p>
               </div>
             </div>
@@ -219,24 +226,24 @@ export default function HomePage() {
           <div className="px-4 py-14 md:px-8 md:py-20">
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
               <div>
-                <p className="eyebrow eyebrow-olive">System Capabilities</p>
+                <p className="eyebrow eyebrow-olive">Key Capabilities</p>
                 <h2 className="section-title mt-5 max-w-[12ch]">
-                  A more useful pre-class workflow for both students and faculty.
+                  Built for guided learning, not generic chat.
                 </h2>
               </div>
               <div className="metric-list">
-                {pillars.map((pillar) => (
+                {capabilities.map((item) => (
                   <div
-                    key={pillar.label}
+                    key={item.label}
                     className="grid grid-cols-1 gap-3 px-5 py-6 md:grid-cols-[180px_1fr]"
                   >
                     <p
                       className="text-[15px] font-extrabold"
-                      style={{ color: pillar.color }}
+                      style={{ color: item.color }}
                     >
-                      {pillar.label}
+                      {item.label}
                     </p>
-                    <p className="body-copy text-[15px]">{pillar.description}</p>
+                    <p className="body-copy text-[15px]">{item.description}</p>
                   </div>
                 ))}
               </div>
@@ -249,13 +256,14 @@ export default function HomePage() {
           <div className="px-4 py-16 md:px-8 md:py-20">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_280px] md:items-center">
               <div>
-                <p className="lead-copy max-w-[18ch]">
-                  See who is prepared, what they misunderstood, and where the
-                  next discussion should begin.
+                <p className="lead-copy max-w-[17ch]">
+                  Use pre-class tutoring to arrive at better class discussion,
+                  not just more logged-in activity.
                 </p>
                 <p className="body-copy muted-copy mt-6 max-w-[38rem]">
-                  Create a session, upload the reading, invite your students,
-                  and use the resulting reports to guide stronger teaching.
+                  Start with one reading, one instructor goal, and one session.
+                  The app is strongest when it makes student preparation legible
+                  enough to shape what happens next.
                 </p>
               </div>
               <div className="md:justify-self-end">

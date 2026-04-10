@@ -235,34 +235,6 @@ select {
   color: var(--charcoal);
 }
 
-.hero-orb {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.hero-orb::before {
-  content: "";
-  position: absolute;
-  right: -20%;
-  top: 8%;
-  width: min(48vw, 660px);
-  aspect-ratio: 1;
-  border-radius: 999px;
-  opacity: 0.34;
-  background:
-    radial-gradient(circle at 16% 70%, rgba(114, 133, 3, 0.75) 0 1.6px, transparent 2.3px),
-    radial-gradient(circle at 34% 23%, rgba(17, 120, 144, 0.68) 0 1.6px, transparent 2.4px),
-    radial-gradient(circle at 61% 39%, rgba(165, 65, 125, 0.62) 0 1.9px, transparent 2.6px),
-    radial-gradient(circle at 73% 73%, rgba(210, 205, 200, 0.5) 0 1.8px, transparent 2.6px),
-    radial-gradient(circle at 44% 78%, rgba(240, 235, 230, 0.85) 0 1.2px, transparent 2px),
-    radial-gradient(circle at center, rgba(255, 255, 255, 0.78) 0 58%, rgba(255, 255, 255, 0) 70%);
-  background-size: 38px 38px, 44px 44px, 41px 41px, 31px 31px, 22px 22px, auto;
-  box-shadow: inset 0 0 90px rgba(255, 255, 255, 0.92);
-  transform: rotate(-10deg);
-}
-
 .metric-list {
   display: grid;
   gap: 1px;
@@ -276,11 +248,6 @@ select {
 .chat-prose {
   font-size: 16px;
   line-height: 1.7;
-}
-
-.hero-copy {
-  position: relative;
-  z-index: 1;
 }
 
 .proof-grid {
@@ -302,11 +269,5 @@ select {
 
   .minerva-shell {
     width: min(100%, calc(100% - 28px));
-  }
-
-  .hero-orb::before {
-    right: -42%;
-    top: 10%;
-    width: 92vw;
   }
 }
