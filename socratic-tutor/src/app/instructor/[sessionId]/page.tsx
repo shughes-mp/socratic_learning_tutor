@@ -14,6 +14,7 @@ export default function SessionManagementPage() {
   const [uploading, setUploading] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [generatingMap, setGeneratingMap] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [dragActive, setDragActive] = useState<"reading" | "assessment" | null>(null);
@@ -22,36 +23,54 @@ export default function SessionManagementPage() {
 
   const fetchSession = useCallback(async () => {
     try {
-      // Fetch session details from the files endpoint (which includes session info)
       const res = await fetch(`/api/sessions/${sessionId}/files`);
-      if (!res.ok) throw new Error("Session not found.");
-      const data = await res.json();
-      setFiles(data.files);
 
-      // Fetch session config separately
+      const filesContentType = res.headers.get("content-type") ?? "";
+      if (!filesContentType.includes("application/json")) {
+        throw new Error(
+          "The server is not responding correctly. Please refresh the page or contact support if the issue persists."
+        );
+      }
+
+      const filesData = await res.json();
+      if (!res.ok) {
+        throw new Error(filesData.error || "Failed to load session files.");
+      }
+      setFiles(filesData.files);
+
       const configRes = await fetch(`/api/sessions/${sessionId}/config`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}), // Empty patch to get current data
+        body: JSON.stringify({}),
       });
+
       if (configRes.ok) {
-        const configData = await configRes.json();
-        setSession({
-          id: configData.id,
-          name: configData.name,
-          description: configData.description,
-          courseContext: configData.courseContext,
-          learningGoal: configData.learningGoal,
-          prerequisiteMap: configData.prerequisiteMap,
-          accessCode: configData.accessCode,
-          createdAt: "",
-          maxExchanges: configData.maxExchanges,
-          readingsCount: data.files.filter((f: FileInfo) => f.category === "reading").length,
-          assessmentsCount: data.files.filter((f: FileInfo) => f.category === "assessment").length,
-        });
+        const configData = await configRes.json().catch(() => null);
+        if (configData) {
+          setSession({
+            id: configData.id,
+            name: configData.name,
+            description: configData.description,
+            courseContext: configData.courseContext,
+            learningGoal: configData.learningGoal,
+            prerequisiteMap: configData.prerequisiteMap,
+            accessCode: configData.accessCode,
+            createdAt: "",
+            maxExchanges: configData.maxExchanges,
+            readingsCount: filesData.files.filter((f: FileInfo) => f.category === "reading").length,
+            assessmentsCount: filesData.files.filter((f: FileInfo) => f.category === "assessment").length,
+          });
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load session.");
+      const message = err instanceof Error ? err.message : "Failed to load session.";
+      if (message.includes("<!DOCTYPE") || message.includes("Unexpected token")) {
+        setError(
+          "The server returned an unexpected response. Please refresh the page."
+        );
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -204,6 +223,7 @@ export default function SessionManagementPage() {
 
   const readings = files.filter((f) => f.category === "reading");
   const assessments = files.filter((f) => f.category === "assessment");
+  const isActive = readings.length > 0;
 
   if (loading) {
     return (
@@ -246,7 +266,13 @@ export default function SessionManagementPage() {
         <div className="minerva-card p-6 md:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <p className="eyebrow eyebrow-teal">Instructor Workspace</p>
+              <nav className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
+                <Link href="/instructor" className="hover:text-[var(--teal)] transition-colors">
+                  Sessions
+                </Link>
+                <span>/</span>
+                <span className="text-[var(--charcoal)]">{session.name}</span>
+              </nav>
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
                 {session.name}
               </h1>
@@ -258,51 +284,25 @@ export default function SessionManagementPage() {
             </div>
             <div className="flex gap-2">
               <Link
-                href={`/instructor/${sessionId}/monitor`}
-                className="minerva-button minerva-button-secondary"
+                href={isActive ? `/instructor/${sessionId}/monitor` : "#"}
+                aria-disabled={!isActive}
+                title={!isActive ? "Upload a reading to activate this session first" : undefined}
+                className={`minerva-button minerva-button-secondary ${
+                  !isActive ? "pointer-events-none opacity-40" : ""
+                }`}
               >
                 Student Activity
               </Link>
               <Link
-                href={`/instructor/${sessionId}/report`}
-                className="minerva-button minerva-button-secondary"
+                href={isActive ? `/instructor/${sessionId}/report` : "#"}
+                aria-disabled={!isActive}
+                title={!isActive ? "Upload a reading to activate this session first" : undefined}
+                className={`minerva-button minerva-button-secondary ${
+                  !isActive ? "pointer-events-none opacity-40" : ""
+                }`}
               >
                 Report
               </Link>
-            </div>
-          </div>
-
-          {/* Share link card */}
-          <div className="minerva-panel mt-6 p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-              <div>
-                <p className="eyebrow eyebrow-teal">
-                  Access Code
-                </p>
-                <p className="mt-1 text-lg font-mono font-semibold text-[var(--charcoal)]">
-                  {session.accessCode}
-                </p>
-              </div>
-              <button
-                onClick={copyLink}
-                className="minerva-button"
-              >
-                {copied ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    Copy Student Link
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -324,24 +324,59 @@ export default function SessionManagementPage() {
           </div>
         )}
 
-        <div className="minerva-card space-y-4 p-6 md:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div>
-              <p className="eyebrow eyebrow-teal">Teaching Context</p>
-              <h2 className="mt-3 font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-                Teaching Context
-              </h2>
-              <p className="mt-2 text-sm text-[var(--dim-grey)]">
-                Guide the tutor&apos;s opening, transfer checks, and prerequisite prompts.
-              </p>
+        {/* Share link card — shown after status bar */}
+        {session && (
+          <div className="minerva-card p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+              <div>
+                <p className={`eyebrow ${isActive ? "eyebrow-teal" : "eyebrow-rose"}`}>
+                  {isActive ? "Access Code" : "Access Code — Not yet active"}
+                </p>
+                <p className={`mt-1 text-lg font-mono font-semibold ${
+                  isActive ? "text-[var(--charcoal)]" : "text-[var(--dim-grey)] select-none blur-[3px]"
+                }`}>
+                  {session.accessCode}
+                </p>
+                {!isActive && (
+                  <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                    Upload at least one reading below to activate this session.
+                  </p>
+                )}
+              </div>
+              {isActive && (
+                <button
+                  onClick={copyLink}
+                  className="minerva-button"
+                >
+                  {copied ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      Copy Student Link
+                    </>
+                  )}
+                </button>
+              )}
             </div>
-            <button
-              onClick={saveTeachingContext}
-              disabled={savingConfig}
-              className="minerva-button"
-            >
-              {savingConfig ? "Saving..." : "Save Context"}
-            </button>
+          </div>
+        )}
+
+        <div className="minerva-card space-y-4 p-6 md:p-8">
+          <div>
+            <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+              Teaching Context
+            </h2>
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">
+              Guide the tutor&apos;s opening, transfer checks, and prerequisite prompts.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -379,34 +414,65 @@ export default function SessionManagementPage() {
           </div>
 
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <label className="minerva-label">
-                  Prerequisite Map JSON
-                </label>
-                <p className="mt-1 text-xs text-[var(--dim-grey)]">
-                  Optional advanced map for prerequisite-aware scaffolding.
-                </p>
-              </div>
-              <button
-                onClick={generateSuggestedMap}
-                disabled={generatingMap || readings.length === 0}
-                className="minerva-button minerva-button-secondary"
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="flex items-center gap-2 text-xs font-semibold text-[var(--dim-grey)] hover:text-[var(--charcoal)] transition-colors"
+            >
+              <svg
+                className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {generatingMap ? "Generating..." : "Generate Suggested Map"}
-              </button>
-            </div>
-            <textarea
-              value={session.prerequisiteMap ?? ""}
-              onChange={(e) =>
-                setSession((prev) =>
-                  prev ? { ...prev, prerequisiteMap: e.target.value } : prev
-                )
-              }
-              rows={10}
-              placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
-              className="minerva-textarea resize-y font-mono text-xs"
-            />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Advanced settings
+            </button>
+
+            {showAdvanced && (
+              <>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <label className="minerva-label">
+                      Prerequisite Map JSON
+                    </label>
+                    <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                      Optional. Maps concept dependencies so the tutor can scaffold prerequisite gaps.
+                    </p>
+                  </div>
+                  <button
+                    onClick={generateSuggestedMap}
+                    disabled={generatingMap || readings.length === 0}
+                    title={readings.length === 0 ? "Upload a reading first to generate a map" : undefined}
+                    className="minerva-button minerva-button-secondary"
+                  >
+                    {generatingMap ? "Generating..." : "Generate from readings"}
+                  </button>
+                </div>
+                <textarea
+                  value={session.prerequisiteMap ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, prerequisiteMap: e.target.value } : prev
+                    )
+                  }
+                  rows={8}
+                  placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
+                  className="minerva-textarea resize-y font-mono text-xs"
+                />
+              </>
+            )}
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={saveTeachingContext}
+              disabled={savingConfig}
+              className="minerva-button"
+            >
+              {savingConfig ? "Saving..." : "Save Context"}
+            </button>
           </div>
         </div>
 
@@ -487,8 +553,9 @@ export default function SessionManagementPage() {
             <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
               Assessments
             </h2>
-            <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              The tutor will never answer these directly.
+            <p className="mt-1 text-sm text-[var(--dim-grey)] max-w-[38rem]">
+              Upload your assignments or exam questions. The tutor reads them to understand
+              what students are working toward — but will never reveal or directly answer them.
             </p>
           </div>
 
