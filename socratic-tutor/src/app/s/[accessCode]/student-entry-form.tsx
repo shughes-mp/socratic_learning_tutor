@@ -51,10 +51,7 @@ export default function StudentEntryForm({ sessionId, accessCode }: StudentEntry
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label
-          htmlFor="student-name"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-        >
+        <label htmlFor="student-name" className="minerva-label">
           Your Name
         </label>
         <input
@@ -63,14 +60,14 @@ export default function StudentEntryForm({ sessionId, accessCode }: StudentEntry
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter your first and last name"
-          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors"
+          className="minerva-input"
           required
           autoFocus
         />
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
+        <div className="border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-[13px] text-[var(--signal)]">
           {error}
         </div>
       )}
@@ -78,7 +75,7 @@ export default function StudentEntryForm({ sessionId, accessCode }: StudentEntry
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+        className="minerva-button w-full"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">

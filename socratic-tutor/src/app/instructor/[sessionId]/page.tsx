@@ -195,37 +195,51 @@ export default function SessionManagementPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center">
-        <div className="animate-pulse text-slate-400">Loading session...</div>
-      </div>
+      <main className="minerva-page">
+        <div className="minerva-shell">
+          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+            <div className="hidden border-r border-[var(--rule)] md:block" />
+            <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
+              Loading session...
+            </div>
+          </section>
+        </div>
+      </main>
     );
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
-        <div className="text-center space-y-3">
-          <p className="text-slate-500">Session not found.</p>
-          <Link href="/instructor" className="text-indigo-600 hover:underline text-sm">
-            Create a new session
-          </Link>
+      <main className="minerva-page">
+        <div className="minerva-shell">
+          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+            <div className="hidden border-r border-[var(--rule)] md:block" />
+            <div className="px-4 py-16 md:px-8 md:py-20">
+              <p className="eyebrow eyebrow-rose">Instructor View</p>
+              <h1 className="section-title mt-5">Session not found.</h1>
+              <Link href="/instructor" className="mt-6 inline-flex text-[var(--signal)]">
+                Create a new session
+              </Link>
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <main className="minerva-page">
+      <div className="minerva-shell space-y-6 py-8">
         {/* Header */}
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm">
+        <div className="minerva-card p-6 md:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              <p className="eyebrow eyebrow-teal">Instructor Workspace</p>
+              <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
                 {session.name}
               </h1>
               {session.description && (
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-3 max-w-[36rem] text-[15px] leading-7 text-[var(--dim-grey)]">
                   {session.description}
                 </p>
               )}
@@ -233,13 +247,13 @@ export default function SessionManagementPage() {
             <div className="flex gap-2">
               <Link
                 href={`/instructor/${sessionId}/monitor`}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="minerva-button minerva-button-secondary"
               >
                 Student Activity
               </Link>
               <Link
                 href={`/instructor/${sessionId}/report`}
-                className="px-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="minerva-button minerva-button-secondary"
               >
                 Report
               </Link>
@@ -247,19 +261,19 @@ export default function SessionManagementPage() {
           </div>
 
           {/* Share link card */}
-          <div className="mt-4 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30">
+          <div className="minerva-panel mt-6 p-5">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
               <div>
-                <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                <p className="eyebrow eyebrow-teal">
                   Access Code
                 </p>
-                <p className="text-lg font-mono font-semibold text-indigo-900 dark:text-indigo-200 mt-0.5">
+                <p className="mt-1 text-lg font-mono font-semibold text-[var(--charcoal)]">
                   {session.accessCode}
                 </p>
               </div>
               <button
                 onClick={copyLink}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors"
+                className="minerva-button"
               >
                 {copied ? (
                   <>
@@ -282,10 +296,10 @@ export default function SessionManagementPage() {
         </div>
 
         {/* Status bar */}
-        <div className={`p-3 rounded-xl text-sm ${
+        <div className={`px-4 py-3 text-sm ${
           readings.length === 0
-            ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-400"
-            : "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400"
+            ? "border border-[rgba(144,111,18,0.22)] bg-[rgba(144,111,18,0.08)] text-[#906f12]"
+            : "border border-[rgba(17,120,144,0.18)] bg-[rgba(17,120,144,0.08)] text-[var(--teal)]"
         }`}>
           {readings.length === 0
             ? "Upload at least one reading to activate this session."
@@ -293,32 +307,33 @@ export default function SessionManagementPage() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
+          <div className="border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-sm text-[var(--signal)]">
             {error}
           </div>
         )}
 
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="minerva-card space-y-4 p-6 md:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              <p className="eyebrow eyebrow-teal">Teaching Context</p>
+              <h2 className="mt-3 font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
                 Teaching Context
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <p className="mt-2 text-sm text-[var(--dim-grey)]">
                 Guide the tutor&apos;s opening, transfer checks, and prerequisite prompts.
               </p>
             </div>
             <button
               onClick={saveTeachingContext}
               disabled={savingConfig}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
+              className="minerva-button"
             >
               {savingConfig ? "Saving..." : "Save Context"}
             </button>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="minerva-label">
               Course Context
             </label>
             <textarea
@@ -330,12 +345,12 @@ export default function SessionManagementPage() {
               }
               rows={3}
               placeholder="How this reading fits the broader course arc..."
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
+              className="minerva-textarea"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="minerva-label">
               Session Learning Goal
             </label>
             <textarea
@@ -347,24 +362,24 @@ export default function SessionManagementPage() {
               }
               rows={3}
               placeholder="What students should be able to explain or apply by the end of the session..."
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-none"
+              className="minerva-textarea"
             />
           </div>
 
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label className="minerva-label">
                   Prerequisite Map JSON
                 </label>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="mt-1 text-xs text-[var(--dim-grey)]">
                   Optional advanced map for prerequisite-aware scaffolding.
                 </p>
               </div>
               <button
                 onClick={generateSuggestedMap}
                 disabled={generatingMap || readings.length === 0}
-                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 disabled:opacity-50"
+                className="minerva-button minerva-button-secondary"
               >
                 {generatingMap ? "Generating..." : "Generate Suggested Map"}
               </button>
@@ -378,14 +393,14 @@ export default function SessionManagementPage() {
               }
               rows={10}
               placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-colors resize-y font-mono text-xs"
+              className="minerva-textarea resize-y font-mono text-xs"
             />
           </div>
         </div>
 
         {/* Readings section */}
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <div className="minerva-card space-y-4 p-6 md:p-8">
+          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
             Readings
           </h2>
 
@@ -397,8 +412,8 @@ export default function SessionManagementPage() {
             onClick={() => readingInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
               dragActive === "reading"
-                ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
-                : "border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                ? "border-[var(--teal)] bg-[rgba(17,120,144,0.08)]"
+                : "border-[var(--light-grey)] hover:border-[var(--teal)] hover:bg-[rgba(255,255,255,0.55)]"
             }`}
           >
             <input
@@ -408,13 +423,13 @@ export default function SessionManagementPage() {
               onChange={(e) => handleFileChange(e, "reading")}
               className="hidden"
             />
-            <svg className="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mx-auto mb-2 w-8 h-8 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-[var(--charcoal)]">
               {uploading ? "Uploading..." : "Drag and drop files here, or click to browse"}
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
               .pdf, .docx, .txt, .md (max 10MB)
             </p>
           </div>
@@ -425,24 +440,24 @@ export default function SessionManagementPage() {
               {readings.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-600/50"
+                  className="flex items-center justify-between border border-[var(--rule)] bg-[rgba(255,255,255,0.58)] p-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 uppercase">
+                    <span className="rounded-md bg-[rgba(17,120,144,0.12)] px-2 py-0.5 text-xs font-medium uppercase text-[var(--teal)]">
                       {file.filename.split(".").pop()}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                      <p className="truncate text-sm font-medium text-[var(--charcoal)]">
                         {file.filename}
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      <p className="truncate text-xs text-[var(--dim-grey)]">
                         {file.preview}...
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleRemoveFile(file.id, file.category)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+                    className="flex-shrink-0 p-1.5 text-[var(--dim-grey)] transition-colors hover:bg-[rgba(223,47,38,0.08)] hover:text-[var(--signal)]"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -455,12 +470,12 @@ export default function SessionManagementPage() {
         </div>
 
         {/* Assessments section */}
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="minerva-card space-y-4 p-6 md:p-8">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
               Assessments
             </h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
               The tutor will never answer these directly.
             </p>
           </div>
@@ -473,8 +488,8 @@ export default function SessionManagementPage() {
             onClick={() => assessmentInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
               dragActive === "assessment"
-                ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20"
-                : "border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                ? "border-[var(--rose)] bg-[rgba(165,65,125,0.08)]"
+                : "border-[var(--light-grey)] hover:border-[var(--rose)] hover:bg-[rgba(255,255,255,0.55)]"
             }`}
           >
             <input
@@ -484,13 +499,13 @@ export default function SessionManagementPage() {
               onChange={(e) => handleFileChange(e, "assessment")}
               className="hidden"
             />
-            <svg className="w-8 h-8 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mx-auto mb-2 w-8 h-8 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-[var(--charcoal)]">
               {uploading ? "Uploading..." : "Drag and drop files here, or click to browse"}
             </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
               .pdf, .docx, .txt, .md (max 10MB)
             </p>
           </div>
@@ -501,24 +516,24 @@ export default function SessionManagementPage() {
               {assessments.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-600/50"
+                  className="flex items-center justify-between border border-[var(--rule)] bg-[rgba(255,255,255,0.58)] p-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 uppercase">
+                    <span className="rounded-md bg-[rgba(165,65,125,0.12)] px-2 py-0.5 text-xs font-medium uppercase text-[var(--rose)]">
                       {file.filename.split(".").pop()}
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                      <p className="truncate text-sm font-medium text-[var(--charcoal)]">
                         {file.filename}
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      <p className="truncate text-xs text-[var(--dim-grey)]">
                         {file.preview}...
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleRemoveFile(file.id, file.category)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+                    className="flex-shrink-0 p-1.5 text-[var(--dim-grey)] transition-colors hover:bg-[rgba(223,47,38,0.08)] hover:text-[var(--signal)]"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -530,6 +545,6 @@ export default function SessionManagementPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

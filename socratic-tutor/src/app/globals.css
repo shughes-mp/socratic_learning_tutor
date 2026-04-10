@@ -2,37 +2,68 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --lightest-gray: #f2f2f2;
+  --linen: #f0ebe6;
+  --sand: #fef8e9;
+  --charcoal: #3c3732;
+  --dim-grey: #78736e;
+  --light-grey: #d2cdc8;
+  --rule: rgba(60, 55, 50, 0.16);
+  --teal: #117890;
+  --olive: #728503;
+  --rose: #a5417d;
+  --signal: #df2f26;
+  --card: rgba(255, 255, 255, 0.78);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-sans), sans-serif;
+  --font-serif: var(--font-serif), serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #e2e8f0;
-  }
+* {
+  box-sizing: border-box;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-}
-
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  background: var(--lightest-gray);
 }
 
-/* Custom scrollbar */
+body.app-shell {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(to right, transparent 0, transparent 155px, var(--rule) 155px, var(--rule) 156px, transparent 156px),
+    linear-gradient(to bottom, transparent 0, transparent 72px, var(--rule) 72px, var(--rule) 73px, transparent 73px),
+    var(--lightest-gray);
+  color: var(--charcoal);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(17, 120, 144, 0.18);
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -40,10 +71,227 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border-radius: 3px;
+  background: rgba(60, 55, 50, 0.24);
+  border-radius: 999px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+.minerva-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 88% 14%, rgba(114, 133, 3, 0.06), transparent 20rem),
+    radial-gradient(circle at 92% 10%, rgba(165, 65, 125, 0.05), transparent 16rem),
+    var(--lightest-gray);
+}
+
+.minerva-shell {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.top-rule {
+  border-top: 1px solid var(--rule);
+}
+
+.bottom-rule {
+  border-bottom: 1px solid var(--rule);
+}
+
+.section-rule {
+  border-bottom: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.eyebrow-teal {
+  color: var(--teal);
+}
+
+.eyebrow-olive {
+  color: var(--olive);
+}
+
+.eyebrow-rose {
+  color: var(--rose);
+}
+
+.display-title {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(3.2rem, 6vw, 5.9rem);
+  line-height: 0.94;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.section-title {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(2.3rem, 4vw, 4rem);
+  line-height: 0.98;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.lead-copy {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(2.1rem, 3vw, 3.6rem);
+  line-height: 1.04;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.body-copy {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--charcoal);
+}
+
+.muted-copy {
+  color: var(--dim-grey);
+}
+
+.minerva-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  backdrop-filter: blur(8px);
+}
+
+.minerva-panel {
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid var(--rule);
+}
+
+.minerva-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--signal);
+  background: var(--signal);
+  color: white;
+  min-height: 48px;
+  padding: 0 22px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.minerva-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 35px rgba(223, 47, 38, 0.16);
+}
+
+.minerva-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.minerva-button-secondary {
+  border: 1px solid var(--rule);
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--charcoal);
+}
+
+.minerva-input,
+.minerva-textarea {
+  width: 100%;
+  border: 1px solid var(--light-grey);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--charcoal);
+  padding: 14px 16px;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+.minerva-input::placeholder,
+.minerva-textarea::placeholder {
+  color: #908a84;
+}
+
+.minerva-input:focus,
+.minerva-textarea:focus {
+  border-color: rgba(17, 120, 144, 0.55);
+  box-shadow: 0 0 0 4px rgba(17, 120, 144, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.minerva-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--charcoal);
+}
+
+.hero-orb {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-orb::before {
+  content: "";
+  position: absolute;
+  right: -12%;
+  top: 3%;
+  width: min(54vw, 760px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  opacity: 0.82;
+  background:
+    radial-gradient(circle at 16% 70%, rgba(114, 133, 3, 0.75) 0 1.6px, transparent 2.3px),
+    radial-gradient(circle at 34% 23%, rgba(17, 120, 144, 0.68) 0 1.6px, transparent 2.4px),
+    radial-gradient(circle at 61% 39%, rgba(165, 65, 125, 0.62) 0 1.9px, transparent 2.6px),
+    radial-gradient(circle at 73% 73%, rgba(210, 205, 200, 0.5) 0 1.8px, transparent 2.6px),
+    radial-gradient(circle at 44% 78%, rgba(240, 235, 230, 0.85) 0 1.2px, transparent 2px),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.78) 0 58%, rgba(255, 255, 255, 0) 70%);
+  background-size: 38px 38px, 44px 44px, 41px 41px, 31px 31px, 22px 22px, auto;
+  box-shadow: inset 0 0 80px rgba(255, 255, 255, 0.85);
+  transform: rotate(-10deg);
+}
+
+.metric-list {
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+}
+
+.metric-list > * {
+  background: var(--lightest-gray);
+}
+
+.chat-prose {
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+@media (max-width: 900px) {
+  body.app-shell {
+    background:
+      linear-gradient(to bottom, transparent 0, transparent 72px, var(--rule) 72px, var(--rule) 73px, transparent 73px),
+      var(--lightest-gray);
+  }
+
+  .minerva-shell {
+    width: min(100%, calc(100% - 28px));
+  }
+
+  .hero-orb::before {
+    right: -32%;
+    top: 7%;
+    width: 100vw;
+  }
 }

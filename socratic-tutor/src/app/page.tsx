@@ -1,48 +1,190 @@
 import Link from "next/link";
 
+const pillars = [
+  {
+    label: "Guided Reasoning",
+    color: "var(--teal)",
+    description:
+      "Students are led through structured questions before the tutor gives direct explanations.",
+  },
+  {
+    label: "Faculty Oversight",
+    color: "var(--olive)",
+    description:
+      "Instructors create sessions, upload materials, and review student progress with replay and reports.",
+  },
+  {
+    label: "Impact Signals",
+    color: "var(--rose)",
+    description:
+      "Misconceptions, confidence, and topic mastery are surfaced so sessions generate useful teaching evidence.",
+  },
+];
+
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full text-center space-y-8">
-        {/* Logo / Title */}
-        <div className="space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
+    <main className="minerva-page">
+      <div className="minerva-shell">
+        <header className="top-rule bottom-rule grid min-h-[74px] grid-cols-1 items-center gap-4 px-0 md:grid-cols-[156px_1fr_160px]">
+          <div className="hidden md:block" />
+          <div className="px-4 py-5 md:px-8">
+            <p className="text-[12px] font-extrabold tracking-[0.01em]">
+              Socratic Tutor
+            </p>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            Socratic Tutor
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Guided exploration of course readings through the Socratic method.
-            Designed for professional learners.
-          </p>
-        </div>
+          <div className="px-4 py-5 md:px-8 md:text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
+              Learning System
+            </p>
+          </div>
+        </header>
 
-        {/* Actions */}
-        <div className="space-y-3">
-          <Link
-            href="/instructor"
-            className="block w-full px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-200"
-          >
-            Create a Session (Instructor)
-          </Link>
-          <p className="text-xs text-slate-400 dark:text-slate-500">
-            Students: use the link provided by your instructor
-          </p>
-        </div>
+        <section className="relative overflow-hidden">
+          <div className="hero-orb" />
+          <div className="grid grid-cols-1 md:grid-cols-[156px_304px_minmax(0,1fr)]">
+            <div className="hidden border-r border-[var(--rule)] md:block" />
+            <div className="px-4 py-12 md:px-8 md:py-16">
+              <p className="eyebrow eyebrow-teal">Solution</p>
+              <div className="mt-20 w-fit">
+                <div className="mb-5 flex h-18 w-18 items-center justify-center rounded-full border border-[var(--rule)] bg-white/70 text-[28px] font-semibold">
+                  S
+                </div>
+                <p className="font-serif text-[46px] leading-[0.9] tracking-[-0.04em]">
+                  Socratic
+                  <br />
+                  Tutor
+                </p>
+              </div>
+
+              <div className="mt-14 space-y-0">
+                {pillars.map((pillar) => (
+                  <div
+                    key={pillar.label}
+                    className="border-y border-[var(--rule)] px-0 py-4"
+                  >
+                    <p
+                      className="text-[18px] font-extrabold leading-tight"
+                      style={{ color: pillar.color }}
+                    >
+                      {pillar.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-4 pb-14 pt-12 md:px-8 md:pb-20 md:pt-20">
+              <h1 className="lead-copy max-w-[14ch]">
+                A deeply guided reading and reflection environment for
+                higher-stakes learning.
+              </h1>
+              <p className="body-copy muted-copy mt-8 max-w-[35rem]">
+                Socratic Tutor helps instructors turn readings into structured,
+                evidence-rich conversations. Students enter a session, explain
+                what they think, work through guided questions, and leave behind
+                a clearer record of mastery, confusion, and growth.
+              </p>
+
+              <div className="mt-10 flex flex-wrap items-center gap-3">
+                <Link href="/instructor" className="minerva-button">
+                  Create a Session
+                </Link>
+                <span className="text-[12px] font-medium text-[var(--dim-grey)]">
+                  Students join with the link shared by their instructor.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+          <div className="hidden border-r border-[var(--rule)] md:block" />
+          <div className="px-4 py-14 md:px-8 md:py-20">
+            <p className="eyebrow eyebrow-teal">
+              Institutional Architecture For Learning
+            </p>
+            <h2 className="section-title mt-5 max-w-[12ch]">
+              Connect course preparation to observable learning moves.
+            </h2>
+
+            <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-0">
+              <div className="md:border-r md:border-[var(--rule)] md:pr-8">
+                <p className="eyebrow eyebrow-teal">Our Approach</p>
+                <p className="body-copy mt-5 max-w-[28rem]">
+                  Sessions are grounded in instructor-uploaded readings and
+                  optional protected assessments. The tutor begins with prior
+                  knowledge, asks for reasoning, and adapts based on attempts,
+                  confidence, and misconception signals.
+                </p>
+              </div>
+              <div className="md:pl-8">
+                <p className="eyebrow eyebrow-teal">Why It Matters</p>
+                <p className="body-copy mt-5 max-w-[33rem]">
+                  Instead of reducing study time to answer retrieval, the app
+                  makes student thinking visible. Instructors get a cleaner view
+                  of where preparation is strong, where it breaks down, and what
+                  concepts need intervention.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+          <div className="hidden border-r border-[var(--rule)] md:block" />
+          <div className="px-4 py-14 md:px-8 md:py-20">
+            <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+              <div>
+                <p className="eyebrow eyebrow-olive">Faculty Development</p>
+                <h2 className="section-title mt-5 max-w-[12ch]">
+                  Build sessions that coach understanding rather than reward
+                  answer hunting.
+                </h2>
+              </div>
+              <div className="metric-list">
+                {pillars.map((pillar) => (
+                  <div
+                    key={pillar.label}
+                    className="grid grid-cols-1 gap-3 px-5 py-6 md:grid-cols-[180px_1fr]"
+                  >
+                    <p
+                      className="text-[15px] font-extrabold"
+                      style={{ color: pillar.color }}
+                    >
+                      {pillar.label}
+                    </p>
+                    <p className="body-copy text-[15px]">{pillar.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+          <div className="hidden border-r border-[var(--rule)] md:block" />
+          <div className="px-4 py-16 md:px-8 md:py-20">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_260px] md:items-center">
+              <div>
+                <p className="lead-copy max-w-[18ch]">
+                  Better preparation becomes visible when learners have to think
+                  in public.
+                </p>
+                <p className="body-copy muted-copy mt-6 max-w-[38rem]">
+                  Create a session, upload readings, share the student link, and
+                  review reports that capture patterns in confidence,
+                  misconceptions, and topic mastery.
+                </p>
+              </div>
+              <div className="md:justify-self-end">
+                <Link href="/instructor" className="minerva-button w-full md:w-[220px]">
+                  Start Building
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

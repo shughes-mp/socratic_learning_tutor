@@ -27,19 +27,19 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
   if (!displayContent && !isUser) return null;
 
   return (
-    <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"} mb-6`}>
+    <div className={`mb-8 flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
       <div
         className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-4 ${
           isUser
-            ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-tr-sm"
+            ? "border border-[rgba(223,47,38,0.25)] bg-[rgba(223,47,38,0.92)] text-white shadow-[0_20px_35px_rgba(223,47,38,0.12)] rounded-tr-sm"
             : isSystem
-              ? "bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 shadow-sm text-slate-800 dark:text-slate-100 rounded-xl"
-              : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-800 dark:text-slate-200 rounded-tl-sm"
+              ? "border border-[rgba(17,120,144,0.24)] bg-[rgba(17,120,144,0.08)] text-[var(--charcoal)] shadow-sm rounded-xl"
+              : "border border-[var(--rule)] bg-[rgba(255,255,255,0.7)] text-[var(--charcoal)] shadow-sm rounded-tl-sm"
         }`}
       >
-        <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed prose-pre:bg-slate-800 prose-pre:text-white max-w-none">
+        <div className="chat-prose max-w-none">
           {displayContent || (
-            <span className="inline-block w-2 h-4 bg-slate-300 dark:bg-slate-600 animate-pulse rounded-sm" />
+            <span className="inline-block h-4 w-2 animate-pulse rounded-sm bg-[var(--light-grey)]" />
           )}
         </div>
       </div>

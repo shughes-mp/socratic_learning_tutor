@@ -1,10 +1,10 @@
 export function TypingIndicator() {
   return (
-    <div className="flex w-full justify-start mb-6">
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-1.5 h-[52px]">
-        <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-[bounce_1.4s_infinite_ease-in-out_both] [animation-delay:-0.32s]" />
-        <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-[bounce_1.4s_infinite_ease-in-out_both] [animation-delay:-0.16s]" />
-        <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-[bounce_1.4s_infinite_ease-in-out_both]" />
+    <div className="mb-8 flex w-full justify-start">
+      <div className="flex h-[52px] items-center gap-1.5 rounded-2xl rounded-tl-sm border border-[var(--rule)] bg-[rgba(255,255,255,0.7)] px-5 py-4 shadow-sm">
+        <span className="h-2 w-2 rounded-full bg-[var(--teal)] animate-[bounce_1.4s_infinite_ease-in-out_both] [animation-delay:-0.32s]" />
+        <span className="h-2 w-2 rounded-full bg-[var(--olive)] animate-[bounce_1.4s_infinite_ease-in-out_both] [animation-delay:-0.16s]" />
+        <span className="h-2 w-2 rounded-full bg-[var(--rose)] animate-[bounce_1.4s_infinite_ease-in-out_both]" />
       </div>
     </div>
   );

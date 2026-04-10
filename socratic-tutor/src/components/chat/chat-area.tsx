@@ -22,8 +22,8 @@ export function ChatArea({ messages, isLoading }: ChatAreaProps) {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex-1 w-full overflow-y-auto px-4 py-6 scroll-smooth">
-      <div className="max-w-4xl mx-auto flex flex-col pt-4 pb-20">
+    <div className="flex-1 w-full overflow-y-auto px-4 py-8 scroll-smooth md:px-8">
+      <div className="mx-auto flex max-w-5xl flex-col pb-20 pt-4">
         {messages.map((m) => (
           <MessageBubble key={m.id} role={m.role as "user" | "assistant" | "system" | "data"} content={m.content} />
         ))}

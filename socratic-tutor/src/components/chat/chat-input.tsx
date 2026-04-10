@@ -32,7 +32,7 @@ export function ChatInput({ input, handleInputChange, handleSubmit, isLoading, d
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative flex items-end w-full max-w-4xl mx-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/50 transition-shadow"
+      className="relative mx-auto flex w-full max-w-5xl items-end border border-[var(--rule)] bg-[rgba(255,255,255,0.78)] p-2 shadow-sm transition-shadow focus-within:shadow-[0_0_0_4px_rgba(17,120,144,0.08)]"
     >
       <textarea
         ref={textareaRef}
@@ -41,14 +41,14 @@ export function ChatInput({ input, handleInputChange, handleSubmit, isLoading, d
         onKeyDown={onKeyDown}
         placeholder={disabled ? "Session has ended." : "Type your message... (Shift+Enter for new line)"}
         disabled={isLoading || disabled}
-        className="w-full max-h-[200px] min-h-[44px] bg-transparent resize-none outline-none px-3 py-2.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 disabled:opacity-50"
+        className="min-h-[52px] max-h-[200px] w-full resize-none bg-transparent px-3 py-3 text-[15px] text-[var(--charcoal)] outline-none placeholder:text-[#908a84] disabled:opacity-50"
         rows={1}
       />
       
       <button
         type="submit"
         disabled={!input.trim() || isLoading || disabled}
-        className="flex-shrink-0 h-[44px] w-[44px] flex items-center justify-center rounded-xl bg-indigo-600 text-white disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-500 hover:bg-indigo-700 transition-colors ml-2"
+        className="ml-2 flex h-[48px] w-[48px] flex-shrink-0 items-center justify-center border border-[var(--signal)] bg-[var(--signal)] text-white transition-colors hover:bg-[#c92c24] disabled:border-[var(--light-grey)] disabled:bg-[rgba(255,255,255,0.6)] disabled:text-[var(--light-grey-2,#b4afaa)]"
       >
         <svg className="w-5 h-5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

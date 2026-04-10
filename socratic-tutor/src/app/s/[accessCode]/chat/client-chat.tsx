@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChatArea } from "@/components/chat/chat-area";
 import { ChatInput } from "@/components/chat/chat-input";
@@ -40,7 +40,9 @@ export function ClientChat({
   const [error, setError] = useState(false);
   const initialized = useRef(false);
 
-  const exchangeCount = Math.ceil(messages.filter((message) => message.role === "user").length);
+  const exchangeCount = Math.ceil(
+    messages.filter((message) => message.role === "user").length
+  );
 
   useEffect(() => {
     const sid = sessionStorage.getItem("studentSessionId");
@@ -190,135 +192,156 @@ If course context is available, use it naturally in the first three exchanges.`,
 
   if (!studentSessionId) return null;
 
+  if (isEnded && summary) {
+    return (
+      <main className="minerva-page">
+        <div className="minerva-shell">
+          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+            <div className="hidden border-r border-[var(--rule)] md:block" />
+            <div className="px-4 py-14 md:px-8 md:py-18">
+              <p className="eyebrow eyebrow-teal">Session Complete</p>
+              <h1 className="section-title mt-5 max-w-[11ch]">
+                Reflection summary for {studentName ?? "this session"}.
+              </h1>
+              <div className="minerva-card mt-10 max-w-4xl p-6 md:p-8">
+                <div className="space-y-4 text-[16px] leading-7 text-[var(--charcoal)]">
+                  {summary.split("\n").map((line, index) => (
+                    <p key={index}>{line}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100">
-      <header className="flex-shrink-0 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shadow-sm z-10">
-        <div className="flex flex-col">
-          <h1 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-            {sessionName}
-          </h1>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            Socratic Tutor • Access: {accessCode}
-          </p>
-        </div>
-        {!isEnded && (
-          <button
-            onClick={handleEndClick}
-            disabled={isEnding || isLoading}
-            className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/30 rounded-lg transition-colors border-transparent"
-          >
-            {isEnding ? "Ending..." : "End Session"}
-          </button>
-        )}
-      </header>
-
-      {isEnded && summary ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-950 flex justify-center">
-          <div className="max-w-3xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 shadow-sm my-8">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
-              <span className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </span>
-              Session Complete
-            </h2>
-            <div className="prose prose-slate dark:prose-invert max-w-none">
-              {summary.split("\n").map((line, index) => (
-                <p key={index}>{line}</p>
-              ))}
-            </div>
+    <main className="minerva-page flex min-h-screen flex-col">
+      <div className="minerva-shell flex min-h-screen flex-col">
+        <header className="top-rule bottom-rule grid grid-cols-1 md:grid-cols-[156px_1fr_220px]">
+          <div className="hidden border-r border-[var(--rule)] md:block" />
+          <div className="px-4 py-5 md:px-8">
+            <p className="eyebrow eyebrow-teal">Socratic Session</p>
+            <h1 className="mt-2 font-serif text-[34px] leading-[0.96] tracking-[-0.03em]">
+              {sessionName}
+            </h1>
+            <p className="mt-2 text-[12px] text-[var(--dim-grey)]">
+              Access code {accessCode}
+            </p>
           </div>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 pt-6">
-            <div className="rounded-2xl border border-indigo-200/70 dark:border-indigo-900/60 bg-white dark:bg-slate-900 shadow-sm p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400">
-                Session Orientation
-              </p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                {sessionName}
-              </h2>
-              {sessionDescription && (
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                  {sessionDescription}
-                </p>
-              )}
-              <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
-                I&apos;ll help you work through the reading by asking questions
-                that push you to build your own understanding. After a few
-                genuine attempts, I&apos;ll give a direct answer if you&apos;re
-                still stuck.
-              </p>
-              {courseContext && (
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium text-slate-800 dark:text-slate-100">
-                    Why this matters:
-                  </span>{" "}
-                  {courseContext}
-                </p>
-              )}
-              {learningGoal && (
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium text-slate-800 dark:text-slate-100">
-                    Goal for this session:
-                  </span>{" "}
-                  {learningGoal}
-                </p>
-              )}
-              {studentName && (
-                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                  You&apos;re joining as {studentName}.
-                </p>
-              )}
-            </div>
-          </div>
-          <ChatArea messages={messages} isLoading={isLoading} />
-        </div>
-      )}
-
-      {!isEnded && (
-        <div className="flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-4 pt-4 pb-6">
-          <div className="max-w-4xl mx-auto flex flex-col items-center">
-            {error && (
-              <div className="w-full mb-3 px-4 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center shadow-sm">
-                I&apos;m having trouble connecting right now. Please try again
-                in a moment.
-              </div>
-            )}
-
-            <ChatInput
-              input={input}
-              handleInputChange={handleInputChange}
-              handleSubmit={handleSubmit}
-              isLoading={isLoading}
-              disabled={isEnded || isEnding || (exchangeCount >= maxExchanges && !isLoading)}
-            />
-
-            <div className="w-full flex justify-between items-center mt-3 px-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <span>This tutor draws only from the uploaded readings.</span>
-              <span className="bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded-md">
-                {exchangeCount} of {maxExchanges} exchanges
-              </span>
-            </div>
-
-            {exchangeCount >= maxExchanges && !isLoading && !isEnded && (
-              <div className="mt-4 text-center">
-                <p className="text-sm font-medium text-amber-600 mb-2">
-                  You have reached the exchange limit for this session.
-                </p>
-                <button
-                  onClick={() => triggerEndSession(studentSessionId)}
-                  className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm transition-colors"
-                >
-                  View Summary
-                </button>
-              </div>
+          <div className="px-4 py-5 md:px-8 md:text-right">
+            {!isEnded && (
+              <button
+                onClick={handleEndClick}
+                disabled={isEnding || isLoading}
+                className="minerva-button minerva-button-secondary"
+              >
+                {isEnding ? "Ending..." : "End Session"}
+              </button>
             )}
           </div>
+        </header>
+
+        <div className="grid flex-1 grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+          <aside className="hidden border-r border-[var(--rule)] md:block" />
+          <div className="flex min-h-0 flex-col">
+            <div className="border-b border-[var(--rule)] px-4 py-6 md:px-8">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_300px]">
+                <div>
+                  <p className="eyebrow eyebrow-teal">Session Orientation</p>
+                  {sessionDescription && (
+                    <p className="body-copy mt-4 max-w-[40rem]">
+                      {sessionDescription}
+                    </p>
+                  )}
+                  <p className="mt-4 max-w-[40rem] text-[14px] leading-7 text-[var(--dim-grey)]">
+                    This tutor is designed to help you articulate your thinking,
+                    test your assumptions, and build stronger understanding from
+                    the uploaded materials.
+                  </p>
+                </div>
+
+                <div className="minerva-panel p-5">
+                  <div className="space-y-4 text-[13px] leading-6">
+                    {courseContext && (
+                      <div>
+                        <p className="eyebrow eyebrow-olive">Why This Matters</p>
+                        <p className="mt-2 text-[var(--charcoal)]">
+                          {courseContext}
+                        </p>
+                      </div>
+                    )}
+                    {learningGoal && (
+                      <div>
+                        <p className="eyebrow eyebrow-rose">Goal For This Session</p>
+                        <p className="mt-2 text-[var(--charcoal)]">
+                          {learningGoal}
+                        </p>
+                      </div>
+                    )}
+                    {studentName && (
+                      <p className="border-t border-[var(--rule)] pt-4 text-[var(--dim-grey)]">
+                        You are participating as <strong>{studentName}</strong>.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1">
+              <ChatArea messages={messages} isLoading={isLoading} />
+            </div>
+
+            <div className="border-t border-[var(--rule)] px-4 py-4 pb-6 md:px-8">
+              {error && (
+                <div className="mb-4 border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-[13px] text-[var(--signal)]">
+                  I&apos;m having trouble connecting right now. Please try again
+                  in a moment.
+                </div>
+              )}
+
+              <ChatInput
+                input={input}
+                handleInputChange={handleInputChange}
+                handleSubmit={handleSubmit}
+                isLoading={isLoading}
+                disabled={
+                  isEnded ||
+                  isEnding ||
+                  (exchangeCount >= maxExchanges && !isLoading)
+                }
+              />
+
+              <div className="mt-3 flex flex-col gap-2 text-[12px] font-medium text-[var(--dim-grey)] md:flex-row md:items-center md:justify-between">
+                <span>
+                  This conversation is grounded in the instructor&apos;s uploaded
+                  materials.
+                </span>
+                <span>
+                  {exchangeCount} of {maxExchanges} exchanges used
+                </span>
+              </div>
+
+              {exchangeCount >= maxExchanges && !isLoading && !isEnded && (
+                <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="text-[13px] font-semibold text-[var(--signal)]">
+                    You have reached the exchange limit for this session.
+                  </p>
+                  <button
+                    onClick={() => triggerEndSession(studentSessionId)}
+                    className="minerva-button"
+                  >
+                    View Summary
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </main>
   );
 }
