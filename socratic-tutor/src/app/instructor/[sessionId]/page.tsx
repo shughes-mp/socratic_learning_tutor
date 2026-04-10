@@ -75,8 +75,20 @@ export default function SessionManagementPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to upload file.");
+        const responseText = await res.text();
+        let errorMessage = "Failed to upload file.";
+
+        try {
+          const data = JSON.parse(responseText) as { error?: string };
+          errorMessage = data.error || errorMessage;
+        } catch {
+          if (res.status >= 500) {
+            errorMessage =
+              "The server could not process that file. Please try again or upload a text-based PDF, DOCX, TXT, or Markdown file.";
+          }
+        }
+
+        throw new Error(errorMessage);
       }
 
       await fetchSession();

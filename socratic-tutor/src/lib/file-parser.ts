@@ -1,6 +1,3 @@
-import { PDFParse } from "pdf-parse";
-import mammoth from "mammoth";
-
 export type SupportedFileType = "pdf" | "docx" | "txt" | "md";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -62,8 +59,10 @@ export async function parseFile(
 
 async function parsePdf(buffer: Buffer): Promise<string> {
   try {
+    const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: buffer });
     const data = await parser.getText();
+    await parser.destroy();
     const text = data.text.trim();
     if (!text || text.length < 20) {
       throw new Error(
@@ -83,6 +82,7 @@ async function parsePdf(buffer: Buffer): Promise<string> {
 
 async function parseDocx(buffer: Buffer): Promise<string> {
   try {
+    const mammoth = await import("mammoth");
     const result = await mammoth.extractRawText({ buffer });
     return result.value.trim();
   } catch {

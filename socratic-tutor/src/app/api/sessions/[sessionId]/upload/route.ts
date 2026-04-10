@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { parseFile, validateFile } from "@/lib/file-parser";
 import type { ApiError, FileCategory } from "@/types";
 
@@ -11,6 +11,7 @@ export async function POST(
 ) {
   try {
     const { sessionId } = await params;
+    await ensureDatabaseReady();
 
     // Verify session exists
     const session = await prisma.session.findUnique({
@@ -125,7 +126,15 @@ export async function POST(
       );
     }
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Error uploading file:", {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : "UnknownError",
+      stack: error instanceof Error ? error.stack : undefined,
+      cause:
+        error instanceof Error && "cause" in error
+          ? error.cause
+          : undefined,
+    });
     return NextResponse.json<ApiError>(
       { error: "Failed to upload file.", code: "UPLOAD_FAILED" },
       { status: 500 }
