@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { generateUniqueAccessCode } from "@/lib/access-codes";
 import type { CreateSessionRequest, CreateSessionResponse, ApiError } from "@/types";
 
 export async function POST(request: Request) {
   try {
+    await ensureDatabaseReady();
+
     const body = (await request.json()) as CreateSessionRequest;
 
     if (!body.name || body.name.trim().length === 0) {
@@ -35,7 +37,15 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating session:", error);
+    console.error("Error creating session:", {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : typeof error,
+      stack: error instanceof Error ? error.stack : undefined,
+      cause:
+        error instanceof Error && "cause" in error
+          ? (error as Error & { cause?: unknown }).cause
+          : undefined,
+    });
     return NextResponse.json<ApiError>(
       { error: "Failed to create session.", code: "CREATE_FAILED" },
       { status: 500 }
