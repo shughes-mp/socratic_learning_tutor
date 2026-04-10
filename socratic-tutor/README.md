@@ -1,135 +1,164 @@
-# Socratic Tutor MVP
+# Socratic Tutor
 
-Socratic Tutor is an AI-assisted learning app that helps students work through course readings by thinking out loud, getting guided questions, and building their own understanding before receiving direct answers.
+Socratic Tutor is an AI-powered learning app that helps students think through course material with guided questions instead of rushing straight to answers.
 
-## What This App Does
+It is designed for instructors, adult learners, and professional learners who want a more reflective way to prepare for class, discussion, or assessment.
 
-This MVP is designed for instructors who want students to arrive better prepared for class, and for adult or professional learners who benefit from structured reflection instead of answer dumping.
+## What the App Does
 
-The app supports a simple teaching workflow:
+An instructor creates a learning session, uploads readings and optional assessment materials, and shares a student link. Students then chat with the tutor about the material. The tutor pushes them to explain their thinking, identify misunderstandings, and build stronger understanding step by step. Afterward, the instructor can review student activity and generate a report.
 
-1. An instructor creates a session.
-2. The instructor uploads readings and optional assessment materials.
-3. The app generates a student access link and code.
-4. Students join the session, enter their name, and chat with the tutor.
-5. The tutor guides students through the material using a Socratic approach.
-6. The instructor reviews student activity and an AI-generated session report.
+This is not a generic chatbot. It is meant to behave like a guided tutor.
 
-## Why It Is “Socratic”
+## How the Tutoring Approach Works
 
-This tutor is built to coach thinking, not shortcut it.
+The app is built around a Socratic approach:
 
-- For conceptual questions, it starts with guiding questions instead of giving the answer immediately.
-- If a student makes a genuine effort and is still stuck after repeated attempts, the tutor can provide a direct explanation.
-- If the student is asking a straightforward comprehension question, the tutor can answer more directly.
-- If assessment material has been uploaded, the tutor will not give away protected answers. It can give feedback on a student's reasoning, but it should not solve the assessment for them.
+- It starts with guiding questions, prompts, and follow-up checks instead of immediately giving away answers.
+- It asks students to explain what they already know before moving deeper into a topic.
+- It tracks repeated attempts so the tutor can respond differently when a learner is genuinely stuck.
+- It can probe confidence, surface misconceptions, and revisit weak areas later in the session.
+- It protects uploaded assessment materials by avoiding direct answer-giving on those protected questions.
 
-## MVP Features
+In short: the app is designed to support learning, not shortcut it.
 
-- Instructor session creation
-- Access-code based student entry
+## Core Features
+
+- Instructor session creation with shareable student access links
 - Upload support for `.pdf`, `.docx`, `.txt`, and `.md` files
-- Reading-aware chat grounded in uploaded materials
+- Reading-grounded tutoring conversations
 - Optional assessment upload with answer-protection behavior
 - Student chat sessions with exchange limits
-- Misconception logging and confidence checks
-- Instructor activity monitor with replay view
-- AI-generated instructor report
-- PDF export for the report
-- Local SQLite storage for MVP development
+- Prior-knowledge opening prompts and guided onboarding
+- Attempt tracking, confidence checks, and misconception logging
+- Topic mastery tracking and revisit prompts for shaky concepts
+- Instructor monitoring view with student replay
+- AI-generated session reports
+- PDF export for instructor reports
 
 ## Who It Is For
 
-- Instructors who want a lightweight pre-class preparation tool
-- Programs serving adult learners, executive learners, or professional students
-- Teams testing whether AI-guided discussion improves reading comprehension and class readiness
+- Instructors who want students to arrive better prepared
+- Programs serving adult, executive, or professional learners
+- Teams exploring whether guided AI tutoring improves comprehension and readiness
 
-## How A Typical Session Works
+## Typical Workflow
 
-### For instructors
+### Instructor flow
 
-1. Open the app and create a new session.
-2. Add a session name and optional description.
-3. Upload at least one reading.
-4. Optionally upload assessments you do not want the tutor to answer directly.
-5. Copy the student link and share it with your learners.
-6. Monitor participation and review the generated instructor report.
+1. Create a session.
+2. Add a title, description, and optional course context or learning goal.
+3. Upload one or more readings.
+4. Optionally upload assessments the tutor should treat as protected.
+5. Share the student link and access code.
+6. Monitor student activity and generate a report afterward.
 
-### For students
+### Student flow
 
 1. Open the shared session link.
-2. Enter your name.
-3. Ask questions about the reading or respond to the tutor's prompts.
-4. Work through the material with guided follow-up questions.
-5. Finish the session with a stronger grasp of the ideas before class.
+2. Enter a name and begin the chat.
+3. Answer opening prompts about prior knowledge and confidence.
+4. Work through the reading with guided questions and feedback.
+5. Leave with a clearer understanding of the material and where they were confused.
 
-## Local Setup
+## Local Development Setup
 
 ### What you need
 
 - Node.js
-- `pnpm`
+- npm
 - An Anthropic API key
-
-This project uses a local SQLite database for MVP development. The database file is created locally and should not be committed to GitHub.
 
 ### Environment variables
 
-Create a local `.env.local` file based on the example values below:
+Create a local `.env.local` file.
 
 ```bash
 ANTHROPIC_API_KEY=your_anthropic_api_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-DATABASE_URL=file:./dev.db
+LOCAL_DATABASE_URL=file:./prisma/dev.db
+DATABASE_URL=file:./prisma/dev.db
+TURSO_DATABASE_URL=libsql://your-production-database.turso.io
+TURSO_AUTH_TOKEN=your_turso_auth_token
 ```
 
-Notes:
+What these are for:
 
-- `ANTHROPIC_API_KEY` is required for chat and report generation.
-- `NEXT_PUBLIC_APP_URL` is optional for local development, but useful when sharing or generating links.
-- `DATABASE_URL` is included for clarity, although the current MVP uses a local SQLite adapter and stores data in `dev.db`.
+- `ANTHROPIC_API_KEY`: required for tutoring and report generation
+- `NEXT_PUBLIC_APP_URL`: optional locally, useful for links
+- `LOCAL_DATABASE_URL`: used by Prisma CLI commands during local schema work
+- `DATABASE_URL`: local SQLite fallback
+- `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`: used by the app in production
 
-### Run the app
+Do not commit `.env.local`.
+
+### Install and run
 
 ```bash
-pnpm install
-pnpm dev
+npm install
+npm run db:push
+npm run dev
 ```
 
 Then open [http://localhost:3000](http://localhost:3000).
 
-## Quick Start
+## Database Setup
 
-Once the app is running locally:
+The app uses two database modes:
 
-1. Go to the home page.
-2. Choose **Create a Session (Instructor)**.
-3. Create a session and upload a reading.
-4. Copy the student link.
-5. Join as a student in a separate browser window if you want to test the full flow.
-6. Return to the instructor view to monitor activity and generate a report.
+- Local development: `better-sqlite3` with a local SQLite file
+- Production: Turso Cloud through Prisma's libsql adapter
 
-## Important Caveats
+Important detail: Prisma CLI schema commands run against the local SQLite database. The production app runtime connects to Turso.
 
-- This is an MVP, optimized for fast iteration and local testing.
-- The quality of the tutoring experience depends on the quality and clarity of the uploaded reading material.
-- PDF support works best with text-based PDFs, not scanned-image PDFs.
-- Report generation and chat both depend on Anthropic API availability and valid credentials.
-- The app is currently set up for local SQLite-backed usage rather than a production multi-user deployment.
+## Production Deployment
+
+This project is set up for deployment on Vercel.
+
+Set these environment variables in Vercel:
+
+- `ANTHROPIC_API_KEY`
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
+- `NEXT_PUBLIC_APP_URL`
+
+The production build runs:
+
+```bash
+prisma generate && next build
+```
+
+## Quick Test Flow
+
+Once the app is running:
+
+1. Create an instructor session.
+2. Upload a reading.
+3. Open the student link in a second browser window.
+4. Have a short tutoring conversation.
+5. Return to the instructor area to monitor activity and generate a report.
+
+## Caveats
+
+- This is still an MVP and should be treated as an early production prototype.
+- PDF extraction works best with text-based PDFs, not scanned-image PDFs.
+- The quality of tutoring depends heavily on the quality of the uploaded source material.
+- The app depends on Anthropic API availability and valid credentials.
+- Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.
 
 ## Tech Stack
 
 - Next.js 16
 - React 19
 - Prisma
-- SQLite
-- Anthropic SDK / AI SDK
+- SQLite for local development
+- Turso/libsql for production
+- Anthropic SDK and AI SDK
 - Tailwind CSS
 
 ## Repository Safety
 
-This repository is intended to be safe to clone publicly.
-
-- Do not commit `.env.local` or any real API keys.
-- Do not commit local SQLite database files such as `dev.db`.
+- Keep `.env.local` out of Git.
+- Never commit real API keys or Turso tokens.
+- Do not commit local database files.
 - Use placeholder credentials in examples only.

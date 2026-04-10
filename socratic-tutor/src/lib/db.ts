@@ -6,8 +6,19 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  // URL matches prisma.config.ts datasource — resolved relative to process.cwd()
-  const adapter = new PrismaBetterSqlite3({ url: "file:./dev.db" });
+  if (process.env.TURSO_DATABASE_URL) {
+    // Production: Turso Cloud via libsql
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaLibSql } = require("@prisma/adapter-libsql");
+    const adapter = new PrismaLibSql({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    return new PrismaClient({ adapter } as never);
+  }
+
+  // Local dev: better-sqlite3
+  const adapter = new PrismaBetterSqlite3({ url: "file:./prisma/dev.db" });
   return new PrismaClient({ adapter } as never);
 }
 

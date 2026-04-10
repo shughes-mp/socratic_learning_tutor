@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "db:push": "prisma db push",
     "start": "next start",
     "lint": "eslint"
   },
@@ -12,7 +13,9 @@
     "@ai-sdk/anthropic": "^3.0.68",
     "@ai-sdk/react": "^3.0.156",
     "@anthropic-ai/sdk": "^0.85.0",
+    "@libsql/client": "^0.14.0",
     "@prisma/adapter-better-sqlite3": "^7.7.0",
+    "@prisma/adapter-libsql": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@tailwindcss/typography": "^0.5.19",
     "ai": "^6.0.154",
