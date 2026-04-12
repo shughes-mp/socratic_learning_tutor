@@ -5,6 +5,11 @@ const globalForPrisma = globalThis as unknown as {
   tursoSchemaReady: Promise<void> | undefined;
 };
 
+type LibsqlClient = {
+  execute: (args: string | { sql: string; args?: unknown[] }) => Promise<unknown>;
+  executeMultiple: (sql: string) => Promise<unknown>;
+};
+
 const TURSO_BOOTSTRAP_SQL = `
 CREATE TABLE IF NOT EXISTS "Session" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -12,12 +17,14 @@ CREATE TABLE IF NOT EXISTS "Session" (
   "description" TEXT,
   "courseContext" TEXT,
   "learningGoal" TEXT,
+  "learningOutcomes" TEXT,
   "prerequisiteMap" TEXT,
   "accessCode" TEXT NOT NULL,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "opensAt" DATETIME,
   "closesAt" DATETIME,
-  "maxExchanges" INTEGER NOT NULL DEFAULT 20
+  "maxExchanges" INTEGER NOT NULL DEFAULT 20,
+  "stance" TEXT NOT NULL DEFAULT 'directed'
 );
 CREATE TABLE IF NOT EXISTS "Reading" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -73,6 +80,12 @@ CREATE TABLE IF NOT EXISTS "Misconception" (
   "resolved" BOOLEAN NOT NULL DEFAULT false,
   "persistentlyUnresolved" BOOLEAN NOT NULL DEFAULT false,
   "detectedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "canonicalClaim" TEXT,
+  "passageAnchor" TEXT,
+  "misconceptionType" TEXT,
+  "severity" TEXT NOT NULL DEFAULT 'medium',
+  "confidence" TEXT NOT NULL DEFAULT 'medium',
+  "updatedAt" DATETIME,
   CONSTRAINT "Misconception_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE TABLE IF NOT EXISTS "ConfidenceCheck" (
@@ -115,6 +128,67 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Session_accessCode_key" ON "Session"("accessC
 CREATE UNIQUE INDEX IF NOT EXISTS "TopicMastery_studentSessionId_topicThread_key" ON "TopicMastery"("studentSessionId", "topicThread");
 `;
 
+async function getExistingColumns(
+  client: LibsqlClient,
+  tableName: string
+): Promise<Set<string>> {
+  const result = (await client.execute(`PRAGMA table_info("${tableName}")`)) as {
+    rows?: Array<Record<string, unknown>>;
+  };
+
+  const columns = new Set<string>();
+  for (const row of result.rows ?? []) {
+    const columnName = row.name;
+    if (typeof columnName === "string") {
+      columns.add(columnName);
+    }
+  }
+
+  return columns;
+}
+
+async function addColumnIfMissing(
+  client: LibsqlClient,
+  tableName: string,
+  columnName: string,
+  definition: string
+) {
+  const columns = await getExistingColumns(client, tableName);
+  if (columns.has(columnName)) return;
+  await client.execute(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${definition}`);
+}
+
+async function ensureTursoSchemaUpgrades(client: LibsqlClient) {
+  await addColumnIfMissing(client, "Session", "learningOutcomes", "TEXT");
+  await addColumnIfMissing(
+    client,
+    "Session",
+    "stance",
+    "TEXT NOT NULL DEFAULT 'directed'"
+  );
+
+  await addColumnIfMissing(client, "Misconception", "canonicalClaim", "TEXT");
+  await addColumnIfMissing(client, "Misconception", "passageAnchor", "TEXT");
+  await addColumnIfMissing(client, "Misconception", "misconceptionType", "TEXT");
+  await addColumnIfMissing(
+    client,
+    "Misconception",
+    "severity",
+    "TEXT NOT NULL DEFAULT 'medium'"
+  );
+  await addColumnIfMissing(
+    client,
+    "Misconception",
+    "confidence",
+    "TEXT NOT NULL DEFAULT 'medium'"
+  );
+  await addColumnIfMissing(client, "Misconception", "updatedAt", "DATETIME");
+
+  await client.execute(
+    `UPDATE "Misconception" SET "updatedAt" = COALESCE("updatedAt", "detectedAt", CURRENT_TIMESTAMP)`
+  );
+}
+
 function createPrismaClient(): PrismaClient {
   if (process.env.TURSO_DATABASE_URL) {
     // Production: Turso Cloud via libsql
@@ -151,6 +225,7 @@ export async function ensureDatabaseReady() {
       });
 
       await client.executeMultiple(TURSO_BOOTSTRAP_SQL);
+      await ensureTursoSchemaUpgrades(client as LibsqlClient);
     })();
   }
 
