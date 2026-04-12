@@ -13,12 +13,14 @@ model Session {
   description     String?
   courseContext   String?
   learningGoal    String?
+  learningOutcomes String?
   prerequisiteMap String?
   accessCode      String    @unique
   createdAt       DateTime  @default(now())
   opensAt         DateTime?
   closesAt        DateTime?
   maxExchanges    Int       @default(20)
+  stance          String    @default("directed")
   readings        Reading[]
   assessments     Assessment[]
   studentSessions StudentSession[]
@@ -87,7 +89,13 @@ model Misconception {
   studentMessage   String
   resolved         Boolean  @default(false)
   persistentlyUnresolved Boolean @default(false)
+  canonicalClaim   String?
+  passageAnchor    String?
+  misconceptionType String?
+  severity         String   @default("medium")
+  confidence       String   @default("medium")
   detectedAt       DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
 }
 

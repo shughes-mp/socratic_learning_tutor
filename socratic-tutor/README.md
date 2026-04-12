@@ -30,10 +30,13 @@ In short: the app is designed to support learning, not shortcut it.
 - Upload support for `.pdf`, `.docx`, `.txt`, and `.md` files
 - Reading-grounded tutoring conversations
 - Optional assessment upload with answer-protection behavior
+- Tutor configuration with learning goals, learning outcomes, and selectable tutor stance
 - Student chat sessions with message limits
+- Student chat sessions with phase-based progress framing instead of countdown-style pressure
 - Prior-knowledge opening prompts and guided onboarding
 - Tutor responses that render as readable prose with the Socratic question visually separated
-- Attempt tracking, confidence checks, and misconception logging
+- Attempt tracking, confidence checks, and structured misconception logging
+- Tutor phase awareness that helps the conversation move from orientation to exploration to wrap-up
 - Topic mastery tracking and revisit prompts for shaky concepts
 - Instructor monitoring view with student replay
 - AI-generated session reports
@@ -53,7 +56,7 @@ In short: the app is designed to support learning, not shortcut it.
 2. Add a title and an optional note students will see before they begin.
 3. Upload one or more readings.
 4. Optionally upload assessments the tutor should treat as protected.
-5. Add optional tutor configuration to improve how the tutor opens, probes, and checks understanding.
+5. Add optional tutor configuration such as course framing, learning goals, institutional learning outcomes, tutor stance, and checkpoint-capacity guidance based on session length.
 6. Share the student link and access code.
 7. Monitor student activity and generate a report afterward.
 
@@ -161,8 +164,9 @@ Once the app is running:
 4. Enter a student name and begin the tutoring conversation.
 5. Expand the "About this session" panel if you want to see the session description and instructor framing.
 6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
-7. End the session and review the summary.
+7. Watch the student-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
 8. Return to the instructor area to monitor activity and generate a report.
+9. End the session and review the summary.
 
 ## Caveats
 
@@ -170,6 +174,8 @@ Once the app is running:
 - PDF extraction works best with text-based PDFs, not scanned-image PDFs.
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
+- Structured misconception logging is now captured in the database for diagnosis and future reporting, but the instructor UI for inspecting the full structure is still evolving.
+- Conversation pacing is now phase-aware, but checkpoint planning is still advisory rather than enforced by a dedicated checkpoint model.
 - The app depends on Anthropic API availability and valid credentials.
 - Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.
 

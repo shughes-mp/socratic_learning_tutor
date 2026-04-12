@@ -9,6 +9,29 @@ export async function PATCH(
   try {
     const { sessionId } = await params;
     const body = await request.json();
+    const {
+      name,
+      description,
+      courseContext,
+      learningGoal,
+      learningOutcomes,
+      prerequisiteMap,
+      maxExchanges,
+      opensAt,
+      closesAt,
+      stance,
+    } = body as {
+      name?: string;
+      description?: string | null;
+      courseContext?: string | null;
+      learningGoal?: string | null;
+      learningOutcomes?: string | null;
+      prerequisiteMap?: string | null;
+      maxExchanges?: number;
+      opensAt?: string | null;
+      closesAt?: string | null;
+      stance?: string;
+    };
 
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -23,21 +46,27 @@ export async function PATCH(
 
     const updateData: Record<string, unknown> = {};
 
-    if (body.name !== undefined) updateData.name = body.name.trim();
-    if (body.description !== undefined)
-      updateData.description = body.description?.trim() || null;
-    if (body.courseContext !== undefined)
-      updateData.courseContext = body.courseContext?.trim() || null;
-    if (body.learningGoal !== undefined)
-      updateData.learningGoal = body.learningGoal?.trim() || null;
-    if (body.prerequisiteMap !== undefined)
-      updateData.prerequisiteMap = body.prerequisiteMap?.trim() || null;
-    if (body.maxExchanges !== undefined)
-      updateData.maxExchanges = Math.max(1, Math.min(100, body.maxExchanges));
-    if (body.opensAt !== undefined)
-      updateData.opensAt = body.opensAt ? new Date(body.opensAt) : null;
-    if (body.closesAt !== undefined)
-      updateData.closesAt = body.closesAt ? new Date(body.closesAt) : null;
+    if (name !== undefined) updateData.name = name.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (courseContext !== undefined) updateData.courseContext = courseContext?.trim() || null;
+    if (learningGoal !== undefined) updateData.learningGoal = learningGoal?.trim() || null;
+    if (learningOutcomes !== undefined)
+      updateData.learningOutcomes = learningOutcomes?.trim() || null;
+    if (prerequisiteMap !== undefined)
+      updateData.prerequisiteMap = prerequisiteMap?.trim() || null;
+    if (maxExchanges !== undefined)
+      updateData.maxExchanges = Math.max(1, Math.min(100, maxExchanges));
+    if (opensAt !== undefined) updateData.opensAt = opensAt ? new Date(opensAt) : null;
+    if (closesAt !== undefined) updateData.closesAt = closesAt ? new Date(closesAt) : null;
+    if (stance !== undefined) {
+      if (!["directed", "mentor"].includes(stance)) {
+        return NextResponse.json(
+          { error: "stance must be 'directed' or 'mentor'" },
+          { status: 400 }
+        );
+      }
+      updateData.stance = stance;
+    }
 
     const updated = await prisma.session.update({
       where: { id: sessionId },
@@ -50,9 +79,11 @@ export async function PATCH(
       description: updated.description,
       courseContext: updated.courseContext,
       learningGoal: updated.learningGoal,
+      learningOutcomes: updated.learningOutcomes,
       prerequisiteMap: updated.prerequisiteMap,
       accessCode: updated.accessCode,
       maxExchanges: updated.maxExchanges,
+      stance: updated.stance,
     });
   } catch (error) {
     console.error("Error updating session config:", error);

@@ -30,6 +30,10 @@ const TAG_PATTERNS = {
   topicThread: /\[TOPIC_THREAD:\s*(.+?)\]/i,
   genuineAttempt: /\[IS_GENUINE_ATTEMPT:\s*(true|false)\]/i,
   misconception: /\[MISCONCEPTION:\s*(.+?)\]/i,
+  misconceptionCanonical: /\[MISCONCEPTION_CANONICAL:\s*(.+?)\]/i,
+  misconceptionPassage: /\[MISCONCEPTION_PASSAGE:\s*(.+?)\]/i,
+  misconceptionType: /\[MISCONCEPTION_TYPE:\s*(.+?)\]/i,
+  misconceptionSeverity: /\[MISCONCEPTION_SEVERITY:\s*(.+?)\]/i,
   directAnswer: /\[DIRECT_ANSWER:\s*(.+?)\]/i,
   questionType: /\[QTYPE:\s*(explain|predict|apply|distinguish|challenge|detect-error)\]/i,
   feedbackType: /\[FEEDBACK_TYPE:\s*(corrective|extension|redirection)\]/i,
@@ -117,6 +121,10 @@ export function parseTags(rawText: string): ParseResult {
     .replace(/\[TOPIC_THREAD:\s*.*?\]/gi, "")
     .replace(/\[IS_GENUINE_ATTEMPT:\s*.*?\]/gi, "")
     .replace(/\[MISCONCEPTION:\s*.*?\]/gi, "")
+    .replace(/\[MISCONCEPTION_CANONICAL:\s*.*?\]/gi, "")
+    .replace(/\[MISCONCEPTION_PASSAGE:\s*.*?\]/gi, "")
+    .replace(/\[MISCONCEPTION_TYPE:\s*.*?\]/gi, "")
+    .replace(/\[MISCONCEPTION_SEVERITY:\s*.*?\]/gi, "")
     .replace(/\[DIRECT_ANSWER:\s*.*?\]/gi, "")
     .replace(/\[QTYPE:\s*.*?\]/gi, "")
     .replace(/\[FEEDBACK_TYPE:\s*.*?\]/gi, "")

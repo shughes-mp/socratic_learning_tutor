@@ -7,6 +7,8 @@ export interface CreateSessionRequest {
   description?: string;
   courseContext?: string;
   learningGoal?: string;
+  learningOutcomes?: string;
+  stance?: "directed" | "mentor";
 }
 
 export interface CreateSessionResponse {
@@ -33,10 +35,12 @@ export interface SessionDetails {
   description: string | null;
   courseContext: string | null;
   learningGoal: string | null;
+  learningOutcomes: string | null;
   prerequisiteMap: string | null;
   accessCode: string;
   createdAt: string;
   maxExchanges: number;
+  stance: "directed" | "mentor";
   readingsCount: number;
   assessmentsCount: number;
 }
@@ -47,6 +51,8 @@ export interface StudentEntryData {
   description: string | null;
   courseContext?: string | null;
   learningGoal?: string | null;
+  learningOutcomes?: string | null;
+  stance?: "directed" | "mentor";
 }
 
 export interface ApiError {

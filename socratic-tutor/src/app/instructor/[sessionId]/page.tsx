@@ -5,6 +5,13 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import type { FileInfo, SessionDetails } from "@/types";
 
+function getRecommendedCheckpoints(maxExchanges: number): number {
+  if (maxExchanges < 8) {
+    return 1;
+  }
+  return Math.floor((maxExchanges - 4) / 4);
+}
+
 export default function SessionManagementPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
@@ -53,10 +60,12 @@ export default function SessionManagementPage() {
             description: configData.description,
             courseContext: configData.courseContext,
             learningGoal: configData.learningGoal,
+            learningOutcomes: configData.learningOutcomes,
             prerequisiteMap: configData.prerequisiteMap,
             accessCode: configData.accessCode,
             createdAt: "",
             maxExchanges: configData.maxExchanges,
+            stance: configData.stance ?? "directed",
             readingsCount: filesData.files.filter((f: FileInfo) => f.category === "reading").length,
             assessmentsCount: filesData.files.filter((f: FileInfo) => f.category === "assessment").length,
           });
@@ -177,18 +186,20 @@ export default function SessionManagementPage() {
         body: JSON.stringify({
           courseContext: session.courseContext,
           learningGoal: session.learningGoal,
+          learningOutcomes: session.learningOutcomes,
           prerequisiteMap: session.prerequisiteMap,
+          stance: session.stance || "directed",
         }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to save teaching context.");
+        throw new Error(data.error || "Failed to save tutor configuration.");
       }
 
       await fetchSession();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save teaching context.");
+      setError(err instanceof Error ? err.message : "Failed to save tutor configuration.");
     } finally {
       setSavingConfig(false);
     }
@@ -419,6 +430,58 @@ export default function SessionManagementPage() {
             </p>
           </div>
 
+          <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
+            <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
+              Tutor Stance
+            </legend>
+
+            <div className="space-y-2">
+              <label className="flex cursor-pointer items-start space-x-3">
+                <input
+                  type="radio"
+                  name="stance"
+                  value="directed"
+                  checked={(session.stance ?? "directed") === "directed"}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                    )
+                  }
+                  className="mt-1"
+                />
+                <div>
+                  <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
+                  <div className="text-xs text-[var(--dim-grey)]">
+                    The tutor guides the student through probing questions. Best for
+                    undergraduate learners.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex cursor-pointer items-start space-x-3">
+                <input
+                  type="radio"
+                  name="stance"
+                  value="mentor"
+                  checked={session.stance === "mentor"}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                    )
+                  }
+                  className="mt-1"
+                />
+                <div>
+                  <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
+                  <div className="text-xs text-[var(--dim-grey)]">
+                    The tutor engages as a thinking partner, challenging interpretations
+                    collaboratively. Better for professional or executive learners.
+                  </div>
+                </div>
+              </label>
+            </div>
+          </fieldset>
+
           <div className="space-y-2">
             <label className="minerva-label">
               Where this fits in your course
@@ -432,6 +495,23 @@ export default function SessionManagementPage() {
               }
               rows={3}
               placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Students have read Meadows chapters 1–3 and are familiar with stocks and flows, but have not yet covered feedback loops."
+              className="minerva-textarea"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="minerva-label">
+              Learning Outcomes <span className="text-[var(--dim-grey)]">(optional)</span>
+            </label>
+            <textarea
+              value={session.learningOutcomes ?? ""}
+              onChange={(e) =>
+                setSession((prev) =>
+                  prev ? { ...prev, learningOutcomes: e.target.value } : prev
+                )
+              }
+              rows={3}
+              placeholder="e.g. Students will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
               className="minerva-textarea"
             />
           </div>
@@ -452,6 +532,25 @@ export default function SessionManagementPage() {
               className="minerva-textarea"
             />
           </div>
+
+          {session.maxExchanges && (
+            <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
+              <p className="mb-1 font-semibold text-[var(--teal)]">
+                Checkpoint Capacity
+              </p>
+              <p className="leading-6 text-[var(--dim-grey)]">
+                With <strong>{session.maxExchanges} exchanges</strong>, this
+                session can meaningfully cover approximately{" "}
+                <strong>
+                  {getRecommendedCheckpoints(session.maxExchanges)} learning
+                  checkpoint
+                  {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}
+                </strong>
+                . This assumes roughly four exchanges per checkpoint, plus
+                exchanges for orientation and wrap-up.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-3">
             <button

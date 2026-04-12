@@ -20,6 +20,16 @@ import {
 
 export const maxDuration = 60;
 
+const VALID_MISCONCEPTION_TYPES = [
+  "misread",
+  "missing_warrant",
+  "wrong_inference",
+  "overgeneralization",
+  "ignored_counterevidence",
+] as const;
+
+const VALID_MISCONCEPTION_SEVERITIES = ["low", "medium", "high"] as const;
+
 function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: string[] }> }): boolean {
   const visiting = new Set<string>();
   const visited = new Set<string>();
@@ -39,6 +49,44 @@ function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: strin
   };
 
   return mapValue.concepts.some((item) => visit(item.id));
+}
+
+function extractTagValues(rawText: string, tagName: string): string[] {
+  const pattern = new RegExp(`\\[${tagName}:\\s*(.*?)\\]`, "gi");
+  return Array.from(rawText.matchAll(pattern), (match) => match[1].trim());
+}
+
+function extractStructuredMisconceptions(rawText: string) {
+  const descriptions = extractTagValues(rawText, "MISCONCEPTION");
+  const canonicalClaims = extractTagValues(rawText, "MISCONCEPTION_CANONICAL");
+  const passageAnchors = extractTagValues(rawText, "MISCONCEPTION_PASSAGE");
+  const types = extractTagValues(rawText, "MISCONCEPTION_TYPE");
+  const severities = extractTagValues(rawText, "MISCONCEPTION_SEVERITY");
+
+  return descriptions.map((description, index) => {
+    const rawType = types[index]?.toLowerCase() ?? null;
+    const rawSeverity = severities[index]?.toLowerCase() ?? "medium";
+
+    const misconceptionType = VALID_MISCONCEPTION_TYPES.includes(
+      rawType as (typeof VALID_MISCONCEPTION_TYPES)[number]
+    )
+      ? rawType
+      : null;
+
+    const severity = VALID_MISCONCEPTION_SEVERITIES.includes(
+      rawSeverity as (typeof VALID_MISCONCEPTION_SEVERITIES)[number]
+    )
+      ? rawSeverity
+      : "medium";
+
+    return {
+      description,
+      canonicalClaim: canonicalClaims[index] || null,
+      passageAnchor: passageAnchors[index] || null,
+      misconceptionType,
+      severity,
+    };
+  });
 }
 
 export async function POST(req: Request) {
@@ -174,6 +222,8 @@ export async function POST(req: Request) {
       {
         courseContext: studentSession.session.courseContext,
         learningGoal: studentSession.session.learningGoal,
+        learningOutcomes: studentSession.session.learningOutcomes,
+        stance: studentSession.session.stance,
       }
     );
 
@@ -248,6 +298,7 @@ export async function POST(req: Request) {
           }
 
           const { cleanedText, tags } = parseTags(fullResponse);
+          const structuredMisconceptions = extractStructuredMisconceptions(fullResponse);
           const normalizedTopicThread =
             confidenceRating === "uncertain" && currentTopicThread
               ? currentTopicThread
@@ -279,12 +330,29 @@ export async function POST(req: Request) {
             },
           });
 
-          if (tags.misconception) {
+          if (structuredMisconceptions.length > 0) {
+            for (const misconception of structuredMisconceptions) {
+              await prisma.misconception.create({
+                data: {
+                  studentSessionId,
+                  topicThread: normalizedTopicThread || currentTopicThread || "general",
+                  description: misconception.description,
+                  canonicalClaim: misconception.canonicalClaim,
+                  passageAnchor: misconception.passageAnchor,
+                  misconceptionType: misconception.misconceptionType,
+                  severity: misconception.severity,
+                  confidence: "medium",
+                  studentMessage: lastUserMessage.content,
+                },
+              });
+            }
+          } else if (tags.misconception) {
             await prisma.misconception.create({
               data: {
                 studentSessionId,
                 topicThread: normalizedTopicThread || currentTopicThread || "general",
                 description: tags.misconception,
+                confidence: "medium",
                 studentMessage: lastUserMessage.content,
               },
             });

@@ -5,6 +5,22 @@ import { useRouter } from "next/navigation";
 import { ChatArea } from "@/components/chat/chat-area";
 import { ChatInput } from "@/components/chat/chat-input";
 
+function getConversationPhase(exchangeCount: number, maxExchanges: number) {
+  const safeMax = Math.max(maxExchanges, 1);
+  const percentage = Math.min((exchangeCount / safeMax) * 100, 100);
+
+  if (percentage < 40) {
+    return { phase: "Getting started", percentage };
+  }
+  if (percentage < 70) {
+    return { phase: "Exploring the reading", percentage };
+  }
+  if (percentage < 90) {
+    return { phase: "Wrapping up", percentage };
+  }
+  return { phase: "Final thoughts", percentage };
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant" | "system" | "data";
@@ -46,6 +62,7 @@ export function ClientChat({
   const exchangeCount = Math.ceil(
     messages.filter((message) => message.role === "user" && !message.hidden).length
   );
+  const phaseInfo = getConversationPhase(exchangeCount, maxExchanges);
 
   useEffect(() => {
     const sid = sessionStorage.getItem("studentSessionId");
@@ -370,13 +387,43 @@ If course context is available, use it naturally in the first three exchanges.`,
                 }
               />
 
+              {maxExchanges > 0 && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[var(--charcoal)]">
+                      {phaseInfo.phase}
+                    </span>
+                    <span
+                      className="cursor-help text-xs text-[var(--dim-grey)]"
+                      title={`${exchangeCount} / ${maxExchanges} exchanges`}
+                    >
+                      {exchangeCount} / {maxExchanges}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-[rgba(60,55,50,0.12)]">
+                    <div
+                      className="h-full bg-[var(--teal)] transition-all duration-300"
+                      style={{ width: `${phaseInfo.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {exchangeCount >= Math.floor(maxExchanges * 0.9) &&
+                exchangeCount < maxExchanges &&
+                !isLoading &&
+                !isEnded && (
+                  <div className="mt-3 rounded border border-[rgba(144,111,18,0.28)] bg-[rgba(144,111,18,0.1)] p-3 text-sm text-[#6f5710]">
+                    You&apos;re approaching the end of this session. Take a moment
+                    to synthesize what you&apos;ve learned before your final exchange.
+                  </div>
+                )}
+
               <div className="mt-3 flex flex-col gap-2 text-[12px] font-medium text-[var(--dim-grey)] md:flex-row md:items-center md:justify-between">
                 <span>
                   Your tutor is based only on the materials your instructor uploaded.
                 </span>
-                <span>
-                  {exchangeCount} of {maxExchanges} messages used
-                </span>
+                <span>{phaseInfo.phase}</span>
               </div>
 
               {exchangeCount >= maxExchanges && !isLoading && !isEnded && (
