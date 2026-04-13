@@ -27,6 +27,7 @@ model Session {
   studentSessions StudentSession[]
   reports         Report[]
   suggestedQuestions SuggestedQuestion[]
+  misconceptionOverrides MisconceptionOverride[]
 }
 
 model Reading {
@@ -148,6 +149,19 @@ model Misconception {
   detectedAt       DateTime @default(now())
   updatedAt        DateTime @updatedAt
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+}
+
+model MisconceptionOverride {
+  id             String   @id @default(cuid())
+  sessionId      String
+  session        Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  clusterLabel   String
+  overrideType   String
+  instructorNote String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([sessionId])
 }
 
 model ConfidenceCheck {

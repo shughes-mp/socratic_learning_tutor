@@ -109,6 +109,41 @@ export interface LOAssessmentRecord {
   updatedAt: string;
 }
 
+export interface MisconceptionClusterRecord {
+  id: string;
+  label: string;
+  misconceptionType: string | null;
+  passageAnchor: string | null;
+  topicThread: string | null;
+  count: number;
+  totalStudents: number;
+  prevalence: number;
+  resolutionRate: number;
+  medianTurnsToResolve: number;
+  severity: "low" | "medium" | "high";
+  representativeExcerpt: string;
+  misconceptionIds: string[];
+  studentCount: number;
+  overrideType: "acceptable_interpretation" | "needs_discussion" | null;
+}
+
+export interface MisconceptionDashboardStats {
+  totalStudents: number;
+  totalMisconceptions: number;
+  avgMisconceptionsPerStudent: number;
+  overallResolutionRate: number;
+}
+
+export interface MisconceptionOverrideRecord {
+  id: string;
+  sessionId: string;
+  clusterLabel: string;
+  overrideType: "acceptable_interpretation" | "needs_discussion";
+  instructorNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StudentEntryData {
   sessionId: string;
   sessionName: string;

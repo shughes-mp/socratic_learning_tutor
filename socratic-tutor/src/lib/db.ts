@@ -176,6 +176,16 @@ CREATE TABLE IF NOT EXISTS "TopicMastery" (
   "updatedAt" DATETIME NOT NULL,
   CONSTRAINT "TopicMastery_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "MisconceptionOverride" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "sessionId" TEXT NOT NULL,
+  "clusterLabel" TEXT NOT NULL,
+  "overrideType" TEXT NOT NULL,
+  "instructorNote" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "MisconceptionOverride_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE UNIQUE INDEX IF NOT EXISTS "Session_accessCode_key" ON "Session"("accessCode");
 CREATE INDEX IF NOT EXISTS "Checkpoint_sessionId_idx" ON "Checkpoint"("sessionId");
 CREATE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_idx" ON "StudentCheckpoint"("studentSessionId");
@@ -183,6 +193,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_checkpoint
 CREATE INDEX IF NOT EXISTS "LOAssessment_studentSessionId_idx" ON "LOAssessment"("studentSessionId");
 CREATE UNIQUE INDEX IF NOT EXISTS "LOAssessment_studentSessionId_learningOutcome_key" ON "LOAssessment"("studentSessionId", "learningOutcome");
 CREATE UNIQUE INDEX IF NOT EXISTS "TopicMastery_studentSessionId_topicThread_key" ON "TopicMastery"("studentSessionId", "topicThread");
+CREATE INDEX IF NOT EXISTS "MisconceptionOverride_sessionId_idx" ON "MisconceptionOverride"("sessionId");
 `;
 
 async function getExistingColumns(
