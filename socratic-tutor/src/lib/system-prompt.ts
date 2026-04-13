@@ -157,6 +157,12 @@ MISCONCEPTION_SEVERITY (choose one):
 - medium: Moderate misunderstanding. Student's reasoning is partially correct but built on a flawed premise. Addressing it requires re-reading or clarification.
 - high: Critical misunderstanding. Student's core claim contradicts the text or severely limits their ability to understand the author's argument. Addressing it is essential.
 
+HARD RULE:
+- If you give corrective feedback because the learner's claim is wrong, incomplete in a misleading way, or contradicted by the reading, you must emit the full misconception bundle in that same response.
+- If you use [FEEDBACK_TYPE: corrective], you should almost always also emit [MISCONCEPTION], [MISCONCEPTION_CANONICAL], [MISCONCEPTION_PASSAGE], [MISCONCEPTION_TYPE], and [MISCONCEPTION_SEVERITY].
+- If you use [COGNITIVE_CONFLICT: TENSION] or [COGNITIVE_CONFLICT: RESOLVE], you must emit the full misconception bundle unless the learner had already explicitly self-corrected before your response.
+- Missing misconception tags after corrective feedback is a system failure.
+
 REQUIRED TAGS
 Append all applicable tags on separate lines at the end of every response:
 [MODE: comprehension|socratic]

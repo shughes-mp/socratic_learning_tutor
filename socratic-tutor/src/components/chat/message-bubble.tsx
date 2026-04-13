@@ -15,6 +15,10 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
     .replace(/\[TOPIC_THREAD:\s*.*?\]/ig, "")
     .replace(/\[IS_GENUINE_ATTEMPT:\s*.*?\]/ig, "")
     .replace(/\[MISCONCEPTION:\s*.*?\]/ig, "")
+    .replace(/\[MISCONCEPTION_CANONICAL:\s*.*?\]/ig, "")
+    .replace(/\[MISCONCEPTION_PASSAGE:\s*.*?\]/ig, "")
+    .replace(/\[MISCONCEPTION_TYPE:\s*.*?\]/ig, "")
+    .replace(/\[MISCONCEPTION_SEVERITY:\s*.*?\]/ig, "")
     .replace(/\[DIRECT_ANSWER:\s*.*?\]/ig, "")
     .replace(/\[QTYPE:\s*.*?\]/ig, "")
     .replace(/\[FEEDBACK_TYPE:\s*.*?\]/ig, "")
@@ -22,6 +26,8 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
     .replace(/\[SELF_EXPLAIN_PROMPTED:\s*.*?\]/ig, "")
     .replace(/\[COGNITIVE_CONFLICT:\s*.*?\]/ig, "")
     .replace(/\[MISCONCEPTION_RESOLVED:\s*.*?\]/ig, "")
+    .replace(/\[CHECKPOINT_ID:\s*.*?\]/ig, "")
+    .replace(/\[CHECKPOINT_STATUS:\s*.*?\]/ig, "")
     .replace(/\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*.*?\]/ig, "")
     .trim();
 

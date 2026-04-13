@@ -542,10 +542,10 @@ export default function MisconceptionDashboardPage() {
                               {cluster.severity}
                             </p>
                             <p className="mt-3 text-[var(--dim-grey)]">
-                              Estimated median turns to resolve
+                              Median turns to resolve
                             </p>
                             <p className="mt-1 font-semibold text-[var(--charcoal)]">
-                              {cluster.medianTurnsToResolve}
+                              {cluster.medianTurnsToResolve ?? "—"}
                             </p>
                           </div>
 
