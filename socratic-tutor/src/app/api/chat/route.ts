@@ -58,7 +58,7 @@ function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: strin
 }
 
 function extractTagValues(rawText: string, tagName: string): string[] {
-  const pattern = new RegExp(`\\[${tagName}:\\s*(.*?)\\]`, "gi");
+  const pattern = new RegExp(`\\[${tagName}:\\s*([\\s\\S]*?)\\]`, "gi");
   return Array.from(rawText.matchAll(pattern), (match) => match[1].trim());
 }
 
@@ -426,7 +426,7 @@ export async function POST(req: Request) {
             : null;
           const checkpointStatusMatches = Array.from(
             fullResponse.matchAll(
-              /\[CHECKPOINT_STATUS:\s*([^|]+)\|([^\]]+)\]/gi
+              /\[CHECKPOINT_STATUS:\s*([\s\S]*?)\|([\s\S]+?)\]/gi
             )
           );
 
