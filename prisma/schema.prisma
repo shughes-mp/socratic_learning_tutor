@@ -1,0 +1,142 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Session {
+  id              String    @id @default(cuid())
+  name            String
+  description     String?
+  courseContext   String?
+  learningGoal    String?
+  learningOutcomes String?
+  prerequisiteMap String?
+  accessCode      String    @unique
+  createdAt       DateTime  @default(now())
+  opensAt         DateTime?
+  closesAt        DateTime?
+  maxExchanges    Int       @default(20)
+  stance          String    @default("directed")
+  readings        Reading[]
+  assessments     Assessment[]
+  studentSessions StudentSession[]
+  reports         Report[]
+  suggestedQuestions SuggestedQuestion[]
+}
+
+model Reading {
+  id        String   @id @default(cuid())
+  sessionId String
+  filename  String
+  content   String
+  uploadedAt DateTime @default(now())
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id        String   @id @default(cuid())
+  sessionId String
+  filename  String
+  content   String
+  uploadedAt DateTime @default(now())
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model StudentSession {
+  id             String    @id @default(cuid())
+  sessionId      String
+  studentName    String
+  softRevisitQueue String  @default("[]")
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  sessionSummary String?
+  messages       Message[]
+  misconceptions Misconception[]
+  confidenceChecks ConfidenceCheck[]
+  topicMastery   TopicMastery[]
+  session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id               String   @id @default(cuid())
+  studentSessionId String
+  role             String   // "user" | "assistant"
+  content          String
+  topicThread      String?  // AI-classified topic label
+  attemptNumber    Int?     // null for assistant messages
+  isGenuineAttempt Boolean? // null for assistant or comprehension
+  mode             String?  // "comprehension" | "socratic" | null
+  questionType     String?
+  feedbackType     String?
+  expertModelType  String?
+  selfExplainPrompted Boolean @default(false)
+  cognitiveConflictStage String?
+  misconceptionResolved Boolean @default(false)
+  isRevisitProbe   Boolean @default(false)
+  createdAt        DateTime @default(now())
+  studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+}
+
+model Misconception {
+  id               String   @id @default(cuid())
+  studentSessionId String
+  topicThread      String
+  description      String
+  studentMessage   String
+  resolved         Boolean  @default(false)
+  persistentlyUnresolved Boolean @default(false)
+  canonicalClaim   String?
+  passageAnchor    String?
+  misconceptionType String?
+  severity         String   @default("medium")
+  confidence       String   @default("medium")
+  detectedAt       DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+}
+
+model ConfidenceCheck {
+  id               String   @id @default(cuid())
+  studentSessionId String
+  topicThread      String
+  rating           String   // "very_confident" | "somewhat_confident" | "uncertain"
+  probeAsked       Boolean  @default(false)
+  probeResult      String?
+  createdAt        DateTime @default(now())
+  studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  sessionId   String
+  content     String   // Full generated report text
+  stats       String   // JSON: { exchanges, misconceptions, directAnswers, studentsCount }
+  generatedAt DateTime @default(now())
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model SuggestedQuestion {
+  id          String   @id @default(cuid())
+  sessionId   String
+  question    String
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model TopicMastery {
+  id               String   @id @default(cuid())
+  studentSessionId String
+  topicThread      String
+  status           String
+  criteriamet      String   @default("[]")
+  hintLadderRung   Int      @default(0)
+  updatedAt        DateTime @updatedAt
+  studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentSessionId, topicThread])
+}
