@@ -8,6 +8,7 @@ export default defineConfig({
   schema: "./prisma/schema.prisma",
   datasource: {
     url:
+      process.env.TURSO_DATABASE_URL ||
       process.env.LOCAL_DATABASE_URL ||
       process.env.DATABASE_URL ||
       "file:./prisma/dev.db",
