@@ -45,6 +45,49 @@ export interface SessionDetails {
   assessmentsCount: number;
 }
 
+export type CheckpointProcessLevel =
+  | "retrieve"
+  | "infer"
+  | "integrate"
+  | "evaluate";
+
+export type StudentCheckpointStatus =
+  | "unseen"
+  | "probing"
+  | "evidence_sufficient"
+  | "evidence_insufficient"
+  | "deferred";
+
+export interface CheckpointRecord {
+  id: string;
+  sessionId: string;
+  orderIndex: number;
+  prompt: string;
+  processLevel: CheckpointProcessLevel;
+  passageAnchors: string | null;
+  expectations: string | null;
+  misconceptionSeeds: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentCheckpointRecord {
+  id: string;
+  studentSessionId: string;
+  checkpointId: string;
+  status: StudentCheckpointStatus;
+  turnsSpent: number;
+  evidenceNotes: string | null;
+  updatedAt: string;
+}
+
+export interface CheckpointLintResult {
+  isRecallOnly: boolean;
+  suggestedRewrite: string;
+  suggestedExpectations: string[];
+  suggestedMisconceptions: string[];
+}
+
 export interface StudentEntryData {
   sessionId: string;
   sessionName: string;

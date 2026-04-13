@@ -29,6 +29,12 @@ const VALID_MISCONCEPTION_TYPES = [
 ] as const;
 
 const VALID_MISCONCEPTION_SEVERITIES = ["low", "medium", "high"] as const;
+const VALID_CHECKPOINT_STATUSES = [
+  "probing",
+  "evidence_sufficient",
+  "evidence_insufficient",
+  "deferred",
+] as const;
 
 function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: string[] }> }): boolean {
   const visiting = new Set<string>();
@@ -139,6 +145,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const checkpoints = await prisma.checkpoint.findMany({
+      where: { sessionId: studentSession.session.id },
+      orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+    });
+
+    const studentCheckpoints = await prisma.studentCheckpoint.findMany({
+      where: { studentSessionId },
+    });
+
     const dbMessages = await prisma.message.findMany({
       where: { studentSessionId },
       orderBy: { createdAt: "asc" },
@@ -224,7 +239,8 @@ export async function POST(req: Request) {
         learningGoal: studentSession.session.learningGoal,
         learningOutcomes: studentSession.session.learningOutcomes,
         stance: studentSession.session.stance,
-      }
+      },
+      checkpoints
     );
 
     const instruction = buildContextInstruction({
@@ -232,6 +248,8 @@ export async function POST(req: Request) {
       currentAttemptCount: attemptCount,
       exchangeCount,
       maxExchanges: studentSession.session.maxExchanges,
+      checkpoints,
+      studentCheckpoints,
       previousQuestionType,
       unresolvedMisconceptions,
       confidenceRating,
@@ -310,6 +328,11 @@ export async function POST(req: Request) {
 
           const currentHintRung = topicMastery?.hintLadderRung ?? 0;
           const nextHintRung = determineNextHintLadderRung(currentHintRung, tags);
+          const checkpointStatusMatches = Array.from(
+            fullResponse.matchAll(
+              /\[CHECKPOINT_STATUS:\s*([^|]+)\|([^\]]+)\]/gi
+            )
+          );
 
           await prisma.message.create({
             data: {
@@ -356,6 +379,51 @@ export async function POST(req: Request) {
                 studentMessage: lastUserMessage.content,
               },
             });
+          }
+
+          if (checkpointStatusMatches.length > 0) {
+            const studentCheckpointMap = new Map(
+              studentCheckpoints.map((item) => [item.checkpointId, item])
+            );
+
+            for (const match of checkpointStatusMatches) {
+              const checkpointId = match[1]?.trim();
+              const rawStatus = match[2]?.trim().toLowerCase();
+
+              if (!checkpointId) continue;
+              if (
+                !VALID_CHECKPOINT_STATUSES.includes(
+                  rawStatus as (typeof VALID_CHECKPOINT_STATUSES)[number]
+                )
+              ) {
+                continue;
+              }
+
+              const checkpoint = checkpoints.find((item) => item.id === checkpointId);
+              if (!checkpoint) continue;
+
+              const existing = studentCheckpointMap.get(checkpointId);
+              if (existing) {
+                const updated = await prisma.studentCheckpoint.update({
+                  where: { id: existing.id },
+                  data: {
+                    status: rawStatus,
+                    turnsSpent: existing.turnsSpent + 1,
+                  },
+                });
+                studentCheckpointMap.set(checkpointId, updated);
+              } else {
+                const created = await prisma.studentCheckpoint.create({
+                  data: {
+                    studentSessionId,
+                    checkpointId,
+                    status: rawStatus,
+                    turnsSpent: 1,
+                  },
+                });
+                studentCheckpointMap.set(checkpointId, created);
+              }
+            }
           }
 
           if (tags.misconceptionResolved || tags.cognitiveConflictStage === "RESOLVE") {

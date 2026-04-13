@@ -23,6 +23,7 @@ model Session {
   stance          String    @default("directed")
   readings        Reading[]
   assessments     Assessment[]
+  checkpoints     Checkpoint[]
   studentSessions StudentSession[]
   reports         Report[]
   suggestedQuestions SuggestedQuestion[]
@@ -46,6 +47,38 @@ model Assessment {
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
+model Checkpoint {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  orderIndex         Int
+  prompt             String
+  processLevel       String
+  passageAnchors     String?
+  expectations       String?
+  misconceptionSeeds String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  studentCheckpoints StudentCheckpoint[]
+
+  @@index([sessionId])
+}
+
+model StudentCheckpoint {
+  id               String         @id @default(cuid())
+  studentSessionId String
+  studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+  checkpointId     String
+  checkpoint       Checkpoint     @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  status           String         @default("unseen")
+  turnsSpent       Int            @default(0)
+  evidenceNotes    String?
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([studentSessionId, checkpointId])
+  @@index([studentSessionId])
+}
+
 model StudentSession {
   id             String    @id @default(cuid())
   sessionId      String
@@ -58,6 +91,7 @@ model StudentSession {
   misconceptions Misconception[]
   confidenceChecks ConfidenceCheck[]
   topicMastery   TopicMastery[]
+  studentCheckpoints StudentCheckpoint[]
   session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
