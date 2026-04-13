@@ -687,6 +687,12 @@ export default function SessionManagementPage() {
               >
                 Report
               </Link>
+              <Link
+                href={`/instructor/${sessionId}/misconceptions`}
+                className="minerva-button minerva-button-secondary"
+              >
+                Misconceptions
+              </Link>
             </div>
           </div>
         </div>
