@@ -92,7 +92,24 @@ model StudentSession {
   confidenceChecks ConfidenceCheck[]
   topicMastery   TopicMastery[]
   studentCheckpoints StudentCheckpoint[]
+  loAssessments  LOAssessment[]
   session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model LOAssessment {
+  id               String         @id @default(cuid())
+  studentSessionId String
+  studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+  learningOutcome  String
+  status           String
+  confidence       String
+  evidenceSummary  String?
+  processMetrics   String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([studentSessionId])
+  @@unique([studentSessionId, learningOutcome])
 }
 
 model Message {
