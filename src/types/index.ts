@@ -58,6 +58,15 @@ export type StudentCheckpointStatus =
   | "evidence_insufficient"
   | "deferred";
 
+export type LOAssessmentStatus =
+  | "not_observed"
+  | "insufficient_evidence"
+  | "emerging"
+  | "meets"
+  | "exceeds";
+
+export type LOAssessmentConfidence = "low" | "medium" | "high";
+
 export interface CheckpointRecord {
   id: string;
   sessionId: string;
@@ -86,6 +95,18 @@ export interface CheckpointLintResult {
   suggestedRewrite: string;
   suggestedExpectations: string[];
   suggestedMisconceptions: string[];
+}
+
+export interface LOAssessmentRecord {
+  id: string;
+  studentSessionId: string;
+  learningOutcome: string;
+  status: LOAssessmentStatus;
+  confidence: LOAssessmentConfidence;
+  evidenceSummary: string | null;
+  processMetrics: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StudentEntryData {

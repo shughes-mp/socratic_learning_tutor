@@ -7,6 +7,27 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
     const p = await params;
     const { sessionId } = p;
 
+    const getLOAssessments = async () =>
+      prisma.lOAssessment.findMany({
+        where: {
+          studentSession: {
+            sessionId,
+          },
+        },
+        include: {
+          studentSession: {
+            select: {
+              id: true,
+              studentName: true,
+            },
+          },
+        },
+        orderBy: [
+          { studentSession: { studentName: "asc" } },
+          { createdAt: "asc" },
+        ],
+      });
+
     // Check for cached report
     const latestReport = await prisma.report.findFirst({
       where: { sessionId },
@@ -24,14 +45,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
         });
 
         if (!latestMessage || latestMessage.createdAt <= latestReport.generatedAt) {
-          return NextResponse.json(latestReport);
+          return NextResponse.json({
+            ...latestReport,
+            loAssessments: await getLOAssessments(),
+          });
         }
       }
     }
 
     // Generate new report
     const newReport = await generateInstructorReport(sessionId);
-    return NextResponse.json(newReport);
+    return NextResponse.json({
+      ...newReport,
+      loAssessments: await getLOAssessments(),
+    });
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

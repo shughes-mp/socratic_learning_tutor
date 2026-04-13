@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { ReadinessHeatmap } from "@/components/instructor/readiness-heatmap";
+import { LOAssessmentCard } from "@/components/LOAssessmentCard";
+import type { LOAssessmentRecord } from "@/types";
 
 interface ReportData {
   id: string;
@@ -12,6 +14,14 @@ interface ReportData {
   content: string;
   stats: string; // JSON
   generatedAt: string;
+  loAssessments?: Array<
+    LOAssessmentRecord & {
+      studentSession: {
+        id: string;
+        studentName: string;
+      };
+    }
+  >;
 }
 
 interface ReportStats {
@@ -19,6 +29,13 @@ interface ReportStats {
   exchanges: number;
   misconceptions: number;
   directAnswers: number;
+}
+
+type ReportLOAssessment = NonNullable<ReportData["loAssessments"]>[number];
+
+interface StudentLOAssessmentGroup {
+  studentName: string;
+  assessments: ReportLOAssessment[];
 }
 
 export default function ReportPage() {
@@ -81,6 +98,23 @@ export default function ReportPage() {
   if (!report) return null;
 
   const stats = JSON.parse(report.stats) as ReportStats;
+  const loAssessmentsByStudent = (report.loAssessments ?? []).reduce(
+    (acc, assessment) => {
+      const studentId = assessment.studentSession.id;
+      const studentName = assessment.studentSession.studentName;
+
+      const group =
+        acc[studentId] ??
+        (acc[studentId] = {
+          studentName,
+          assessments: [],
+        });
+
+      group.assessments.push(assessment);
+      return acc;
+    },
+    {} as Record<string, StudentLOAssessmentGroup>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12">
@@ -146,6 +180,37 @@ export default function ReportPage() {
             <ReactMarkdown>{report.content}</ReactMarkdown>
           </div>
         </section>
+
+        {Object.keys(loAssessmentsByStudent).length > 0 && (
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 md:p-12 rounded-3xl shadow-sm">
+            <div className="border-t border-transparent pt-0">
+              <h3 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-50">
+                Learning Outcome Assessment
+              </h3>
+              <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+                These assessments are formative and AI-generated. They reflect observed engagement during the tutoring
+                session and should be reviewed by the instructor before informing any grading decisions.
+              </p>
+
+              <div className="space-y-8">
+                {Object.entries(loAssessmentsByStudent).map(([studentId, group]) => (
+                  <div key={studentId} className="space-y-3">
+                    <div>
+                      <h4 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                        {group.studentName}
+                      </h4>
+                    </div>
+                    <div className="space-y-3">
+                      {(group.assessments ?? []).map((assessment) => (
+                        <LOAssessmentCard key={assessment.id} assessment={assessment} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
       </div>
     </div>

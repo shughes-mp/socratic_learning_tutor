@@ -138,6 +138,18 @@ CREATE TABLE IF NOT EXISTS "StudentCheckpoint" (
   CONSTRAINT "StudentCheckpoint_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "StudentCheckpoint_checkpointId_fkey" FOREIGN KEY ("checkpointId") REFERENCES "Checkpoint" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "LOAssessment" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "studentSessionId" TEXT NOT NULL,
+  "learningOutcome" TEXT NOT NULL,
+  "status" TEXT NOT NULL,
+  "confidence" TEXT NOT NULL,
+  "evidenceSummary" TEXT,
+  "processMetrics" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "LOAssessment_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "TopicMastery" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "studentSessionId" TEXT NOT NULL,
@@ -152,6 +164,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Session_accessCode_key" ON "Session"("accessC
 CREATE INDEX IF NOT EXISTS "Checkpoint_sessionId_idx" ON "Checkpoint"("sessionId");
 CREATE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_idx" ON "StudentCheckpoint"("studentSessionId");
 CREATE UNIQUE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_checkpointId_key" ON "StudentCheckpoint"("studentSessionId", "checkpointId");
+CREATE INDEX IF NOT EXISTS "LOAssessment_studentSessionId_idx" ON "LOAssessment"("studentSessionId");
+CREATE UNIQUE INDEX IF NOT EXISTS "LOAssessment_studentSessionId_learningOutcome_key" ON "LOAssessment"("studentSessionId", "learningOutcome");
 CREATE UNIQUE INDEX IF NOT EXISTS "TopicMastery_studentSessionId_topicThread_key" ON "TopicMastery"("studentSessionId", "topicThread");
 `;
 

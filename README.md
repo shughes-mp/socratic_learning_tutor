@@ -41,6 +41,7 @@ In short: the app is designed to support learning, not shortcut it.
 - Attempt tracking, confidence checks, and structured misconception logging
 - Tutor phase awareness that helps the conversation move from orientation to exploration to wrap-up
 - Checkpoint-aware tutoring with student-level checkpoint coverage tracking and rescue-mode pacing near the end of a session
+- Formative learning outcome assessments generated per student inside the instructor report
 - Topic mastery tracking and revisit prompts for shaky concepts
 - Instructor monitoring view with student replay
 - AI-generated session reports
@@ -65,7 +66,7 @@ In short: the app is designed to support learning, not shortcut it.
 7. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
 8. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
 9. Share the student link and access code.
-10. Monitor student activity and generate a report afterward.
+10. Monitor student activity and generate a report afterward, including formative learning outcome assessments for each student.
 
 ### Student flow
 
@@ -173,7 +174,7 @@ Once the app is running:
 6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
 7. Watch the student-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
 8. Return to the instructor area and add a few key questions, then try the question feedback tool on one of them.
-9. Monitor activity and generate a report.
+9. Monitor activity and generate a report with session-level insights plus per-student learning outcome assessments.
 10. End the session and review the summary.
 
 ## Caveats
@@ -183,7 +184,8 @@ Once the app is running:
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - Structured misconception logging is now captured in the database for diagnosis and future reporting, but the instructor UI for inspecting the full structure is still evolving.
-- Key question coverage is now tracked per student session, but the instructor reporting layer for question-level mastery is still evolving.
+- Key question coverage is now tracked per student session, and instructor reports now include formative AI-generated learning outcome assessments.
+- Learning outcome assessments are instructor-facing formative signals, not final grades or official student records.
 - The app depends on Anthropic API availability and valid credentials.
 - Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.
 
