@@ -5,6 +5,22 @@ const globalForPrisma = globalThis as unknown as {
   tursoSchemaReady: Promise<void> | undefined;
 };
 
+function getRemoteDatabaseUrl(): string | undefined {
+  if (process.env.TURSO_DATABASE_URL) {
+    return process.env.TURSO_DATABASE_URL;
+  }
+
+  if (process.env.DATABASE_URL?.startsWith("libsql://")) {
+    return process.env.DATABASE_URL;
+  }
+
+  return undefined;
+}
+
+function isHostedProductionEnvironment() {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+}
+
 type LibsqlClient = {
   execute: (args: string | { sql: string; args?: unknown[] }) => Promise<unknown>;
   executeMultiple: (sql: string) => Promise<unknown>;
@@ -231,15 +247,24 @@ async function ensureTursoSchemaUpgrades(client: LibsqlClient) {
 }
 
 function createPrismaClient(): PrismaClient {
-  if (process.env.TURSO_DATABASE_URL) {
+  const remoteDatabaseUrl = getRemoteDatabaseUrl();
+
+  if (remoteDatabaseUrl) {
     // Production: Turso Cloud via libsql
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaLibSql } = require("@prisma/adapter-libsql");
     const adapter = new PrismaLibSql({
-      url: process.env.TURSO_DATABASE_URL,
+      url: remoteDatabaseUrl,
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
     return new PrismaClient({ adapter } as never);
+  }
+
+  if (isHostedProductionEnvironment()) {
+    const message =
+      "Production database is not configured. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Vercel.";
+    console.error(message);
+    throw new Error(message);
   }
 
   // Local dev: better-sqlite3 (not loaded on Vercel)
@@ -254,14 +279,15 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export async function ensureDatabaseReady() {
-  if (!process.env.TURSO_DATABASE_URL) return;
+  const remoteDatabaseUrl = getRemoteDatabaseUrl();
+  if (!remoteDatabaseUrl) return;
 
   if (!globalForPrisma.tursoSchemaReady) {
     globalForPrisma.tursoSchemaReady = (async () => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { createClient } = require("@libsql/client");
       const client = createClient({
-        url: process.env.TURSO_DATABASE_URL,
+        url: remoteDatabaseUrl,
         authToken: process.env.TURSO_AUTH_TOKEN,
       });
 
