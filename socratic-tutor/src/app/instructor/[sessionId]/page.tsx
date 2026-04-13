@@ -41,13 +41,13 @@ function getProcessLevelTone(processLevel: CheckpointProcessLevel) {
 function formatProcessLevelLabel(processLevel: CheckpointProcessLevel) {
   switch (processLevel) {
     case "retrieve":
-      return "Retrieve";
+      return "Find in the text";
     case "infer":
-      return "Infer";
+      return "Read between the lines";
     case "integrate":
-      return "Integrate";
+      return "Connect ideas";
     case "evaluate":
-      return "Evaluate";
+      return "Judge the argument";
   }
 }
 
@@ -97,13 +97,13 @@ export default function SessionManagementPage() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to load checkpoints.");
+        throw new Error(data?.error || "Failed to load questions.");
       }
 
       setCheckpoints(Array.isArray(data?.checkpoints) ? data.checkpoints : []);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to load checkpoints.";
+        err instanceof Error ? err.message : "Failed to load questions.";
       setError(message);
     } finally {
       setLoadingCheckpoints(false);
@@ -309,7 +309,7 @@ export default function SessionManagementPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to save tutor configuration.");
+        throw new Error(data.error || "Failed to save settings.");
       }
 
       await fetchSession();
@@ -318,11 +318,11 @@ export default function SessionManagementPage() {
       setShowSavedState(true);
       setToast({
         tone: "success",
-        message: "Tutor configuration saved.",
+        message: "Settings saved.",
       });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to save tutor configuration.";
+        err instanceof Error ? err.message : "Failed to save settings.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -359,7 +359,7 @@ export default function SessionManagementPage() {
 
   async function createCheckpoint() {
     if (!newCheckpointPrompt.trim()) {
-      setError("Add a checkpoint prompt before saving.");
+      setError("Write a question before saving.");
       return;
     }
 
@@ -378,17 +378,17 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to create checkpoint.");
+        throw new Error(data?.error || "Failed to add question.");
       }
 
       setNewCheckpointPrompt("");
       setNewCheckpointProcessLevel("infer");
       setNewCheckpointPassageAnchors("");
       await fetchCheckpoints();
-      setToast({ tone: "success", message: "Checkpoint added." });
+      setToast({ tone: "success", message: "Question added." });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to create checkpoint.";
+        err instanceof Error ? err.message : "Failed to add question.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -413,7 +413,7 @@ export default function SessionManagementPage() {
 
   async function saveCheckpointEdit(checkpointId: string) {
     if (!editingCheckpointPrompt.trim()) {
-      setError("Checkpoint prompt cannot be empty.");
+      setError("The question can't be empty.");
       return;
     }
 
@@ -432,15 +432,15 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to update checkpoint.");
+        throw new Error(data?.error || "Failed to update question.");
       }
 
       await fetchCheckpoints();
       cancelEditingCheckpoint();
-      setToast({ tone: "success", message: "Checkpoint updated." });
+      setToast({ tone: "success", message: "Question updated." });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to update checkpoint.";
+        err instanceof Error ? err.message : "Failed to update question.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -459,17 +459,17 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to delete checkpoint.");
+        throw new Error(data?.error || "Failed to remove question.");
       }
 
       setCheckpointLintResult((prev) =>
         prev?.checkpointId === checkpointId ? null : prev
       );
       await fetchCheckpoints();
-      setToast({ tone: "success", message: "Checkpoint removed." });
+      setToast({ tone: "success", message: "Question removed." });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to delete checkpoint.";
+        err instanceof Error ? err.message : "Failed to remove question.";
       setError(message);
       setToast({ tone: "error", message });
     }
@@ -499,7 +499,7 @@ export default function SessionManagementPage() {
           }).then(async (res) => {
             if (!res.ok) {
               const data = await res.json().catch(() => null);
-              throw new Error(data?.error || "Failed to reorder checkpoints.");
+              throw new Error(data?.error || "Failed to reorder questions.");
             }
           })
         )
@@ -508,7 +508,7 @@ export default function SessionManagementPage() {
       await fetchCheckpoints();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to reorder checkpoints.";
+        err instanceof Error ? err.message : "Failed to reorder questions.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -528,7 +528,7 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to improve checkpoint.");
+        throw new Error(data?.error || "Failed to get suggestions.");
       }
 
       setCheckpointLintResult({
@@ -549,7 +549,7 @@ export default function SessionManagementPage() {
       });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to improve checkpoint.";
+        err instanceof Error ? err.message : "Failed to get suggestions.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -575,15 +575,15 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to apply checkpoint suggestions.");
+        throw new Error(data?.error || "Failed to apply suggestions.");
       }
 
       await fetchCheckpoints();
       setCheckpointLintResult(null);
-      setToast({ tone: "success", message: "Suggestions applied to checkpoint." });
+      setToast({ tone: "success", message: "Suggestions applied." });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to apply checkpoint suggestions.";
+        err instanceof Error ? err.message : "Failed to apply suggestions.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -805,7 +805,7 @@ export default function SessionManagementPage() {
 
           <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
             <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
-              Tutor Stance
+              Interaction style
             </legend>
 
             <div className="space-y-2">
@@ -825,8 +825,7 @@ export default function SessionManagementPage() {
                 <div>
                   <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
                   <div className="text-xs text-[var(--dim-grey)]">
-                    The tutor guides the student through probing questions. Best for
-                    undergraduate learners.
+                    Guides the student through probing questions. The tutor leads.
                   </div>
                 </div>
               </label>
@@ -847,8 +846,8 @@ export default function SessionManagementPage() {
                 <div>
                   <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
                   <div className="text-xs text-[var(--dim-grey)]">
-                    The tutor engages as a thinking partner, challenging interpretations
-                    collaboratively. Better for professional or executive learners.
+                    Engages as a thinking partner, challenging interpretations
+                    collaboratively. Good for experienced learners.
                   </div>
                 </div>
               </label>
@@ -859,6 +858,9 @@ export default function SessionManagementPage() {
             <label className="minerva-label">
               Where this fits in your course
             </label>
+            <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+              Background the tutor needs — what course this is for, where students are in the curriculum, what they've covered so far.
+            </p>
             <textarea
               value={session.courseContext ?? ""}
               onChange={(e) =>
@@ -874,8 +876,11 @@ export default function SessionManagementPage() {
 
           <div className="space-y-2">
             <label className="minerva-label">
-              Learning Outcomes <span className="text-[var(--dim-grey)]">(optional)</span>
+              Learning Outcomes
             </label>
+            <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+              Optional. The specific skills or understandings students should demonstrate. These are referenced in student reports.
+            </p>
             <textarea
               value={session.learningOutcomes ?? ""}
               onChange={(e) =>
@@ -893,6 +898,9 @@ export default function SessionManagementPage() {
             <label className="minerva-label">
               What you want students to be able to do
             </label>
+            <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+              What you want students to understand by the end of this session.
+            </p>
             <textarea
               value={session.learningGoal ?? ""}
               onChange={(e) =>
@@ -909,17 +917,17 @@ export default function SessionManagementPage() {
           {session.maxExchanges && (
             <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
               <p className="mb-1 font-semibold text-[var(--teal)]">
-                Checkpoint Capacity
+                Question Capacity
               </p>
               <p className="leading-6 text-[var(--dim-grey)]">
                 With <strong>{session.maxExchanges} exchanges</strong>, this
                 session can meaningfully cover approximately{" "}
                 <strong>
-                  {getRecommendedCheckpoints(session.maxExchanges)} learning
-                  checkpoint
+                  {getRecommendedCheckpoints(session.maxExchanges)} key
+                  question
                   {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}
                 </strong>
-                . This assumes roughly four exchanges per checkpoint, plus
+                . This assumes roughly four exchanges per question, plus
                 exchanges for orientation and wrap-up.
               </p>
             </div>
@@ -947,10 +955,10 @@ export default function SessionManagementPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <label className="minerva-label">
-                      Prerequisite Map JSON
+                      Concept dependencies
                     </label>
-                    <p className="mt-1 text-xs text-[var(--dim-grey)]">
-                      Optional. Maps concept dependencies so the tutor can scaffold prerequisite gaps.
+                    <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                      A map of which concepts build on others. You can generate this automatically from your reading.
                     </p>
                   </div>
                   <button
@@ -993,7 +1001,7 @@ export default function SessionManagementPage() {
               {(configSavedAt || showSavedState) && (
                 <p className="text-xs text-[var(--dim-grey)]">
                   {showSavedState
-                    ? "Configuration saved."
+                    ? "Settings saved."
                     : configSavedAt
                       ? `Last saved at ${formatSavedTime(configSavedAt)}`
                       : ""}
@@ -1007,35 +1015,37 @@ export default function SessionManagementPage() {
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-                Learning Checkpoints
+                Key Questions
               </h2>
               <p className="mt-2 max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
-                Add the key interpretive understandings you want this session to surface.
-                The tutor will use these adaptively, not as a rigid quiz.
+                Questions students should be able to answer after working through the reading. With{" "}
+                {session.maxExchanges} exchanges, aim for about{" "}
+                {getRecommendedCheckpoints(session.maxExchanges)} question
+                {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}.
               </p>
             </div>
             <p className="text-xs uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-              {checkpoints.length} checkpoint{checkpoints.length === 1 ? "" : "s"}
+              {checkpoints.length} question{checkpoints.length === 1 ? "" : "s"}
             </p>
           </div>
 
           {session.maxExchanges > 0 &&
             checkpoints.length > Math.max(3, Math.floor(session.maxExchanges / 4)) && (
               <div className="rounded-xl border border-[rgba(144,111,18,0.22)] bg-[rgba(144,111,18,0.08)] px-4 py-3 text-sm text-[#906f12]">
-                You have {checkpoints.length} checkpoints with {session.maxExchanges} exchanges.
+                You have {checkpoints.length} questions with {session.maxExchanges} exchanges.
                 Consider trimming this to roughly {getRecommendedCheckpoints(session.maxExchanges)}{" "}
-                to {Math.max(3, Math.floor(session.maxExchanges / 4))} checkpoints for this
+                to {Math.max(3, Math.floor(session.maxExchanges / 4))} questions for this
                 session length.
               </div>
             )}
 
           {loadingCheckpoints ? (
             <div className="rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
-              Loading checkpoints...
+              Loading questions...
             </div>
           ) : checkpoints.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[var(--light-grey)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
-              No checkpoints yet. Add 2-4 interpretive checkpoints to guide the tutor through the reading.
+              No questions yet. Add 2-4 strong questions to guide the tutor through the reading.
             </div>
           ) : (
             <div className="space-y-3">
@@ -1055,7 +1065,7 @@ export default function SessionManagementPage() {
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-                            Checkpoint {index + 1}
+                            Question {index + 1}
                           </span>
                           <span
                             className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getProcessLevelTone(
@@ -1089,17 +1099,17 @@ export default function SessionManagementPage() {
                                 }
                                 className="minerva-input"
                               >
-                                <option value="retrieve">Retrieve</option>
-                                <option value="infer">Infer</option>
-                                <option value="integrate">Integrate</option>
-                                <option value="evaluate">Evaluate</option>
+                                <option value="retrieve">Find in the text — Can the student locate specific information?</option>
+                                <option value="infer">Read between the lines — Can the student draw conclusions the author implies but doesn&apos;t state?</option>
+                                <option value="integrate">Connect ideas — Can the student link ideas across different parts of the reading?</option>
+                                <option value="evaluate">Judge the argument — Can the student assess the strength of the author&apos;s reasoning?</option>
                               </select>
                               <input
                                 value={editingCheckpointPassageAnchors}
                                 onChange={(e) =>
                                   setEditingCheckpointPassageAnchors(e.target.value)
                                 }
-                                placeholder="Optional passage anchors"
+                                placeholder="e.g., Section 2, paragraphs 3–5"
                                 className="minerva-input"
                               />
                             </div>
@@ -1157,8 +1167,8 @@ export default function SessionManagementPage() {
                               className="minerva-button minerva-button-secondary"
                             >
                               {lintingCheckpointId === checkpoint.id
-                                ? "Improving..."
-                                : "Improve this checkpoint"}
+                                ? "Loading..."
+                                : "Get feedback on this question"}
                             </button>
                             <button
                               onClick={() => removeCheckpoint(checkpoint.id)}
@@ -1176,7 +1186,7 @@ export default function SessionManagementPage() {
                         <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-                              Checkpoint review
+                              Question feedback
                             </p>
                             <p className="mt-2 text-sm leading-6 text-[var(--charcoal)]">
                               {lintResult.isRecallOnly
@@ -1238,10 +1248,10 @@ export default function SessionManagementPage() {
           <div className="space-y-4 rounded-2xl border border-[var(--rule)] bg-[rgba(255,255,255,0.5)] p-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-                Add checkpoint
+                Add question
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--dim-grey)]">
-                Write an interpretive question worth discussing, not a fact students can look up directly.
+                Write a question worth discussing, not something students can answer by copying one line from the reading.
               </p>
             </div>
 
@@ -1265,18 +1275,18 @@ export default function SessionManagementPage() {
                   }
                   className="minerva-input"
                 >
-                  <option value="retrieve">Retrieve - locate key claim or evidence</option>
-                  <option value="infer">Infer - draw meaning from the text</option>
-                  <option value="integrate">Integrate - connect multiple ideas</option>
-                  <option value="evaluate">Evaluate - judge the argument or evidence</option>
+                  <option value="retrieve">Find in the text — Can the student locate specific information?</option>
+                  <option value="infer">Read between the lines — Can the student draw conclusions the author implies but doesn&apos;t state?</option>
+                  <option value="integrate">Connect ideas — Can the student link ideas across different parts of the reading?</option>
+                  <option value="evaluate">Judge the argument — Can the student assess the strength of the author&apos;s reasoning?</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="minerva-label">Passage anchors</label>
+                <label className="minerva-label">Which part of the reading?</label>
                 <input
                   value={newCheckpointPassageAnchors}
                   onChange={(e) => setNewCheckpointPassageAnchors(e.target.value)}
-                  placeholder="Optional, e.g. paragraphs 3-4"
+                  placeholder="e.g., Section 2, paragraphs 3–5"
                   className="minerva-input"
                 />
               </div>
@@ -1288,10 +1298,10 @@ export default function SessionManagementPage() {
                 disabled={savingCheckpoint}
                 className="minerva-button"
               >
-                {savingCheckpoint ? "Saving..." : "Add checkpoint"}
+                {savingCheckpoint ? "Saving..." : "Add question"}
               </button>
               <p className="text-xs text-[var(--dim-grey)]">
-                Aim for 2-4 strong checkpoints for most sessions.
+                Aim for 2-4 strong questions for most sessions.
               </p>
             </div>
           </div>

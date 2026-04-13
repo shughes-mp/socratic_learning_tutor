@@ -30,8 +30,8 @@ In short: the app is designed to support learning, not shortcut it.
 - Upload support for `.pdf`, `.docx`, `.txt`, and `.md` files
 - Reading-grounded tutoring conversations
 - Optional assessment upload with answer-protection behavior
-- Tutor configuration with learning goals, learning outcomes, and selectable tutor stance
-- Instructor-authored learning checkpoints with process levels, passage anchors, and adaptive ordering
+- Tutor configuration with learning goals, learning outcomes, and selectable interaction style
+- Instructor-authored key questions with plain-language process levels, reading anchors, and adaptive ordering
 - AI-assisted checkpoint improvement suggestions for turning recall-heavy prompts into better interpretive questions
 - Instructor-side confirmation feedback for uploads and saved configuration changes
 - Student chat sessions with message limits
@@ -60,10 +60,10 @@ In short: the app is designed to support learning, not shortcut it.
 2. Add a title and an optional note students will see before they begin.
 3. Upload one or more readings.
 4. Optionally upload assessments the tutor should treat as protected.
-5. Add optional tutor configuration such as course framing, learning goals, institutional learning outcomes, and tutor stance.
-6. Add 2-4 learning checkpoints to define the key understandings the tutor should surface.
-7. Use the built-in checkpoint improver if a prompt feels too recall-heavy or under-specified.
-8. Get clear visual confirmation when readings, assessments, configuration, or checkpoints are saved.
+5. Add optional tutor configuration such as course framing, learning goals, institutional learning outcomes, and interaction style.
+6. Add 2-4 key questions to define the important understandings students should reach.
+7. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
+8. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
 9. Share the student link and access code.
 10. Monitor student activity and generate a report afterward.
 
@@ -74,7 +74,7 @@ In short: the app is designed to support learning, not shortcut it.
 3. Enter a name and begin the chat with no account required.
 4. Start by sharing prior knowledge before the tutor moves into the reading.
 5. Work through the material with guided questions, confidence checks, and targeted feedback.
-6. End the session and receive a short reflection summary.
+6. End the session and receive a short session summary.
 
 ## Local Development Setup
 
@@ -172,7 +172,7 @@ Once the app is running:
 5. Expand the "About this session" panel if you want to see the session description and instructor framing.
 6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
 7. Watch the student-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
-8. Return to the instructor area and add a few learning checkpoints, then try the checkpoint improver on one of them.
+8. Return to the instructor area and add a few key questions, then try the question feedback tool on one of them.
 9. Monitor activity and generate a report.
 10. End the session and review the summary.
 
@@ -183,7 +183,7 @@ Once the app is running:
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - Structured misconception logging is now captured in the database for diagnosis and future reporting, but the instructor UI for inspecting the full structure is still evolving.
-- Checkpoint coverage is now tracked per student session, but the instructor reporting layer for checkpoint mastery is still evolving.
+- Key question coverage is now tracked per student session, but the instructor reporting layer for question-level mastery is still evolving.
 - The app depends on Anthropic API availability and valid credentials.
 - Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.
 
