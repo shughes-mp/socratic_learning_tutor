@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
 import type { ApiError, CheckpointProcessLevel } from "@/types";
 
 const VALID_PROCESS_LEVELS: CheckpointProcessLevel[] = [
@@ -14,6 +14,7 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    await ensureDatabaseReady();
     const { sessionId } = await params;
 
     const session = await prisma.session.findUnique({
@@ -48,6 +49,7 @@ export async function POST(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    await ensureDatabaseReady();
     const { sessionId } = await params;
     const body = (await request.json()) as {
       prompt?: string;
@@ -127,6 +129,7 @@ export async function DELETE(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    await ensureDatabaseReady();
     const { sessionId } = await params;
     const body = (await request.json()) as { checkpointId?: string };
 

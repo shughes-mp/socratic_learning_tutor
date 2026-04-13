@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { StepIndicator } from "@/components/ui/step-indicator";
 
 export default function InstructorCreatePage() {
   const router = useRouter();
@@ -50,14 +51,17 @@ export default function InstructorCreatePage() {
         <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_360px_minmax(0,1fr)]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-12 md:px-8 md:py-16">
-            <p className="eyebrow eyebrow-teal">New Session</p>
+            <p className="eyebrow eyebrow-teal">Setup</p>
             <h1 className="section-title mt-5 max-w-[10ch]">
               Create a reading session.
             </h1>
             <p className="body-copy muted-copy mt-6 max-w-[25rem]">
-              Name your session and add an optional note for students. After
-              you create it, upload your reading and share the link.
+              Three steps: name your session, upload a reading, then share the
+              link with your learners.
             </p>
+            <div className="mt-8">
+              <StepIndicator currentStep={1} />
+            </div>
           </div>
 
           <div className="px-4 py-12 md:px-8 md:py-16">
@@ -72,7 +76,7 @@ export default function InstructorCreatePage() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Week 3: Systems Thinking"
+                    placeholder="e.g. Week 3: Systems Thinking"
                     className="minerva-input"
                     required
                   />
@@ -83,16 +87,18 @@ export default function InstructorCreatePage() {
                     htmlFor="session-description"
                     className="minerva-label"
                   >
-                    What should students know before they begin?
+                    Instructions for learners
                   </label>
                   <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-                    Optional. This is shown to students on the session entry page.
+                    Optional. Shown on the entry page before learners begin.
+                    Use this to set expectations — e.g. which sections to read,
+                    what to focus on.
                   </p>
                   <textarea
                     id="session-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. Read the first three chapters before starting. Focus on how the author defines feedback loops."
+                    placeholder="e.g. Read the first two sections before starting. Pay attention to how the author defines core terms — the tutor will ask you about them."
                     rows={3}
                     className="minerva-textarea"
                   />
@@ -106,14 +112,14 @@ export default function InstructorCreatePage() {
 
                 <div className="flex flex-col gap-3 border-t border-[var(--rule)] pt-5 md:flex-row md:items-center md:justify-between">
                   <p className="text-[12px] text-[var(--dim-grey)]">
-                    Next: upload a reading, then share the link with your students.
+                    Next: upload a reading, then share the link.
                   </p>
                   <button
                     type="submit"
                     disabled={loading}
                     className="minerva-button"
                   >
-                    {loading ? "Creating..." : "Create Session"}
+                    {loading ? "Creating…" : "Continue"}
                   </button>
                 </div>
               </div>
