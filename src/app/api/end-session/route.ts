@@ -37,17 +37,23 @@ export async function POST(req: Request) {
       (item) => !item.resolved || item.persistentlyUnresolved
     );
 
-    const prompt = `The student is ending their session. Below is the transcript of their session with the tutor.
-Provide a brief session summary with these four sections:
+    const prompt = `The student has just completed a Socratic reading session with an AI tutor. Generate a concise session summary using the transcript below.
 
-1. TOPICS COVERED: List the 2-4 main concepts discussed.
-2. AREAS OF STRENGTH: Where the student demonstrated solid understanding.
-3. AREAS TO REVISIT: Concepts where the student struggled or expressed low confidence. Be specific.
-4. ONE QUESTION TO THINK ABOUT: A thought-provoking question the student can take into the class session.
+Format the summary using markdown with these four sections. Use ## for section headers and - for bullet points. Write in second person (addressing the student as "you").
 
-Label the summary at the very beginning: "Here's a summary of your session that you may want to save or share with your instructor."
+## Topics covered
+List 2–4 main concepts or ideas explored during the session.
 
-If there are unresolved misconceptions, name them specifically in AREAS TO REVISIT.
+## Where you showed strong understanding
+2–3 specific things the student reasoned through well. Be concrete — reference actual ideas from the transcript, not generic praise.
+
+## What's worth revisiting
+Concepts where the student struggled, hedged, or expressed low confidence. Be specific. If there are unresolved misconceptions listed below, name them here explicitly.
+
+## A question to carry into class
+One thought-provoking question the student can bring to the next class session. Make it genuinely open-ended.
+
+Do not add any preamble before the first section header. Do not add any closing remarks after the final section. Keep each section brief — 2–4 bullet points maximum.
 
 Unresolved misconceptions:
 ${unresolvedMisconceptions.map((item) => `- ${item.topicThread}: ${item.description}`).join("\n") || "None"}

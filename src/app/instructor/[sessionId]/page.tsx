@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import type {
   CheckpointLintResult,
   CheckpointProcessLevel,
@@ -70,9 +71,11 @@ export default function SessionManagementPage() {
   const [configSavedAt, setConfigSavedAt] = useState<Date | null>(null);
   const [showSavedState, setShowSavedState] = useState(false);
   const [dragActive, setDragActive] = useState<"reading" | "assessment" | null>(null);
+  const [learnerCount, setLearnerCount] = useState(0);
   const [checkpoints, setCheckpoints] = useState<CheckpointRecord[]>([]);
   const [loadingCheckpoints, setLoadingCheckpoints] = useState(true);
   const [savingCheckpoint, setSavingCheckpoint] = useState(false);
+  const [showQuestionSavedState, setShowQuestionSavedState] = useState(false);
   const [editingCheckpointId, setEditingCheckpointId] = useState<string | null>(null);
   const [editingCheckpointPrompt, setEditingCheckpointPrompt] = useState("");
   const [editingCheckpointProcessLevel, setEditingCheckpointProcessLevel] =
@@ -107,6 +110,22 @@ export default function SessionManagementPage() {
       setError(message);
     } finally {
       setLoadingCheckpoints(false);
+    }
+  }, [sessionId]);
+
+  const fetchLearnerCount = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/students`);
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to load learners.");
+      }
+
+      setLearnerCount(Array.isArray(data) ? data.length : 0);
+    } catch (err) {
+      console.error("Failed to load learners:", err);
+      setLearnerCount(0);
     }
   }, [sessionId]);
 
@@ -154,7 +173,7 @@ export default function SessionManagementPage() {
         }
       }
 
-      await fetchCheckpoints();
+      await Promise.all([fetchCheckpoints(), fetchLearnerCount()]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load session.";
       if (message.includes("<!DOCTYPE") || message.includes("Unexpected token")) {
@@ -167,7 +186,7 @@ export default function SessionManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchCheckpoints, sessionId]);
+  }, [fetchCheckpoints, fetchLearnerCount, sessionId]);
 
   useEffect(() => {
     fetchSession();
@@ -193,6 +212,12 @@ export default function SessionManagementPage() {
     const timeout = window.setTimeout(() => setShowSavedState(false), 2200);
     return () => window.clearTimeout(timeout);
   }, [showSavedState]);
+
+  useEffect(() => {
+    if (!showQuestionSavedState) return;
+    const timeout = window.setTimeout(() => setShowQuestionSavedState(false), 2400);
+    return () => window.clearTimeout(timeout);
+  }, [showQuestionSavedState]);
 
   async function handleUpload(file: File, category: "reading" | "assessment") {
     setUploading(true);
@@ -360,6 +385,7 @@ export default function SessionManagementPage() {
   async function createCheckpoint() {
     if (!newCheckpointPrompt.trim()) {
       setError("Write a question before saving.");
+      setShowQuestionSavedState(false);
       return;
     }
 
@@ -385,11 +411,13 @@ export default function SessionManagementPage() {
       setNewCheckpointProcessLevel("infer");
       setNewCheckpointPassageAnchors("");
       await fetchCheckpoints();
+      setShowQuestionSavedState(true);
       setToast({ tone: "success", message: "Question added." });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to add question.";
       setError(message);
+      setShowQuestionSavedState(false);
       setToast({ tone: "error", message });
     } finally {
       setSavingCheckpoint(false);
@@ -594,6 +622,8 @@ export default function SessionManagementPage() {
   const readings = files.filter((f) => f.category === "reading");
   const assessments = files.filter((f) => f.category === "assessment");
   const isActive = readings.length > 0;
+  const setupStep: 2 | 3 | null =
+    readings.length === 0 ? 2 : learnerCount === 0 ? 3 : null;
 
   if (loading) {
     return (
@@ -665,6 +695,11 @@ export default function SessionManagementPage() {
                   {session.description}
                 </p>
               )}
+              {setupStep !== null && (
+                <div className="mt-4">
+                  <StepIndicator currentStep={setupStep} />
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Link
@@ -695,45 +730,6 @@ export default function SessionManagementPage() {
               </Link>
             </div>
           </div>
-        </div>
-
-        {/* Setup progress strip */}
-        <div className="minerva-card px-6 py-4 md:px-8">
-          <ol className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-0">
-            {[
-              { label: "Session created", done: true },
-              { label: "Upload a reading", done: isActive },
-              { label: "Share with students", done: isActive },
-            ].map((step, i, arr) => (
-              <li key={step.label} className="flex items-center gap-3 sm:flex-1">
-                <span
-                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                    step.done
-                      ? "bg-[var(--teal)] text-white"
-                      : "border-2 border-[var(--light-grey)] text-[var(--dim-grey)]"
-                  }`}
-                >
-                  {step.done ? (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    i + 1
-                  )}
-                </span>
-                <span
-                  className={`text-[13px] font-medium ${
-                    step.done ? "text-[var(--charcoal)]" : "text-[var(--dim-grey)]"
-                  }`}
-                >
-                  {step.label}
-                </span>
-                {i < arr.length - 1 && (
-                  <span className="hidden sm:block flex-1 border-t border-dashed border-[var(--rule)] mx-3" />
-                )}
-              </li>
-            ))}
-          </ol>
         </div>
 
         {/* Status bar */}
@@ -1306,9 +1302,15 @@ export default function SessionManagementPage() {
               >
                 {savingCheckpoint ? "Saving..." : "Add question"}
               </button>
-              <p className="text-xs text-[var(--dim-grey)]">
-                Aim for 2-4 strong questions for most sessions.
-              </p>
+              {showQuestionSavedState ? (
+                <p className="text-xs font-medium text-[var(--teal)]">
+                  Question added and ready to use.
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--dim-grey)]">
+                  Aim for 2-4 strong questions for most sessions.
+                </p>
+              )}
             </div>
           </div>
         </div>
