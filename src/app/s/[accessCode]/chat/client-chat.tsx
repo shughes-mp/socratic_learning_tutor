@@ -232,7 +232,7 @@ If course context is available, use it naturally in the first three exchanges.`,
             <div className="px-4 py-14 md:px-8 md:py-18">
               <p className="eyebrow eyebrow-teal">Session Complete</p>
               <h1 className="section-title mt-5 max-w-[11ch]">
-                Reflection summary for {studentName ?? "this session"}.
+                Session summary for {studentName ?? "you"}.
               </h1>
               <div className="minerva-card mt-10 max-w-4xl p-6 md:p-8">
                 <div className="space-y-4 text-[16px] leading-7 text-[var(--charcoal)]">
@@ -333,7 +333,7 @@ If course context is available, use it naturally in the first three exchanges.`,
                       <p className="mt-3 max-w-[40rem] text-[14px] leading-7 text-[var(--dim-grey)]">
                         Start by sharing what you already know about the topic.
                         The tutor will ask questions — not give you answers.
-                        Work toward understanding before explanations are offered.
+                        Try to explain your thinking before asking for help.
                       </p>
                     </div>
 

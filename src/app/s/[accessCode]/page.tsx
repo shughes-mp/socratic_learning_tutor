@@ -18,7 +18,7 @@ function SessionMessage({
         <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-16 md:px-8 md:py-20">
-            <p className="eyebrow eyebrow-rose">Student Access</p>
+            <p className="eyebrow eyebrow-rose">Session unavailable</p>
             <h1 className="section-title mt-5">{title}</h1>
             <p className="body-copy muted-copy mt-6 max-w-[33rem]">
               {description}
@@ -94,7 +94,7 @@ export default async function StudentEntryPage({ params }: PageProps) {
                 {[
                   "Start by sharing what you already know about the topic.",
                   "The tutor will ask questions — not give you answers directly.",
-                  "Work through the material at your own pace. There’s no time limit.",
+                  "Take your time with each response. Quality matters more than speed.",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
                     <span className="mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(17,120,144,0.12)]">
