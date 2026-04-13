@@ -3,7 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import type { FileInfo, SessionDetails } from "@/types";
+import type {
+  CheckpointLintResult,
+  CheckpointProcessLevel,
+  CheckpointRecord,
+  FileInfo,
+  SessionDetails,
+} from "@/types";
 
 function getRecommendedCheckpoints(maxExchanges: number): number {
   if (maxExchanges < 8) {
@@ -17,6 +23,32 @@ function formatSavedTime(date: Date) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function getProcessLevelTone(processLevel: CheckpointProcessLevel) {
+  switch (processLevel) {
+    case "retrieve":
+      return "bg-[rgba(17,120,144,0.12)] text-[var(--teal)]";
+    case "infer":
+      return "bg-[rgba(114,133,3,0.12)] text-[var(--olive)]";
+    case "integrate":
+      return "bg-[rgba(17,120,144,0.08)] text-[var(--charcoal)]";
+    case "evaluate":
+      return "bg-[rgba(223,47,38,0.08)] text-[var(--signal)]";
+  }
+}
+
+function formatProcessLevelLabel(processLevel: CheckpointProcessLevel) {
+  switch (processLevel) {
+    case "retrieve":
+      return "Retrieve";
+    case "infer":
+      return "Infer";
+    case "integrate":
+      return "Integrate";
+    case "evaluate":
+      return "Evaluate";
+  }
 }
 
 export default function SessionManagementPage() {
@@ -38,8 +70,45 @@ export default function SessionManagementPage() {
   const [configSavedAt, setConfigSavedAt] = useState<Date | null>(null);
   const [showSavedState, setShowSavedState] = useState(false);
   const [dragActive, setDragActive] = useState<"reading" | "assessment" | null>(null);
+  const [checkpoints, setCheckpoints] = useState<CheckpointRecord[]>([]);
+  const [loadingCheckpoints, setLoadingCheckpoints] = useState(true);
+  const [savingCheckpoint, setSavingCheckpoint] = useState(false);
+  const [editingCheckpointId, setEditingCheckpointId] = useState<string | null>(null);
+  const [editingCheckpointPrompt, setEditingCheckpointPrompt] = useState("");
+  const [editingCheckpointProcessLevel, setEditingCheckpointProcessLevel] =
+    useState<CheckpointProcessLevel>("infer");
+  const [editingCheckpointPassageAnchors, setEditingCheckpointPassageAnchors] =
+    useState("");
+  const [newCheckpointPrompt, setNewCheckpointPrompt] = useState("");
+  const [newCheckpointProcessLevel, setNewCheckpointProcessLevel] =
+    useState<CheckpointProcessLevel>("infer");
+  const [newCheckpointPassageAnchors, setNewCheckpointPassageAnchors] = useState("");
+  const [lintingCheckpointId, setLintingCheckpointId] = useState<string | null>(null);
+  const [checkpointLintResult, setCheckpointLintResult] = useState<{
+    checkpointId: string;
+    result: CheckpointLintResult;
+  } | null>(null);
   const readingInputRef = useRef<HTMLInputElement>(null);
   const assessmentInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchCheckpoints = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints`);
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to load checkpoints.");
+      }
+
+      setCheckpoints(Array.isArray(data?.checkpoints) ? data.checkpoints : []);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load checkpoints.";
+      setError(message);
+    } finally {
+      setLoadingCheckpoints(false);
+    }
+  }, [sessionId]);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -84,6 +153,8 @@ export default function SessionManagementPage() {
           });
         }
       }
+
+      await fetchCheckpoints();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load session.";
       if (message.includes("<!DOCTYPE") || message.includes("Unexpected token")) {
@@ -96,7 +167,7 @@ export default function SessionManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [fetchCheckpoints, sessionId]);
 
   useEffect(() => {
     fetchSession();
@@ -283,6 +354,240 @@ export default function SessionManagementPage() {
       setError(err instanceof Error ? err.message : "Failed to generate prerequisite map.");
     } finally {
       setGeneratingMap(false);
+    }
+  }
+
+  async function createCheckpoint() {
+    if (!newCheckpointPrompt.trim()) {
+      setError("Add a checkpoint prompt before saving.");
+      return;
+    }
+
+    setSavingCheckpoint(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: newCheckpointPrompt,
+          processLevel: newCheckpointProcessLevel,
+          passageAnchors: newCheckpointPassageAnchors || null,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to create checkpoint.");
+      }
+
+      setNewCheckpointPrompt("");
+      setNewCheckpointProcessLevel("infer");
+      setNewCheckpointPassageAnchors("");
+      await fetchCheckpoints();
+      setToast({ tone: "success", message: "Checkpoint added." });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create checkpoint.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setSavingCheckpoint(false);
+    }
+  }
+
+  function startEditingCheckpoint(checkpoint: CheckpointRecord) {
+    setEditingCheckpointId(checkpoint.id);
+    setEditingCheckpointPrompt(checkpoint.prompt);
+    setEditingCheckpointProcessLevel(checkpoint.processLevel);
+    setEditingCheckpointPassageAnchors(checkpoint.passageAnchors ?? "");
+    setCheckpointLintResult(null);
+  }
+
+  function cancelEditingCheckpoint() {
+    setEditingCheckpointId(null);
+    setEditingCheckpointPrompt("");
+    setEditingCheckpointProcessLevel("infer");
+    setEditingCheckpointPassageAnchors("");
+  }
+
+  async function saveCheckpointEdit(checkpointId: string) {
+    if (!editingCheckpointPrompt.trim()) {
+      setError("Checkpoint prompt cannot be empty.");
+      return;
+    }
+
+    setSavingCheckpoint(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints/${checkpointId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: editingCheckpointPrompt,
+          processLevel: editingCheckpointProcessLevel,
+          passageAnchors: editingCheckpointPassageAnchors || null,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to update checkpoint.");
+      }
+
+      await fetchCheckpoints();
+      cancelEditingCheckpoint();
+      setToast({ tone: "success", message: "Checkpoint updated." });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update checkpoint.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setSavingCheckpoint(false);
+    }
+  }
+
+  async function removeCheckpoint(checkpointId: string) {
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkpointId }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to delete checkpoint.");
+      }
+
+      setCheckpointLintResult((prev) =>
+        prev?.checkpointId === checkpointId ? null : prev
+      );
+      await fetchCheckpoints();
+      setToast({ tone: "success", message: "Checkpoint removed." });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete checkpoint.";
+      setError(message);
+      setToast({ tone: "error", message });
+    }
+  }
+
+  async function moveCheckpoint(checkpointId: string, direction: -1 | 1) {
+    const currentIndex = checkpoints.findIndex((checkpoint) => checkpoint.id === checkpointId);
+    const targetIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= checkpoints.length) {
+      return;
+    }
+
+    const reordered = [...checkpoints];
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    setSavingCheckpoint(true);
+    setError("");
+    try {
+      await Promise.all(
+        reordered.map((checkpoint, index) =>
+          fetch(`/api/sessions/${sessionId}/checkpoints/${checkpoint.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderIndex: index }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const data = await res.json().catch(() => null);
+              throw new Error(data?.error || "Failed to reorder checkpoints.");
+            }
+          })
+        )
+      );
+
+      await fetchCheckpoints();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to reorder checkpoints.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setSavingCheckpoint(false);
+    }
+  }
+
+  async function improveCheckpoint(checkpoint: CheckpointRecord) {
+    setLintingCheckpointId(checkpoint.id);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints/lint`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: checkpoint.prompt }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to improve checkpoint.");
+      }
+
+      setCheckpointLintResult({
+        checkpointId: checkpoint.id,
+        result: {
+          isRecallOnly: Boolean(data?.isRecallOnly),
+          suggestedRewrite:
+            typeof data?.suggestedRewrite === "string"
+              ? data.suggestedRewrite
+              : checkpoint.prompt,
+          suggestedExpectations: Array.isArray(data?.suggestedExpectations)
+            ? data.suggestedExpectations
+            : [],
+          suggestedMisconceptions: Array.isArray(data?.suggestedMisconceptions)
+            ? data.suggestedMisconceptions
+            : [],
+        },
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to improve checkpoint.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setLintingCheckpointId(null);
+    }
+  }
+
+  async function applyCheckpointSuggestions(checkpointId: string) {
+    if (checkpointLintResult?.checkpointId !== checkpointId) return;
+
+    setSavingCheckpoint(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints/${checkpointId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: checkpointLintResult.result.suggestedRewrite,
+          expectations: checkpointLintResult.result.suggestedExpectations,
+          misconceptionSeeds: checkpointLintResult.result.suggestedMisconceptions,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to apply checkpoint suggestions.");
+      }
+
+      await fetchCheckpoints();
+      setCheckpointLintResult(null);
+      setToast({ tone: "success", message: "Suggestions applied to checkpoint." });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to apply checkpoint suggestions.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setSavingCheckpoint(false);
     }
   }
 
@@ -694,6 +999,300 @@ export default function SessionManagementPage() {
                       : ""}
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+
+        <div className="minerva-card space-y-5 p-6 md:p-8">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Learning Checkpoints
+              </h2>
+              <p className="mt-2 max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
+                Add the key interpretive understandings you want this session to surface.
+                The tutor will use these adaptively, not as a rigid quiz.
+              </p>
+            </div>
+            <p className="text-xs uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+              {checkpoints.length} checkpoint{checkpoints.length === 1 ? "" : "s"}
+            </p>
+          </div>
+
+          {session.maxExchanges > 0 &&
+            checkpoints.length > Math.max(3, Math.floor(session.maxExchanges / 4)) && (
+              <div className="rounded-xl border border-[rgba(144,111,18,0.22)] bg-[rgba(144,111,18,0.08)] px-4 py-3 text-sm text-[#906f12]">
+                You have {checkpoints.length} checkpoints with {session.maxExchanges} exchanges.
+                Consider trimming this to roughly {getRecommendedCheckpoints(session.maxExchanges)}{" "}
+                to {Math.max(3, Math.floor(session.maxExchanges / 4))} checkpoints for this
+                session length.
+              </div>
+            )}
+
+          {loadingCheckpoints ? (
+            <div className="rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
+              Loading checkpoints...
+            </div>
+          ) : checkpoints.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[var(--light-grey)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
+              No checkpoints yet. Add 2-4 interpretive checkpoints to guide the tutor through the reading.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {checkpoints.map((checkpoint, index) => {
+                const isEditing = editingCheckpointId === checkpoint.id;
+                const lintResult =
+                  checkpointLintResult?.checkpointId === checkpoint.id
+                    ? checkpointLintResult.result
+                    : null;
+
+                return (
+                  <div
+                    key={checkpoint.id}
+                    className="space-y-4 rounded-2xl border border-[var(--rule)] bg-[rgba(255,255,255,0.62)] p-4"
+                  >
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                            Checkpoint {index + 1}
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getProcessLevelTone(
+                              checkpoint.processLevel
+                            )}`}
+                          >
+                            {formatProcessLevelLabel(checkpoint.processLevel)}
+                          </span>
+                          {checkpoint.passageAnchors && (
+                            <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
+                              {checkpoint.passageAnchors}
+                            </span>
+                          )}
+                        </div>
+
+                        {isEditing ? (
+                          <div className="space-y-3">
+                            <textarea
+                              value={editingCheckpointPrompt}
+                              onChange={(e) => setEditingCheckpointPrompt(e.target.value)}
+                              rows={4}
+                              className="minerva-textarea"
+                            />
+                            <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
+                              <select
+                                value={editingCheckpointProcessLevel}
+                                onChange={(e) =>
+                                  setEditingCheckpointProcessLevel(
+                                    e.target.value as CheckpointProcessLevel
+                                  )
+                                }
+                                className="minerva-input"
+                              >
+                                <option value="retrieve">Retrieve</option>
+                                <option value="infer">Infer</option>
+                                <option value="integrate">Integrate</option>
+                                <option value="evaluate">Evaluate</option>
+                              </select>
+                              <input
+                                value={editingCheckpointPassageAnchors}
+                                onChange={(e) =>
+                                  setEditingCheckpointPassageAnchors(e.target.value)
+                                }
+                                placeholder="Optional passage anchors"
+                                className="minerva-input"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
+                            {checkpoint.prompt}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => moveCheckpoint(checkpoint.id, -1)}
+                          disabled={index === 0 || savingCheckpoint}
+                          className="minerva-button minerva-button-secondary"
+                        >
+                          Up
+                        </button>
+                        <button
+                          onClick={() => moveCheckpoint(checkpoint.id, 1)}
+                          disabled={index === checkpoints.length - 1 || savingCheckpoint}
+                          className="minerva-button minerva-button-secondary"
+                        >
+                          Down
+                        </button>
+                        {isEditing ? (
+                          <>
+                            <button
+                              onClick={() => saveCheckpointEdit(checkpoint.id)}
+                              disabled={savingCheckpoint}
+                              className="minerva-button"
+                            >
+                              {savingCheckpoint ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              onClick={cancelEditingCheckpoint}
+                              disabled={savingCheckpoint}
+                              className="minerva-button minerva-button-secondary"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => startEditingCheckpoint(checkpoint)}
+                              className="minerva-button minerva-button-secondary"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => improveCheckpoint(checkpoint)}
+                              disabled={lintingCheckpointId === checkpoint.id}
+                              className="minerva-button minerva-button-secondary"
+                            >
+                              {lintingCheckpointId === checkpoint.id
+                                ? "Improving..."
+                                : "Improve this checkpoint"}
+                            </button>
+                            <button
+                              onClick={() => removeCheckpoint(checkpoint.id)}
+                              className="minerva-button minerva-button-secondary"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {lintResult && (
+                      <div className="space-y-4 rounded-xl border border-[rgba(17,120,144,0.18)] bg-[rgba(17,120,144,0.06)] p-4">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                              Checkpoint review
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-[var(--charcoal)]">
+                              {lintResult.isRecallOnly
+                                ? "This prompt looks too recall-heavy. Here is a stronger interpretive version."
+                                : "This prompt is viable. Here are refinements to make evidence and misconception tracking stronger."}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => applyCheckpointSuggestions(checkpoint.id)}
+                            disabled={savingCheckpoint}
+                            className="minerva-button"
+                          >
+                            {savingCheckpoint ? "Applying..." : "Apply suggestions"}
+                          </button>
+                        </div>
+
+                        <div className="space-y-3 text-sm text-[var(--charcoal)]">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                              Suggested rewrite
+                            </p>
+                            <p className="mt-2 leading-6">{lintResult.suggestedRewrite}</p>
+                          </div>
+
+                          {lintResult.suggestedExpectations.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                                Expected evidence
+                              </p>
+                              <ul className="mt-2 space-y-1.5 text-[var(--charcoal)]">
+                                {lintResult.suggestedExpectations.map((item) => (
+                                  <li key={item}>- {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {lintResult.suggestedMisconceptions.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                                Likely misreadings
+                              </p>
+                              <ul className="mt-2 space-y-1.5 text-[var(--charcoal)]">
+                                {lintResult.suggestedMisconceptions.map((item) => (
+                                  <li key={item}>- {item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="space-y-4 rounded-2xl border border-[var(--rule)] bg-[rgba(255,255,255,0.5)] p-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                Add checkpoint
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--dim-grey)]">
+                Write an interpretive question worth discussing, not a fact students can look up directly.
+              </p>
+            </div>
+
+            <textarea
+              value={newCheckpointPrompt}
+              onChange={(e) => setNewCheckpointPrompt(e.target.value)}
+              rows={4}
+              placeholder="e.g. Why does the author's argument about system behavior depend on the claim that structure drives outcomes?"
+              className="minerva-textarea"
+            />
+
+            <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="space-y-2">
+                <label className="minerva-label">Process level</label>
+                <select
+                  value={newCheckpointProcessLevel}
+                  onChange={(e) =>
+                    setNewCheckpointProcessLevel(
+                      e.target.value as CheckpointProcessLevel
+                    )
+                  }
+                  className="minerva-input"
+                >
+                  <option value="retrieve">Retrieve - locate key claim or evidence</option>
+                  <option value="infer">Infer - draw meaning from the text</option>
+                  <option value="integrate">Integrate - connect multiple ideas</option>
+                  <option value="evaluate">Evaluate - judge the argument or evidence</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="minerva-label">Passage anchors</label>
+                <input
+                  value={newCheckpointPassageAnchors}
+                  onChange={(e) => setNewCheckpointPassageAnchors(e.target.value)}
+                  placeholder="Optional, e.g. paragraphs 3-4"
+                  className="minerva-input"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <button
+                onClick={createCheckpoint}
+                disabled={savingCheckpoint}
+                className="minerva-button"
+              >
+                {savingCheckpoint ? "Saving..." : "Add checkpoint"}
+              </button>
+              <p className="text-xs text-[var(--dim-grey)]">
+                Aim for 2-4 strong checkpoints for most sessions.
+              </p>
             </div>
           </div>
         </div>

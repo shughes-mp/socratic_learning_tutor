@@ -42,6 +42,19 @@ CREATE TABLE IF NOT EXISTS "Assessment" (
   "uploadedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "Assessment_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "Checkpoint" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "sessionId" TEXT NOT NULL,
+  "orderIndex" INTEGER NOT NULL,
+  "prompt" TEXT NOT NULL,
+  "processLevel" TEXT NOT NULL,
+  "passageAnchors" TEXT,
+  "expectations" TEXT,
+  "misconceptionSeeds" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Checkpoint_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "StudentSession" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "sessionId" TEXT NOT NULL,
@@ -114,6 +127,17 @@ CREATE TABLE IF NOT EXISTS "SuggestedQuestion" (
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "SuggestedQuestion_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "StudentCheckpoint" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "studentSessionId" TEXT NOT NULL,
+  "checkpointId" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'unseen',
+  "turnsSpent" INTEGER NOT NULL DEFAULT 0,
+  "evidenceNotes" TEXT,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "StudentCheckpoint_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "StudentCheckpoint_checkpointId_fkey" FOREIGN KEY ("checkpointId") REFERENCES "Checkpoint" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS "TopicMastery" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "studentSessionId" TEXT NOT NULL,
@@ -125,6 +149,9 @@ CREATE TABLE IF NOT EXISTS "TopicMastery" (
   CONSTRAINT "TopicMastery_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "Session_accessCode_key" ON "Session"("accessCode");
+CREATE INDEX IF NOT EXISTS "Checkpoint_sessionId_idx" ON "Checkpoint"("sessionId");
+CREATE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_idx" ON "StudentCheckpoint"("studentSessionId");
+CREATE UNIQUE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_checkpointId_key" ON "StudentCheckpoint"("studentSessionId", "checkpointId");
 CREATE UNIQUE INDEX IF NOT EXISTS "TopicMastery_studentSessionId_topicThread_key" ON "TopicMastery"("studentSessionId", "topicThread");
 `;
 

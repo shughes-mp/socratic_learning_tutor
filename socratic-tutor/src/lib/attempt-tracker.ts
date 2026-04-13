@@ -34,6 +34,8 @@ const TAG_PATTERNS = {
   misconceptionPassage: /\[MISCONCEPTION_PASSAGE:\s*(.+?)\]/i,
   misconceptionType: /\[MISCONCEPTION_TYPE:\s*(.+?)\]/i,
   misconceptionSeverity: /\[MISCONCEPTION_SEVERITY:\s*(.+?)\]/i,
+  checkpointId: /\[CHECKPOINT_ID:\s*(.+?)\]/i,
+  checkpointStatus: /\[CHECKPOINT_STATUS:\s*([^|]+)\|([^\]]+)\]/i,
   directAnswer: /\[DIRECT_ANSWER:\s*(.+?)\]/i,
   questionType: /\[QTYPE:\s*(explain|predict|apply|distinguish|challenge|detect-error)\]/i,
   feedbackType: /\[FEEDBACK_TYPE:\s*(corrective|extension|redirection)\]/i,
@@ -125,6 +127,8 @@ export function parseTags(rawText: string): ParseResult {
     .replace(/\[MISCONCEPTION_PASSAGE:\s*.*?\]/gi, "")
     .replace(/\[MISCONCEPTION_TYPE:\s*.*?\]/gi, "")
     .replace(/\[MISCONCEPTION_SEVERITY:\s*.*?\]/gi, "")
+    .replace(/\[CHECKPOINT_ID:\s*.*?\]/gi, "")
+    .replace(/\[CHECKPOINT_STATUS:\s*.*?\]/gi, "")
     .replace(/\[DIRECT_ANSWER:\s*.*?\]/gi, "")
     .replace(/\[QTYPE:\s*.*?\]/gi, "")
     .replace(/\[FEEDBACK_TYPE:\s*.*?\]/gi, "")
