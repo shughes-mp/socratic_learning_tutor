@@ -95,6 +95,90 @@ function extractStructuredMisconceptions(rawText: string) {
   });
 }
 
+function normalizeFallbackClaim(rawText: string) {
+  return rawText
+    .replace(/\s+/g, " ")
+    .replace(/^[\s"'`]+|[\s"'`]+$/g, "")
+    .trim()
+    .slice(0, 280);
+}
+
+function isSubstantiveMisunderstanding(rawText: string) {
+  const cleaned = normalizeFallbackClaim(rawText);
+  if (cleaned.length < 24) return false;
+
+  const lower = cleaned.toLowerCase();
+  const shallowReplies = [
+    "i don't know",
+    "not sure",
+    "maybe",
+    "yes",
+    "no",
+    "okay",
+    "ok",
+  ];
+
+  return !shallowReplies.includes(lower);
+}
+
+function shouldFallbackLogMisconception(options: {
+  cleanedText: string;
+  structuredMisconceptionsCount: number;
+  tags: ReturnType<typeof parseTags>["tags"];
+  lastUserMessage: string;
+}) {
+  if (options.structuredMisconceptionsCount > 0 || options.tags.misconception) {
+    return false;
+  }
+
+  if (!isSubstantiveMisunderstanding(options.lastUserMessage)) {
+    return false;
+  }
+
+  const lowerResponse = options.cleanedText.toLowerCase();
+  const usedCorrectiveFeedback = options.tags.feedbackType === "corrective";
+  const usedConflict =
+    options.tags.cognitiveConflictStage === "TENSION" ||
+    options.tags.cognitiveConflictStage === "RESOLVE";
+  const detectErrorQuestion = options.tags.questionType === "detect-error";
+  const correctiveLanguage =
+    lowerResponse.includes("not quite") ||
+    lowerResponse.includes("the reading does not") ||
+    lowerResponse.includes("the author does not") ||
+    lowerResponse.includes("that is not what") ||
+    lowerResponse.includes("be careful") ||
+    lowerResponse.includes("the text is arguing something narrower") ||
+    lowerResponse.includes("the claim is stronger than the text allows");
+
+  return usedCorrectiveFeedback || usedConflict || detectErrorQuestion || correctiveLanguage;
+}
+
+function buildFallbackMisconception(options: {
+  lastUserMessage: string;
+  topicThread: string | null;
+  tags: ReturnType<typeof parseTags>["tags"];
+}) {
+  const canonicalClaim = normalizeFallbackClaim(options.lastUserMessage);
+  const topicLabel = options.topicThread || "the current topic";
+
+  return {
+    description: `The learner expressed a likely misunderstanding about ${topicLabel}.`,
+    canonicalClaim: canonicalClaim || null,
+    passageAnchor: null,
+    misconceptionType:
+      options.tags.questionType === "detect-error"
+        ? "misread"
+        : options.tags.feedbackType === "corrective"
+          ? "wrong_inference"
+          : null,
+    severity:
+      options.tags.cognitiveConflictStage === "TENSION" ||
+      options.tags.cognitiveConflictStage === "RESOLVE"
+        ? "medium"
+        : "low",
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const payload = (await req.json()) as {
@@ -328,11 +412,35 @@ export async function POST(req: Request) {
 
           const currentHintRung = topicMastery?.hintLadderRung ?? 0;
           const nextHintRung = determineNextHintLadderRung(currentHintRung, tags);
+          const fallbackMisconception = shouldFallbackLogMisconception({
+            cleanedText,
+            structuredMisconceptionsCount: structuredMisconceptions.length,
+            tags,
+            lastUserMessage: lastUserMessage.content,
+          })
+            ? buildFallbackMisconception({
+                lastUserMessage: lastUserMessage.content,
+                topicThread: normalizedTopicThread || currentTopicThread,
+                tags,
+              })
+            : null;
           const checkpointStatusMatches = Array.from(
             fullResponse.matchAll(
               /\[CHECKPOINT_STATUS:\s*([^|]+)\|([^\]]+)\]/gi
             )
           );
+
+          if (
+            fallbackMisconception &&
+            process.env.DEBUG_TUTOR_TAGS === "true"
+          ) {
+            console.warn("Corrective tutor response missing misconception tags.", {
+              studentSessionId,
+              topicThread: normalizedTopicThread || currentTopicThread || "general",
+              lastUserMessage: lastUserMessage.content,
+              assistantSnippet: cleanedText.slice(0, 240),
+            });
+          }
 
           await prisma.message.create({
             data: {
@@ -353,8 +461,15 @@ export async function POST(req: Request) {
             },
           });
 
-          if (structuredMisconceptions.length > 0) {
-            for (const misconception of structuredMisconceptions) {
+          const misconceptionsToPersist =
+            structuredMisconceptions.length > 0
+              ? structuredMisconceptions
+              : fallbackMisconception
+                ? [fallbackMisconception]
+                : [];
+
+          if (misconceptionsToPersist.length > 0) {
+            for (const misconception of misconceptionsToPersist) {
               await prisma.misconception.create({
                 data: {
                   studentSessionId,
@@ -369,16 +484,6 @@ export async function POST(req: Request) {
                 },
               });
             }
-          } else if (tags.misconception) {
-            await prisma.misconception.create({
-              data: {
-                studentSessionId,
-                topicThread: normalizedTopicThread || currentTopicThread || "general",
-                description: tags.misconception,
-                confidence: "medium",
-                studentMessage: lastUserMessage.content,
-              },
-            });
           }
 
           if (checkpointStatusMatches.length > 0) {

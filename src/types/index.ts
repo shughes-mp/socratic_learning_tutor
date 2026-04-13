@@ -119,7 +119,7 @@ export interface MisconceptionClusterRecord {
   totalStudents: number;
   prevalence: number;
   resolutionRate: number;
-  medianTurnsToResolve: number;
+  medianTurnsToResolve: number | null;
   severity: "low" | "medium" | "high";
   representativeExcerpt: string;
   misconceptionIds: string[];

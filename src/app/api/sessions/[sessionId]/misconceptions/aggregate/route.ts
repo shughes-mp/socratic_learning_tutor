@@ -19,6 +19,8 @@ type MisconceptionRecord = {
   passageAnchor: string | null;
   misconceptionType: string | null;
   severity: string;
+  detectedAt: Date;
+  updatedAt: Date;
 };
 
 type SemanticGroup = {
@@ -93,6 +95,19 @@ function getRepresentativeExcerpt(record: MisconceptionRecord) {
     record.description.trim() ||
     record.studentMessage.trim()
   ).slice(0, 140);
+}
+
+function getMedian(values: number[]) {
+  if (values.length === 0) return null;
+
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  }
+
+  return sorted[middle];
 }
 
 function parseSemanticResponse(rawText: string): Array<{ label: string; indices: number[] }> {
@@ -245,7 +260,7 @@ export async function GET(
 
     const totalStudents = session.studentSessions.length;
 
-    const [misconceptions, overrides] = await Promise.all([
+    const [misconceptions, overrides, assistantMessages] = await Promise.all([
       prisma.misconception.findMany({
         where: {
           studentSession: {
@@ -263,12 +278,28 @@ export async function GET(
           passageAnchor: true,
           misconceptionType: true,
           severity: true,
+          detectedAt: true,
+          updatedAt: true,
         },
         orderBy: [{ detectedAt: "asc" }, { id: "asc" }],
       }),
       prisma.misconceptionOverride.findMany({
         where: { sessionId },
         orderBy: { createdAt: "desc" },
+      }),
+      prisma.message.findMany({
+        where: {
+          studentSession: {
+            sessionId,
+          },
+          role: "assistant",
+        },
+        select: {
+          id: true,
+          studentSessionId: true,
+          createdAt: true,
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       }),
     ]);
 
@@ -292,6 +323,14 @@ export async function GET(
     );
 
     const bins = new Map<string, Bin>();
+    const assistantMessagesByStudent = new Map<string, Date[]>();
+
+    assistantMessages.forEach((message) => {
+      const current = assistantMessagesByStudent.get(message.studentSessionId) ?? [];
+      current.push(message.createdAt);
+      assistantMessagesByStudent.set(message.studentSessionId, current);
+    });
+
     misconceptions.forEach((misconception) => {
       const anchor = getAnchorLabel(
         misconception.passageAnchor,
@@ -327,6 +366,18 @@ export async function GET(
           group.misconceptions.map((record) => record.studentSessionId)
         );
         const resolvedCount = group.misconceptions.filter((record) => record.resolved).length;
+        const resolutionTurns = group.misconceptions
+          .filter((record) => record.resolved)
+          .map((record) => {
+            const assistantTurns =
+              assistantMessagesByStudent.get(record.studentSessionId) ?? [];
+            const turnsToResolve = assistantTurns.filter(
+              (createdAt) =>
+                createdAt > record.detectedAt && createdAt <= record.updatedAt
+            ).length;
+
+            return Math.max(turnsToResolve, 1);
+          });
         const resolutionRate =
           group.misconceptions.length > 0
             ? resolvedCount / group.misconceptions.length
@@ -343,7 +394,7 @@ export async function GET(
           prevalence:
             totalStudents > 0 ? uniqueStudentIds.size / totalStudents : 0,
           resolutionRate,
-          medianTurnsToResolve: resolutionRate >= 0.5 ? 4 : 7,
+          medianTurnsToResolve: getMedian(resolutionTurns),
           severity: getHighestSeverity(group.misconceptions),
           representativeExcerpt: getRepresentativeExcerpt(group.misconceptions[0]),
           misconceptionIds: group.misconceptions.map((record) => record.id),
