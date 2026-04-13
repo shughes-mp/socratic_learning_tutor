@@ -12,6 +12,13 @@ function getRecommendedCheckpoints(maxExchanges: number): number {
   return Math.floor((maxExchanges - 4) / 4);
 }
 
+function formatSavedTime(date: Date) {
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function SessionManagementPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
@@ -19,11 +26,17 @@ export default function SessionManagementPage() {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadingCategory, setUploadingCategory] = useState<"reading" | "assessment" | null>(null);
   const [savingConfig, setSavingConfig] = useState(false);
   const [generatingMap, setGeneratingMap] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [recentUploadName, setRecentUploadName] = useState<string | null>(null);
+  const [recentUploadCategory, setRecentUploadCategory] = useState<"reading" | "assessment" | null>(null);
+  const [configSavedAt, setConfigSavedAt] = useState<Date | null>(null);
+  const [showSavedState, setShowSavedState] = useState(false);
   const [dragActive, setDragActive] = useState<"reading" | "assessment" | null>(null);
   const readingInputRef = useRef<HTMLInputElement>(null);
   const assessmentInputRef = useRef<HTMLInputElement>(null);
@@ -89,8 +102,30 @@ export default function SessionManagementPage() {
     fetchSession();
   }, [fetchSession]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!recentUploadName) return;
+    const timeout = window.setTimeout(() => {
+      setRecentUploadName(null);
+      setRecentUploadCategory(null);
+    }, 3200);
+    return () => window.clearTimeout(timeout);
+  }, [recentUploadName]);
+
+  useEffect(() => {
+    if (!showSavedState) return;
+    const timeout = window.setTimeout(() => setShowSavedState(false), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [showSavedState]);
+
   async function handleUpload(file: File, category: "reading" | "assessment") {
     setUploading(true);
+    setUploadingCategory(category);
     setError("");
     try {
       const formData = new FormData();
@@ -120,10 +155,19 @@ export default function SessionManagementPage() {
       }
 
       await fetchSession();
+      setRecentUploadName(file.name);
+      setRecentUploadCategory(category);
+      setToast({
+        tone: "success",
+        message: `${category === "reading" ? "Reading" : "Assessment"} uploaded successfully.`,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      const message = err instanceof Error ? err.message : "Upload failed.";
+      setError(message);
+      setToast({ tone: "error", message });
     } finally {
       setUploading(false);
+      setUploadingCategory(null);
     }
   }
 
@@ -198,8 +242,18 @@ export default function SessionManagementPage() {
       }
 
       await fetchSession();
+      const savedAt = new Date();
+      setConfigSavedAt(savedAt);
+      setShowSavedState(true);
+      setToast({
+        tone: "success",
+        message: "Tutor configuration saved.",
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save tutor configuration.");
+      const message =
+        err instanceof Error ? err.message : "Failed to save tutor configuration.";
+      setError(message);
+      setToast({ tone: "error", message });
     } finally {
       setSavingConfig(false);
     }
@@ -273,6 +327,20 @@ export default function SessionManagementPage() {
   return (
     <main className="minerva-page">
       <div className="minerva-shell space-y-6 py-8">
+        {toast && (
+          <div className="fixed right-5 top-5 z-50 max-w-sm">
+            <div
+              className={`rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur ${
+                toast.tone === "success"
+                  ? "border-[rgba(17,120,144,0.22)] bg-[rgba(255,255,255,0.94)] text-[var(--charcoal)]"
+                  : "border-[rgba(223,47,38,0.28)] bg-[rgba(255,255,255,0.96)] text-[var(--signal)]"
+              }`}
+            >
+              {toast.message}
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="minerva-card p-6 md:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -605,13 +673,28 @@ export default function SessionManagementPage() {
           </div>
 
           <div className="pt-2">
-            <button
-              onClick={saveTeachingContext}
-              disabled={savingConfig}
-              className="minerva-button"
-            >
-              {savingConfig ? "Saving..." : "Save Configuration"}
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <button
+                onClick={saveTeachingContext}
+                disabled={savingConfig}
+                className="minerva-button"
+              >
+                {savingConfig
+                  ? "Saving..."
+                  : showSavedState
+                    ? "Saved"
+                    : "Save Configuration"}
+              </button>
+              {(configSavedAt || showSavedState) && (
+                <p className="text-xs text-[var(--dim-grey)]">
+                  {showSavedState
+                    ? "Configuration saved."
+                    : configSavedAt
+                      ? `Last saved at ${formatSavedTime(configSavedAt)}`
+                      : ""}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -644,7 +727,9 @@ export default function SessionManagementPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             <p className="text-sm text-[var(--charcoal)]">
-              {uploading ? "Uploading..." : "Drag and drop files here, or click to browse"}
+              {uploadingCategory === "reading"
+                ? "Uploading reading..."
+                : "Drag and drop files here, or click to browse"}
             </p>
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
               PDF, DOCX, TXT, or Markdown up to 10MB
@@ -652,6 +737,11 @@ export default function SessionManagementPage() {
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
               Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
             </p>
+            {recentUploadCategory === "reading" && recentUploadName && (
+              <p className="mt-3 text-xs font-medium text-[var(--teal)]">
+                Uploaded: {recentUploadName}
+              </p>
+            )}
           </div>
 
           {/* File list */}
@@ -660,7 +750,11 @@ export default function SessionManagementPage() {
               {readings.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center justify-between border border-[var(--rule)] bg-[rgba(255,255,255,0.58)] p-3"
+                  className={`flex items-center justify-between border p-3 transition-colors ${
+                    recentUploadCategory === "reading" && recentUploadName === file.filename
+                      ? "border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.08)]"
+                      : "border-[var(--rule)] bg-[rgba(255,255,255,0.58)]"
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="rounded-md bg-[rgba(17,120,144,0.12)] px-2 py-0.5 text-xs font-medium uppercase text-[var(--teal)]">
@@ -673,6 +767,11 @@ export default function SessionManagementPage() {
                       <p className="truncate text-xs text-[var(--dim-grey)]">
                         {file.preview}...
                       </p>
+                      {recentUploadCategory === "reading" && recentUploadName === file.filename && (
+                        <p className="mt-1 text-[11px] font-medium text-[var(--teal)]">
+                          Ready
+                        </p>
+                      )}
                     </div>
                   </div>
                   <button
@@ -724,7 +823,9 @@ export default function SessionManagementPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
             <p className="text-sm text-[var(--charcoal)]">
-              {uploading ? "Uploading..." : "Drag and drop files here, or click to browse"}
+              {uploadingCategory === "assessment"
+                ? "Uploading assessment..."
+                : "Drag and drop files here, or click to browse"}
             </p>
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
               PDF, DOCX, TXT, or Markdown up to 10MB
@@ -732,6 +833,11 @@ export default function SessionManagementPage() {
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
               Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
             </p>
+            {recentUploadCategory === "assessment" && recentUploadName && (
+              <p className="mt-3 text-xs font-medium text-[var(--rose)]">
+                Uploaded: {recentUploadName}
+              </p>
+            )}
           </div>
 
           {/* File list */}
@@ -740,7 +846,11 @@ export default function SessionManagementPage() {
               {assessments.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center justify-between border border-[var(--rule)] bg-[rgba(255,255,255,0.58)] p-3"
+                  className={`flex items-center justify-between border p-3 transition-colors ${
+                    recentUploadCategory === "assessment" && recentUploadName === file.filename
+                      ? "border-[rgba(165,65,125,0.24)] bg-[rgba(165,65,125,0.08)]"
+                      : "border-[var(--rule)] bg-[rgba(255,255,255,0.58)]"
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="rounded-md bg-[rgba(165,65,125,0.12)] px-2 py-0.5 text-xs font-medium uppercase text-[var(--rose)]">
@@ -753,6 +863,11 @@ export default function SessionManagementPage() {
                       <p className="truncate text-xs text-[var(--dim-grey)]">
                         {file.preview}...
                       </p>
+                      {recentUploadCategory === "assessment" && recentUploadName === file.filename && (
+                        <p className="mt-1 text-[11px] font-medium text-[var(--rose)]">
+                          Ready
+                        </p>
+                      )}
                     </div>
                   </div>
                   <button

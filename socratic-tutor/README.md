@@ -31,6 +31,7 @@ In short: the app is designed to support learning, not shortcut it.
 - Reading-grounded tutoring conversations
 - Optional assessment upload with answer-protection behavior
 - Tutor configuration with learning goals, learning outcomes, and selectable tutor stance
+- Instructor-side confirmation feedback for uploads and saved configuration changes
 - Student chat sessions with message limits
 - Student chat sessions with phase-based progress framing instead of countdown-style pressure
 - Prior-knowledge opening prompts and guided onboarding
@@ -57,8 +58,9 @@ In short: the app is designed to support learning, not shortcut it.
 3. Upload one or more readings.
 4. Optionally upload assessments the tutor should treat as protected.
 5. Add optional tutor configuration such as course framing, learning goals, institutional learning outcomes, tutor stance, and checkpoint-capacity guidance based on session length.
-6. Share the student link and access code.
-7. Monitor student activity and generate a report afterward.
+6. Get clear visual confirmation when readings, assessments, or tutor configuration changes are saved.
+7. Share the student link and access code.
+8. Monitor student activity and generate a report afterward.
 
 ### Student flow
 
@@ -165,8 +167,9 @@ Once the app is running:
 5. Expand the "About this session" panel if you want to see the session description and instructor framing.
 6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
 7. Watch the student-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
-8. Return to the instructor area to monitor activity and generate a report.
-9. End the session and review the summary.
+8. Return to the instructor area and notice the inline confirmations and toast feedback after uploads and configuration saves.
+9. Monitor activity and generate a report.
+10. End the session and review the summary.
 
 ## Caveats
 
