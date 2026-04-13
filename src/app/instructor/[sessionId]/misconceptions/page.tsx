@@ -8,12 +8,18 @@ import type {
   MisconceptionClusterRecord,
   MisconceptionDashboardStats,
   MisconceptionOverrideRecord,
+  TeachingRecommendationRecord,
 } from "@/types";
 
 type DashboardResponse = {
   clusters: MisconceptionClusterRecord[];
   overrides: MisconceptionOverrideRecord[];
   sessionStats: MisconceptionDashboardStats;
+};
+
+type RecommendationsResponse = {
+  recommendations: TeachingRecommendationRecord[];
+  message?: string;
 };
 
 function formatPercent(value: number) {
@@ -25,7 +31,7 @@ function formatTypeLabel(value: string | null) {
     case "misread":
       return "Misread the text";
     case "missing_warrant":
-      return "Missed the author’s support";
+      return "Missed the author's support";
     case "wrong_inference":
       return "Drew the wrong conclusion";
     case "overgeneralization":
@@ -78,6 +84,11 @@ export default function MisconceptionDashboardPage() {
   const [expandedClusterId, setExpandedClusterId] = useState<string | null>(null);
   const [showAllClusters, setShowAllClusters] = useState(false);
   const [submittingOverride, setSubmittingOverride] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<TeachingRecommendationRecord[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [recommendationMessage, setRecommendationMessage] = useState("");
+  const [detailedView, setDetailedView] = useState(true);
+  const [expandedRecommendationId, setExpandedRecommendationId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ tone: "success" | "error"; message: string } | null>(null);
 
   const fetchDashboard = useCallback(async () => {
@@ -86,7 +97,8 @@ export default function MisconceptionDashboardPage() {
       setError("");
 
       const response = await fetch(
-        `/api/sessions/${sessionId}/misconceptions/aggregate`
+        `/api/sessions/${sessionId}/misconceptions/aggregate`,
+        { cache: "no-store" }
       );
       const data = (await response.json().catch(() => null)) as
         | DashboardResponse
@@ -114,9 +126,41 @@ export default function MisconceptionDashboardPage() {
     }
   }, [sessionId]);
 
+  const fetchRecommendations = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/sessions/${sessionId}/recommendations`,
+        { cache: "no-store" }
+      );
+      const data = (await response.json().catch(() => null)) as
+        | RecommendationsResponse
+        | ApiError
+        | null;
+
+      if (!response.ok || !data || !("recommendations" in data)) {
+        throw new Error(
+          (data && "error" in data && data.error) ||
+            "Failed to load teaching recommendations."
+        );
+      }
+
+      setRecommendations(data.recommendations);
+      setRecommendationMessage(data.message ?? "");
+    } catch (err) {
+      setToast({
+        tone: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to load teaching recommendations.",
+      });
+    }
+  }, [sessionId]);
+
   useEffect(() => {
     fetchDashboard();
-  }, [fetchDashboard]);
+    fetchRecommendations();
+  }, [fetchDashboard, fetchRecommendations]);
 
   useEffect(() => {
     if (mode !== "live") {
@@ -129,7 +173,7 @@ export default function MisconceptionDashboardPage() {
 
   useEffect(() => {
     if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), 2500);
+    const timeout = window.setTimeout(() => setToast(null), 2800);
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
@@ -181,6 +225,99 @@ export default function MisconceptionDashboardPage() {
     }
   }
 
+  async function handleGenerateRecommendations() {
+    try {
+      setLoadingRecommendations(true);
+      const response = await fetch(
+        `/api/sessions/${sessionId}/recommendations`,
+        {
+          method: "POST",
+        }
+      );
+      const data = (await response.json().catch(() => null)) as
+        | RecommendationsResponse
+        | ApiError
+        | null;
+
+      if (!response.ok || !data || !("recommendations" in data)) {
+        throw new Error(
+          (data && "error" in data && data.error) ||
+            "Failed to generate recommendations."
+        );
+      }
+
+      setRecommendations(data.recommendations);
+      setRecommendationMessage(data.message ?? "");
+      setExpandedRecommendationId(null);
+      setToast({
+        tone: "success",
+        message:
+          data.recommendations.length > 0
+            ? "Teaching recommendations generated."
+            : data.message ||
+              "No recommendations were generated for the current clusters.",
+      });
+    } catch (err) {
+      setToast({
+        tone: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to generate recommendations.",
+      });
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  }
+
+  async function handleRecommendationAction(
+    recommendationId: string,
+    action: "used" | "dismissed" | "edited",
+    note?: string
+  ) {
+    try {
+      const response = await fetch(
+        `/api/sessions/${sessionId}/recommendations/${recommendationId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            instructorAction: action,
+            instructorNote: note,
+          }),
+        }
+      );
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to update recommendation.");
+      }
+
+      await fetchRecommendations();
+      setToast({
+        tone: "success",
+        message:
+          action === "used"
+            ? "Recommendation marked as used."
+            : action === "dismissed"
+              ? "Recommendation dismissed."
+              : "Recommendation updated.",
+      });
+    } catch (err) {
+      setToast({
+        tone: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to update recommendation.",
+      });
+    }
+  }
+
   return (
     <main className="minerva-page">
       <div className="minerva-shell space-y-6 py-8">
@@ -220,8 +357,8 @@ export default function MisconceptionDashboardPage() {
               </h1>
               <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
                 Review the patterns students struggled with most, decide which
-                ones need class discussion, and filter out interpretations you
-                consider acceptable.
+                ones need class discussion, and turn those patterns into active
+                learning moves you can use in class.
               </p>
             </div>
 
@@ -386,7 +523,7 @@ export default function MisconceptionDashboardPage() {
                           </p>
 
                           <div className="mt-4 rounded-md bg-[rgba(34,34,34,0.03)] px-4 py-3 text-sm italic text-[var(--charcoal)]">
-                            “{cluster.representativeExcerpt}”
+                            "{cluster.representativeExcerpt}"
                           </div>
 
                           {(cluster.passageAnchor || cluster.topicThread) && (
@@ -510,6 +647,214 @@ export default function MisconceptionDashboardPage() {
                     )}
                   </div>
                 )}
+                
+                <div className="mt-12 border-t border-[var(--rule)] pt-8">
+                  <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                        Teaching recommendations
+                      </h2>
+                      <p className="mt-2 max-w-[46rem] text-sm text-[var(--dim-grey)]">
+                        Generate text-grounded active learning moves from the
+                        misconception patterns above. These are intended as
+                        planning support, not a script you must follow exactly.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm text-[var(--dim-grey)]">
+                        <input
+                          type="checkbox"
+                          checked={detailedView}
+                          onChange={(event) => setDetailedView(event.target.checked)}
+                          className="mr-2"
+                        />
+                        Detailed view
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleGenerateRecommendations}
+                        disabled={loadingRecommendations}
+                        className="minerva-button"
+                      >
+                        {loadingRecommendations
+                          ? "Generating..."
+                          : recommendations.length > 0
+                            ? "Regenerate"
+                            : "Generate recommendations"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {recommendations.length === 0 ? (
+                    <div className="minerva-card p-6">
+                      <p className="text-sm text-[var(--dim-grey)]">
+                        {loadingRecommendations
+                          ? "Analyzing misconceptions and drafting active learning moves..."
+                          : recommendationMessage ||
+                            "No teaching recommendations have been generated yet."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {recommendations.map((recommendation) => (
+                        <div key={recommendation.id} className="minerva-card p-6">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-serif text-[30px] leading-[1.04] tracking-[-0.03em] text-[var(--charcoal)]">
+                                {recommendation.whatToAddress}
+                              </h3>
+                              <p className="mt-2 text-sm italic text-[var(--dim-grey)]">
+                                Why it matters: {recommendation.whyItMatters}
+                              </p>
+                            </div>
+
+                            <div className="text-xs text-[var(--dim-grey)]">
+                              Confidence{" "}
+                              <span className="font-semibold text-[var(--charcoal)]">
+                                {recommendation.confidence}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 rounded-md bg-[rgba(34,34,34,0.03)] px-4 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                              Evidence
+                            </p>
+                            <ul className="mt-3 space-y-2 text-sm text-[var(--charcoal)]">
+                              {recommendation.evidence.map((item, index) => (
+                                <li key={`${recommendation.id}-evidence-${index}`}>
+                                  • {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {detailedView && (
+                            <div className="mt-5">
+                              <div className="flex flex-wrap gap-2 border-b border-[var(--rule)] pb-3">
+                                {[
+                                  { key: "fiveMin", label: "5 min" },
+                                  { key: "fifteenMin", label: "15 min" },
+                                  { key: "thirtyMin", label: "30 min" },
+                                ].map(({ key, label }) => {
+                                  const tabId = `${recommendation.id}-${key}`;
+                                  return (
+                                    <button
+                                      key={tabId}
+                                      type="button"
+                                      onClick={() =>
+                                        setExpandedRecommendationId((current) =>
+                                          current === tabId ? null : tabId
+                                        )
+                                      }
+                                      className={`rounded-full px-4 py-2 text-sm font-medium ${
+                                        expandedRecommendationId === tabId
+                                          ? "bg-[var(--teal)] text-white"
+                                          : "bg-[rgba(34,34,34,0.05)] text-[var(--dim-grey)]"
+                                      }`}
+                                    >
+                                      {label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {[
+                                {
+                                  key: "fiveMin",
+                                  title: "5-minute move",
+                                  move: recommendation.moves.fiveMin,
+                                },
+                                {
+                                  key: "fifteenMin",
+                                  title: "15-minute move",
+                                  move: recommendation.moves.fifteenMin,
+                                },
+                                {
+                                  key: "thirtyMin",
+                                  title: "30-minute move",
+                                  move: recommendation.moves.thirtyMin,
+                                },
+                              ].map(({ key, title, move }) => {
+                                const tabId = `${recommendation.id}-${key}`;
+                                if (expandedRecommendationId !== tabId) return null;
+
+                                return (
+                                  <div
+                                    key={tabId}
+                                    className="mt-4 rounded-lg border border-[var(--rule)] px-4 py-4"
+                                  >
+                                    <p className="text-sm font-semibold text-[var(--charcoal)]">
+                                      {title}
+                                    </p>
+                                    <p className="mt-2 text-sm text-[var(--charcoal)]">
+                                      {move.description}
+                                    </p>
+                                    <p className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                                      Facilitation script
+                                    </p>
+                                    <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--dim-grey)]">
+                                      {move.script}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <div className="mt-5 border-t border-[var(--rule)] pt-4">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                              <p className="text-xs text-[var(--dim-grey)]">
+                                Source clusters: {recommendation.sourceClusters.join(", ")}
+                              </p>
+
+                              {!recommendation.instructorAction ? (
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRecommendationAction(
+                                        recommendation.id,
+                                        "used"
+                                      )
+                                    }
+                                    className="minerva-button"
+                                  >
+                                    Use this
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const note =
+                                        typeof window !== "undefined"
+                                          ? window.prompt("Optional note:")
+                                          : "";
+                                      void handleRecommendationAction(
+                                        recommendation.id,
+                                        "dismissed",
+                                        note || undefined
+                                      );
+                                    }}
+                                    className="minerva-button minerva-button-secondary"
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="rounded-full bg-[rgba(34,34,34,0.05)] px-3 py-1 text-sm text-[var(--charcoal)]">
+                                  {recommendation.instructorAction === "used" && "Used"}
+                                  {recommendation.instructorAction === "dismissed" && "Dismissed"}
+                                  {recommendation.instructorAction === "edited" && "Edited"}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>

@@ -144,6 +144,34 @@ export interface MisconceptionOverrideRecord {
   updatedAt: string;
 }
 
+export type TeachingRecommendationConfidence = "low" | "medium" | "high";
+
+export type TeachingRecommendationAction = "used" | "dismissed" | "edited" | null;
+
+export interface TeachingRecommendationMove {
+  description: string;
+  script: string;
+}
+
+export interface TeachingRecommendationRecord {
+  id: string;
+  sessionId: string;
+  whatToAddress: string;
+  whyItMatters: string;
+  evidence: string[];
+  moves: {
+    fiveMin: TeachingRecommendationMove;
+    fifteenMin: TeachingRecommendationMove;
+    thirtyMin: TeachingRecommendationMove;
+  };
+  sourceClusters: string[];
+  confidence: TeachingRecommendationConfidence;
+  instructorAction: TeachingRecommendationAction;
+  instructorNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StudentEntryData {
   sessionId: string;
   sessionName: string;

@@ -40,6 +40,8 @@ In short: the app is designed to support learning, not shortcut it.
 - Tutor responses that render as readable prose with the Socratic question visually separated
 - Attempt tracking, confidence checks, and structured misconception logging
 - Instructor-side misconception dashboard with clustered patterns, prevalence, resolution rates, and class-discussion triage
+- AI-generated teaching recommendations with 5-minute, 15-minute, and 30-minute active learning moves tied to misconception clusters
+- Instructor-side recommendation actions for marking suggested activities as used or dismissed
 - Tutor phase awareness that helps the conversation move from orientation to exploration to wrap-up
 - Checkpoint-aware tutoring with student-level checkpoint coverage tracking and rescue-mode pacing near the end of a session
 - Formative learning outcome assessments generated per student inside the instructor report
@@ -67,7 +69,8 @@ In short: the app is designed to support learning, not shortcut it.
 7. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
 8. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
 9. Share the student link and access code.
-10. Monitor student activity, review clustered misconception patterns, and generate a report afterward, including formative learning outcome assessments for each student.
+10. Monitor student activity, review clustered misconception patterns, and generate active-learning teaching recommendations from those patterns.
+11. Generate a report afterward, including formative learning outcome assessments for each student.
 
 ### Student flow
 
@@ -175,8 +178,9 @@ Once the app is running:
 6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
 7. Watch the student-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
 8. Return to the instructor area and add a few key questions, then try the question feedback tool on one of them.
-9. Monitor activity and generate a report with session-level insights plus per-student learning outcome assessments.
-10. End the session and review the summary.
+9. Open the misconception dashboard, mark any acceptable interpretations, and generate teaching recommendations if you want lesson-ready follow-up moves.
+10. Monitor activity and generate a report with session-level insights plus per-student learning outcome assessments.
+11. End the session and review the summary.
 
 ## Caveats
 
@@ -185,6 +189,7 @@ Once the app is running:
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - Structured misconception logging is captured in the database and surfaced in an instructor dashboard that groups related misconceptions into broader themes for review.
+- Teaching recommendations are AI-generated planning aids based on misconception clusters and should still be reviewed and adapted by the instructor.
 - Key question coverage is now tracked per student session, and instructor reports now include formative AI-generated learning outcome assessments.
 - Learning outcome assessments are instructor-facing formative signals, not final grades or official student records.
 - The app depends on Anthropic API availability and valid credentials.
