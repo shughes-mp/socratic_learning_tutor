@@ -40,8 +40,10 @@ In short: the app is designed to support learning, not shortcut it.
 - Tutor responses that render as readable prose with the Socratic question visually separated
 - AI-generated session summaries that render as markdown, support copy-to-clipboard, and provide a clean end-of-session exit path
 - Attempt tracking, confidence checks, and structured misconception logging
-- Instructor-side misconception dashboard with clustered patterns, prevalence, resolution rates, and class-discussion triage
-- AI-generated teaching recommendations with 5-minute, 15-minute, and 30-minute active learning moves tied to misconception clusters
+- A separate diagnostic pipeline that analyzes each exchange after the tutor responds, so misconception detection and resolution tracking do not depend on tutor-emitted inline tags
+- Instructor-side misconception dashboard with clustered patterns, learner-based prevalence, learner-based resolution rates, turn-based time-to-resolution metrics, and class-discussion triage
+- Engagement tracking on learner messages, with audit logs for each post-response diagnostic pass
+- AI-generated teaching recommendations with 5-minute, 15-minute, and 30-minute active learning moves tied to misconception clusters, plus a fallback generation path when structured model output is incomplete
 - Instructor-side recommendation actions for marking suggested activities as used or dismissed
 - Tutor phase awareness that helps the conversation move from orientation to exploration to wrap-up
 - Checkpoint-aware tutoring with learner-level checkpoint coverage tracking and rescue-mode pacing near the end of a session
@@ -72,6 +74,7 @@ In short: the app is designed to support learning, not shortcut it.
 9. Share the learner link and access code.
 10. Monitor learner activity, review clustered misconception patterns, and generate active-learning teaching recommendations from those patterns.
 11. Generate a report afterward, including formative learning outcome assessments for each learner.
+12. Review misconception examples, learner-resolution progress, and engagement patterns without needing raw internal model tags.
 
 ### Learner flow
 
@@ -117,7 +120,7 @@ Do not commit `.env.local`.
 
 ```bash
 npm install
-npm run db:push
+npx prisma migrate dev
 npm run dev
 ```
 
@@ -137,6 +140,7 @@ This split is intentional:
 - Prisma CLI uses the local SQLite URL from `LOCAL_DATABASE_URL` or `DATABASE_URL`
 - The deployed app uses `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`
 - The SQLite adapter is loaded lazily so Vercel does not try to load the native local-development driver in production
+- The app also includes a runtime Turso bootstrap path so newly added production columns and tables can be created safely outside the local SQLite workflow
 
 ## Production Deployment
 
@@ -161,7 +165,7 @@ Do not rely on `prisma db push` during the Vercel build for Turso schema creatio
 
 In this project:
 
-- `npm run db:push` is for local SQLite schema sync during development
+- `npx prisma migrate dev` is the local schema workflow for development
 - Vercel builds only generate Prisma and build the app
 - Turso schema rollout should be handled as a separate operational step
 
@@ -190,7 +194,10 @@ Once the app is running:
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - Structured misconception logging is captured in the database and surfaced in an instructor dashboard that groups related misconceptions into broader themes for review.
+- Misconception detection now runs in a separate post-response diagnostic pass. The tutor no longer needs to emit misconception tags for the dashboard to work.
+- Resolution tracking now reflects whether affected learners actually corrected a misconception, not just whether a tutor response claimed it was resolved.
 - Teaching recommendations are AI-generated planning aids based on misconception clusters and should still be reviewed and adapted by the instructor.
+- When recommendation generation cannot be parsed into the preferred structured format, the app now falls back to deterministic recommendation cards so the dashboard remains usable.
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.
 - Learning outcome assessments are instructor-facing formative signals, not final grades or official learner records.
 - The app depends on Anthropic API availability and valid credentials.

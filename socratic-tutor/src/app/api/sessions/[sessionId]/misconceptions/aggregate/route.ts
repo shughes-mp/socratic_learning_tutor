@@ -3,6 +3,7 @@ import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/db";
 import type {
   ApiError,
+  EngagementSummary,
   MisconceptionClusterRecord,
   MisconceptionDashboardStats,
   MisconceptionOverrideRecord,
@@ -19,8 +20,11 @@ type MisconceptionRecord = {
   passageAnchor: string | null;
   misconceptionType: string | null;
   severity: string;
-  detectedAt: Date;
-  updatedAt: Date;
+  confidence: string;
+  detectedAtTurn: number | null;
+  resolvedAtTurn: number | null;
+  resolutionConfidence: string | null;
+  resolutionEvidence: string | null;
 };
 
 type SemanticGroup = {
@@ -260,7 +264,7 @@ export async function GET(
 
     const totalStudents = session.studentSessions.length;
 
-    const [misconceptions, overrides, assistantMessages] = await Promise.all([
+    const [misconceptions, overrides, engagementCounts] = await Promise.all([
       prisma.misconception.findMany({
         where: {
           studentSession: {
@@ -278,8 +282,11 @@ export async function GET(
           passageAnchor: true,
           misconceptionType: true,
           severity: true,
-          detectedAt: true,
-          updatedAt: true,
+          confidence: true,
+          detectedAtTurn: true,
+          resolvedAtTurn: true,
+          resolutionConfidence: true,
+          resolutionEvidence: true,
         },
         orderBy: [{ detectedAt: "asc" }, { id: "asc" }],
       }),
@@ -287,19 +294,16 @@ export async function GET(
         where: { sessionId },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.message.findMany({
+      prisma.message.groupBy({
+        by: ["engagementFlag"],
         where: {
           studentSession: {
             sessionId,
           },
-          role: "assistant",
+          role: "user",
+          engagementFlag: { not: null },
         },
-        select: {
-          id: true,
-          studentSessionId: true,
-          createdAt: true,
-        },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        _count: true,
       }),
     ]);
 
@@ -309,6 +313,9 @@ export async function GET(
         totalMisconceptions: 0,
         avgMisconceptionsPerStudent: 0,
         overallResolutionRate: 0,
+        engagementSummary: Object.fromEntries(
+          engagementCounts.map((row) => [row.engagementFlag, row._count])
+        ) as EngagementSummary,
       };
 
       return NextResponse.json({
@@ -323,13 +330,6 @@ export async function GET(
     );
 
     const bins = new Map<string, Bin>();
-    const assistantMessagesByStudent = new Map<string, Date[]>();
-
-    assistantMessages.forEach((message) => {
-      const current = assistantMessagesByStudent.get(message.studentSessionId) ?? [];
-      current.push(message.createdAt);
-      assistantMessagesByStudent.set(message.studentSessionId, current);
-    });
 
     misconceptions.forEach((misconception) => {
       const anchor = getAnchorLabel(
@@ -365,22 +365,37 @@ export async function GET(
         const uniqueStudentIds = new Set(
           group.misconceptions.map((record) => record.studentSessionId)
         );
-        const resolvedCount = group.misconceptions.filter((record) => record.resolved).length;
-        const resolutionTurns = group.misconceptions
-          .filter((record) => record.resolved)
-          .map((record) => {
-            const assistantTurns =
-              assistantMessagesByStudent.get(record.studentSessionId) ?? [];
-            const turnsToResolve = assistantTurns.filter(
-              (createdAt) =>
-                createdAt > record.detectedAt && createdAt <= record.updatedAt
-            ).length;
 
-            return Math.max(turnsToResolve, 1);
-          });
+        const studentResolutionMap = new Map<string, boolean>();
+        group.misconceptions.forEach((record) => {
+          const current = studentResolutionMap.get(record.studentSessionId) ?? false;
+          if (record.resolved) {
+            studentResolutionMap.set(record.studentSessionId, true);
+          } else if (!current) {
+            studentResolutionMap.set(record.studentSessionId, false);
+          }
+        });
+
+        const studentsWhoResolved = Array.from(
+          studentResolutionMap.values()
+        ).filter(Boolean).length;
+        const resolutionTurns = group.misconceptions
+          .filter(
+            (record) =>
+              record.resolved &&
+              record.resolvedAtTurn != null &&
+              record.detectedAtTurn != null
+          )
+          .map((record) =>
+            Math.max(
+              (record.resolvedAtTurn as number) -
+                (record.detectedAtTurn as number),
+              1
+            )
+          );
         const resolutionRate =
-          group.misconceptions.length > 0
-            ? resolvedCount / group.misconceptions.length
+          studentResolutionMap.size > 0
+            ? studentsWhoResolved / studentResolutionMap.size
             : 0;
 
         clusters.push({
@@ -398,11 +413,39 @@ export async function GET(
           severity: getHighestSeverity(group.misconceptions),
           representativeExcerpt: getRepresentativeExcerpt(group.misconceptions[0]),
           misconceptionIds: group.misconceptions.map((record) => record.id),
+          records: group.misconceptions.map((record) => ({
+            id: record.id,
+            description: record.description,
+            canonicalClaim: record.canonicalClaim,
+            studentMessage: record.studentMessage,
+            resolved: record.resolved,
+          })),
           studentCount: uniqueStudentIds.size,
           overrideType:
             override?.overrideType === "needs_discussion"
               ? "needs_discussion"
               : null,
+          resolutionConfidence:
+            group.misconceptions.find((record) => record.resolutionConfidence)
+              ?.resolutionConfidence === "high" ||
+            group.misconceptions.find((record) => record.resolutionConfidence)
+              ?.resolutionConfidence === "medium" ||
+            group.misconceptions.find((record) => record.resolutionConfidence)
+              ?.resolutionConfidence === "low"
+              ? (group.misconceptions.find(
+                  (record) => record.resolutionConfidence
+                )?.resolutionConfidence as "high" | "medium" | "low")
+              : undefined,
+          detectionConfidence:
+            group.misconceptions.find((record) => record.confidence)
+              ?.confidence === "high" ||
+            group.misconceptions.find((record) => record.confidence)
+              ?.confidence === "medium" ||
+            group.misconceptions.find((record) => record.confidence)
+              ?.confidence === "low"
+              ? (group.misconceptions.find((record) => record.confidence)
+                  ?.confidence as "high" | "medium" | "low")
+              : undefined,
         });
       });
     }
@@ -427,6 +470,9 @@ export async function GET(
           ? clusters.reduce((sum, cluster) => sum + cluster.resolutionRate, 0) /
             clusters.length
           : 0,
+      engagementSummary: Object.fromEntries(
+        engagementCounts.map((row) => [row.engagementFlag, row._count])
+      ) as EngagementSummary,
     };
 
     return NextResponse.json({

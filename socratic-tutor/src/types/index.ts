@@ -121,10 +121,27 @@ export interface MisconceptionClusterRecord {
   resolutionRate: number;
   medianTurnsToResolve: number | null;
   severity: "low" | "medium" | "high";
+  resolutionConfidence?: "high" | "medium" | "low";
+  detectionConfidence?: "high" | "medium" | "low";
   representativeExcerpt: string;
   misconceptionIds: string[];
+  records: Array<{
+    id: string;
+    description: string;
+    canonicalClaim: string | null;
+    studentMessage: string;
+    resolved: boolean;
+  }>;
   studentCount: number;
   overrideType: "acceptable_interpretation" | "needs_discussion" | null;
+}
+
+export interface EngagementSummary {
+  on_task?: number;
+  shallow?: number;
+  disengaged?: number;
+  off_topic?: number;
+  hostile?: number;
 }
 
 export interface MisconceptionDashboardStats {
@@ -132,6 +149,7 @@ export interface MisconceptionDashboardStats {
   totalMisconceptions: number;
   avgMisconceptionsPerStudent: number;
   overallResolutionRate: number;
+  engagementSummary?: EngagementSummary;
 }
 
 export interface MisconceptionOverrideRecord {

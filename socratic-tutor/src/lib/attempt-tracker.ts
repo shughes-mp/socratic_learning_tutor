@@ -2,7 +2,7 @@ export interface ParsedTags {
   mode: "comprehension" | "socratic" | null;
   topicThread: string | null;
   isGenuineAttempt: boolean | null;
-  misconception: string | null;
+  misconception: string | null; // DEPRECATED — now handled by diagnostic pipeline
   directAnswer: string | null;
   questionType:
     | "explain"
@@ -16,7 +16,7 @@ export interface ParsedTags {
   expertModelType: "OPENING" | "REASONING" | null;
   selfExplainPrompted: boolean;
   cognitiveConflictStage: "EXTEND" | "TENSION" | "RESOLVE" | null;
-  misconceptionResolved: boolean;
+  misconceptionResolved?: boolean; // DEPRECATED — now handled by diagnostic pipeline
   isRevisitProbe: boolean;
 }
 
@@ -29,11 +29,6 @@ const TAG_PATTERNS = {
   mode: /\[MODE:\s*(comprehension|socratic)\]/i,
   topicThread: /\[TOPIC_THREAD:\s*([\s\S]+?)\]/i,
   genuineAttempt: /\[IS_GENUINE_ATTEMPT:\s*(true|false)\]/i,
-  misconception: /\[MISCONCEPTION:\s*([\s\S]+?)\]/i,
-  misconceptionCanonical: /\[MISCONCEPTION_CANONICAL:\s*([\s\S]+?)\]/i,
-  misconceptionPassage: /\[MISCONCEPTION_PASSAGE:\s*([\s\S]+?)\]/i,
-  misconceptionType: /\[MISCONCEPTION_TYPE:\s*([\s\S]+?)\]/i,
-  misconceptionSeverity: /\[MISCONCEPTION_SEVERITY:\s*([\s\S]+?)\]/i,
   checkpointId: /\[CHECKPOINT_ID:\s*([\s\S]+?)\]/i,
   checkpointStatus: /\[CHECKPOINT_STATUS:\s*([\s\S]*?)\|([\s\S]+?)\]/i,
   directAnswer: /\[DIRECT_ANSWER:\s*([\s\S]+?)\]/i,
@@ -42,7 +37,6 @@ const TAG_PATTERNS = {
   expertModel: /\[EXPERT_MODEL:\s*(OPENING|REASONING|true)\]/i,
   selfExplainPrompted: /\[SELF_EXPLAIN_PROMPTED:\s*true\]/i,
   cognitiveConflict: /\[COGNITIVE_CONFLICT:\s*(EXTEND|TENSION|RESOLVE|true)\]/i,
-  misconceptionResolved: /\[MISCONCEPTION_RESOLVED:\s*true\]/i,
   softRevisit: /\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*true\]/i,
 };
 
@@ -75,11 +69,6 @@ export function parseTags(rawText: string): ParseResult {
   const genuineMatch = rawText.match(TAG_PATTERNS.genuineAttempt);
   if (genuineMatch) {
     tags.isGenuineAttempt = genuineMatch[1].toLowerCase() === "true";
-  }
-
-  const misconceptionMatch = rawText.match(TAG_PATTERNS.misconception);
-  if (misconceptionMatch) {
-    tags.misconception = misconceptionMatch[1].trim();
   }
 
   const directAnswerMatch = rawText.match(TAG_PATTERNS.directAnswer);
@@ -115,18 +104,12 @@ export function parseTags(rawText: string): ParseResult {
         : (value as ParsedTags["cognitiveConflictStage"]);
   }
 
-  tags.misconceptionResolved = TAG_PATTERNS.misconceptionResolved.test(rawText);
   tags.isRevisitProbe = TAG_PATTERNS.softRevisit.test(rawText);
 
   const cleanedText = rawText
     .replace(/\[MODE:\s*[\s\S]*?\]/gi, "")
     .replace(/\[TOPIC_THREAD:\s*[\s\S]*?\]/gi, "")
     .replace(/\[IS_GENUINE_ATTEMPT:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_CANONICAL:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_PASSAGE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_TYPE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_SEVERITY:\s*[\s\S]*?\]/gi, "")
     .replace(/\[CHECKPOINT_ID:\s*[\s\S]*?\]/gi, "")
     .replace(/\[CHECKPOINT_STATUS:\s*[\s\S]*?\]/gi, "")
     .replace(/\[DIRECT_ANSWER:\s*[\s\S]*?\]/gi, "")
@@ -135,7 +118,6 @@ export function parseTags(rawText: string): ParseResult {
     .replace(/\[EXPERT_MODEL:\s*[\s\S]*?\]/gi, "")
     .replace(/\[SELF_EXPLAIN_PROMPTED:\s*[\s\S]*?\]/gi, "")
     .replace(/\[COGNITIVE_CONFLICT:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_RESOLVED:\s*[\s\S]*?\]/gi, "")
     .replace(/\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*[\s\S]*?\]/gi, "")
     .trim();
 

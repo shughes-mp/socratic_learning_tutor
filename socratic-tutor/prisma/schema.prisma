@@ -95,6 +95,7 @@ model StudentSession {
   topicMastery   TopicMastery[]
   studentCheckpoints StudentCheckpoint[]
   loAssessments  LOAssessment[]
+  diagnosticLogs DiagnosticLog[]
   session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
 
@@ -130,6 +131,8 @@ model Message {
   cognitiveConflictStage String?
   misconceptionResolved Boolean @default(false)
   isRevisitProbe   Boolean @default(false)
+  engagementFlag   String?
+  engagementNote   String?
   createdAt        DateTime @default(now())
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
 }
@@ -147,9 +150,27 @@ model Misconception {
   misconceptionType String?
   severity         String   @default("medium")
   confidence       String   @default("medium")
+  detectedAtTurn   Int?
+  resolvedAtTurn   Int?
+  resolutionConfidence String?
+  resolutionEvidence String?
   detectedAt       DateTime @default(now())
   updatedAt        DateTime @updatedAt
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+}
+
+model DiagnosticLog {
+  id                     String         @id @default(cuid())
+  studentSessionId       String
+  studentSession         StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+  turnIndex              Int
+  rawResponse            String
+  misconceptionsDetected Int
+  misconceptionsResolved Int
+  engagementFlag         String
+  createdAt              DateTime       @default(now())
+
+  @@index([studentSessionId])
 }
 
 model MisconceptionOverride {

@@ -17,18 +17,9 @@ import {
   determineNextHintLadderRung,
   evaluateMastery,
 } from "@/lib/mastery";
+import { runDiagnostic } from "@/lib/diagnostic";
 
 export const maxDuration = 60;
-
-const VALID_MISCONCEPTION_TYPES = [
-  "misread",
-  "missing_warrant",
-  "wrong_inference",
-  "overgeneralization",
-  "ignored_counterevidence",
-] as const;
-
-const VALID_MISCONCEPTION_SEVERITIES = ["low", "medium", "high"] as const;
 const VALID_CHECKPOINT_STATUSES = [
   "probing",
   "evidence_sufficient",
@@ -55,128 +46,6 @@ function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: strin
   };
 
   return mapValue.concepts.some((item) => visit(item.id));
-}
-
-function extractTagValues(rawText: string, tagName: string): string[] {
-  const pattern = new RegExp(`\\[${tagName}:\\s*([\\s\\S]*?)\\]`, "gi");
-  return Array.from(rawText.matchAll(pattern), (match) => match[1].trim());
-}
-
-function extractStructuredMisconceptions(rawText: string) {
-  const descriptions = extractTagValues(rawText, "MISCONCEPTION");
-  const canonicalClaims = extractTagValues(rawText, "MISCONCEPTION_CANONICAL");
-  const passageAnchors = extractTagValues(rawText, "MISCONCEPTION_PASSAGE");
-  const types = extractTagValues(rawText, "MISCONCEPTION_TYPE");
-  const severities = extractTagValues(rawText, "MISCONCEPTION_SEVERITY");
-
-  return descriptions.map((description, index) => {
-    const rawType = types[index]?.toLowerCase() ?? null;
-    const rawSeverity = severities[index]?.toLowerCase() ?? "medium";
-
-    const misconceptionType = VALID_MISCONCEPTION_TYPES.includes(
-      rawType as (typeof VALID_MISCONCEPTION_TYPES)[number]
-    )
-      ? rawType
-      : null;
-
-    const severity = VALID_MISCONCEPTION_SEVERITIES.includes(
-      rawSeverity as (typeof VALID_MISCONCEPTION_SEVERITIES)[number]
-    )
-      ? rawSeverity
-      : "medium";
-
-    return {
-      description,
-      canonicalClaim: canonicalClaims[index] || null,
-      passageAnchor: passageAnchors[index] || null,
-      misconceptionType,
-      severity,
-    };
-  });
-}
-
-function normalizeFallbackClaim(rawText: string) {
-  return rawText
-    .replace(/\s+/g, " ")
-    .replace(/^[\s"'`]+|[\s"'`]+$/g, "")
-    .trim()
-    .slice(0, 280);
-}
-
-function isSubstantiveMisunderstanding(rawText: string) {
-  const cleaned = normalizeFallbackClaim(rawText);
-  if (cleaned.length < 24) return false;
-
-  const lower = cleaned.toLowerCase();
-  const shallowReplies = [
-    "i don't know",
-    "not sure",
-    "maybe",
-    "yes",
-    "no",
-    "okay",
-    "ok",
-  ];
-
-  return !shallowReplies.includes(lower);
-}
-
-function shouldFallbackLogMisconception(options: {
-  cleanedText: string;
-  structuredMisconceptionsCount: number;
-  tags: ReturnType<typeof parseTags>["tags"];
-  lastUserMessage: string;
-}) {
-  if (options.structuredMisconceptionsCount > 0 || options.tags.misconception) {
-    return false;
-  }
-
-  if (!isSubstantiveMisunderstanding(options.lastUserMessage)) {
-    return false;
-  }
-
-  const lowerResponse = options.cleanedText.toLowerCase();
-  const usedCorrectiveFeedback = options.tags.feedbackType === "corrective";
-  const usedConflict =
-    options.tags.cognitiveConflictStage === "TENSION" ||
-    options.tags.cognitiveConflictStage === "RESOLVE";
-  const detectErrorQuestion = options.tags.questionType === "detect-error";
-  const correctiveLanguage =
-    lowerResponse.includes("not quite") ||
-    lowerResponse.includes("the reading does not") ||
-    lowerResponse.includes("the author does not") ||
-    lowerResponse.includes("that is not what") ||
-    lowerResponse.includes("be careful") ||
-    lowerResponse.includes("the text is arguing something narrower") ||
-    lowerResponse.includes("the claim is stronger than the text allows");
-
-  return usedCorrectiveFeedback || usedConflict || detectErrorQuestion || correctiveLanguage;
-}
-
-function buildFallbackMisconception(options: {
-  lastUserMessage: string;
-  topicThread: string | null;
-  tags: ReturnType<typeof parseTags>["tags"];
-}) {
-  const canonicalClaim = normalizeFallbackClaim(options.lastUserMessage);
-  const topicLabel = options.topicThread || "the current topic";
-
-  return {
-    description: `The learner expressed a likely misunderstanding about ${topicLabel}.`,
-    canonicalClaim: canonicalClaim || null,
-    passageAnchor: null,
-    misconceptionType:
-      options.tags.questionType === "detect-error"
-        ? "misread"
-        : options.tags.feedbackType === "corrective"
-          ? "wrong_inference"
-          : null,
-    severity:
-      options.tags.cognitiveConflictStage === "TENSION" ||
-      options.tags.cognitiveConflictStage === "RESOLVE"
-        ? "medium"
-        : "low",
-  };
 }
 
 export async function POST(req: Request) {
@@ -400,7 +269,6 @@ export async function POST(req: Request) {
           }
 
           const { cleanedText, tags } = parseTags(fullResponse);
-          const structuredMisconceptions = extractStructuredMisconceptions(fullResponse);
           const normalizedTopicThread =
             confidenceRating === "uncertain" && currentTopicThread
               ? currentTopicThread
@@ -412,35 +280,11 @@ export async function POST(req: Request) {
 
           const currentHintRung = topicMastery?.hintLadderRung ?? 0;
           const nextHintRung = determineNextHintLadderRung(currentHintRung, tags);
-          const fallbackMisconception = shouldFallbackLogMisconception({
-            cleanedText,
-            structuredMisconceptionsCount: structuredMisconceptions.length,
-            tags,
-            lastUserMessage: lastUserMessage.content,
-          })
-            ? buildFallbackMisconception({
-                lastUserMessage: lastUserMessage.content,
-                topicThread: normalizedTopicThread || currentTopicThread,
-                tags,
-              })
-            : null;
           const checkpointStatusMatches = Array.from(
             fullResponse.matchAll(
               /\[CHECKPOINT_STATUS:\s*([\s\S]*?)\|([\s\S]+?)\]/gi
             )
           );
-
-          if (
-            fallbackMisconception &&
-            process.env.DEBUG_TUTOR_TAGS === "true"
-          ) {
-            console.warn("Corrective tutor response missing misconception tags.", {
-              studentSessionId,
-              topicThread: normalizedTopicThread || currentTopicThread || "general",
-              lastUserMessage: lastUserMessage.content,
-              assistantSnippet: cleanedText.slice(0, 240),
-            });
-          }
 
           await prisma.message.create({
             data: {
@@ -461,30 +305,34 @@ export async function POST(req: Request) {
             },
           });
 
-          const misconceptionsToPersist =
-            structuredMisconceptions.length > 0
-              ? structuredMisconceptions
-              : fallbackMisconception
-                ? [fallbackMisconception]
-                : [];
+          const diagnosticInput = {
+            studentSessionId,
+            sessionId: studentSession.session.id,
+            studentMessage: lastUserMessage.content,
+            assistantMessage: cleanedText,
+            topicThread: normalizedTopicThread,
+            exchangeIndex: exchangeCount + 1,
+            readingContent: studentSession.session.readings
+              .map((reading) => reading.content)
+              .join("\n\n"),
+            checkpoints: checkpoints.map((checkpoint) => ({
+              id: checkpoint.id,
+              prompt: checkpoint.prompt,
+              processLevel: checkpoint.processLevel,
+              passageAnchors: checkpoint.passageAnchors,
+            })),
+            unresolvedMisconceptionIds: unresolvedMisconceptions.map(
+              (misconception) => misconception.id
+            ),
+            conversationHistory: incomingMessages.map((message) => ({
+              role: message.role as "user" | "assistant",
+              content: message.content,
+            })),
+          };
 
-          if (misconceptionsToPersist.length > 0) {
-            for (const misconception of misconceptionsToPersist) {
-              await prisma.misconception.create({
-                data: {
-                  studentSessionId,
-                  topicThread: normalizedTopicThread || currentTopicThread || "general",
-                  description: misconception.description,
-                  canonicalClaim: misconception.canonicalClaim,
-                  passageAnchor: misconception.passageAnchor,
-                  misconceptionType: misconception.misconceptionType,
-                  severity: misconception.severity,
-                  confidence: "medium",
-                  studentMessage: lastUserMessage.content,
-                },
-              });
-            }
-          }
+          runDiagnostic(diagnosticInput).catch((err) =>
+            console.error("Background diagnostic failed:", err)
+          );
 
           if (checkpointStatusMatches.length > 0) {
             const studentCheckpointMap = new Map(
@@ -531,17 +379,6 @@ export async function POST(req: Request) {
             }
           }
 
-          if (tags.misconceptionResolved || tags.cognitiveConflictStage === "RESOLVE") {
-            await prisma.misconception.updateMany({
-              where: {
-                studentSessionId,
-                topicThread: normalizedTopicThread || currentTopicThread || undefined,
-                resolved: false,
-              },
-              data: { resolved: true },
-            });
-          }
-
           if (
             unresolvedConfidenceProbe &&
             !confidenceRating &&
@@ -550,8 +387,7 @@ export async function POST(req: Request) {
             await prisma.confidenceCheck.update({
               where: { id: unresolvedConfidenceProbe.id },
               data: {
-                probeResult:
-                  tags.isGenuineAttempt && !tags.misconception ? "passed" : "failed",
+                probeResult: tags.isGenuineAttempt ? "passed" : "failed",
               },
             });
           }
@@ -568,7 +404,7 @@ export async function POST(req: Request) {
             currentTopicThread &&
             normalizedTopicThread &&
             normalizedTopicThread !== currentTopicThread &&
-            !tags.misconceptionResolved
+            !tags.cognitiveConflictStage
           ) {
             await prisma.misconception.updateMany({
               where: {
@@ -611,13 +447,13 @@ export async function POST(req: Request) {
             unresolvedMisconceptions.some((item) => item.persistentlyUnresolved) ||
             (unresolvedMisconceptions.length > 0 &&
               normalizedTopicThread !== currentTopicThread &&
-              !tags.misconceptionResolved)
+              !tags.cognitiveConflictStage)
           ) {
             addQueueItem("UNRESOLVED_MISCONCEPTION");
           }
 
           if (activeSoftRevisit && tags.isRevisitProbe) {
-            if (tags.isGenuineAttempt && !tags.misconception) {
+            if (tags.isGenuineAttempt) {
               nextSoftRevisitQueue.shift();
             }
           }
