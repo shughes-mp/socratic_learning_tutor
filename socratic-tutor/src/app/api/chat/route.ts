@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import {
@@ -100,19 +100,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const checkpoints = await prisma.checkpoint.findMany({
-      where: { sessionId: studentSession.session.id },
-      orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
-    });
-
-    const studentCheckpoints = await prisma.studentCheckpoint.findMany({
-      where: { studentSessionId },
-    });
-
-    const dbMessages = await prisma.message.findMany({
-      where: { studentSessionId },
-      orderBy: { createdAt: "asc" },
-    });
+    const [checkpoints, studentCheckpoints, dbMessages] = await Promise.all([
+      prisma.checkpoint.findMany({
+        where: { sessionId: studentSession.session.id },
+        orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+      }),
+      prisma.studentCheckpoint.findMany({
+        where: { studentSessionId },
+      }),
+      prisma.message.findMany({
+        where: { studentSessionId },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
 
     const exchangeCount = Math.floor(dbMessages.length / 2);
     if (exchangeCount >= studentSession.session.maxExchanges) {
@@ -142,26 +142,6 @@ export async function POST(req: Request) {
       ? extractConfidenceRating(lastUserMessage.content)
       : null;
 
-    const unresolvedConfidenceProbe = await prisma.confidenceCheck.findFirst({
-      where: {
-        studentSessionId,
-        probeAsked: true,
-        probeResult: null,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const unresolvedMisconceptions = currentTopicThread
-      ? await prisma.misconception.findMany({
-          where: {
-            studentSessionId: payload.studentSessionId,
-            topicThread: currentTopicThread,
-            resolved: false,
-          },
-          orderBy: { detectedAt: "asc" },
-        })
-      : [];
-
     const prerequisiteMap = parsePrerequisiteMap(studentSession.session.prerequisiteMap);
     if (prerequisiteMap && hasCycle(prerequisiteMap)) {
       console.warn("Ignoring prerequisite map with cycle for session", studentSession.session.id);
@@ -170,16 +150,37 @@ export async function POST(req: Request) {
     const activePrerequisiteMap =
       prerequisiteMap && !hasCycle(prerequisiteMap) ? prerequisiteMap : null;
 
-    const topicMastery = currentTopicThread
-      ? await prisma.topicMastery.findUnique({
+    const [unresolvedMisconceptions, topicMastery, unresolvedConfidenceProbe] =
+      await Promise.all([
+        currentTopicThread
+          ? prisma.misconception.findMany({
+              where: {
+                studentSessionId,
+                topicThread: currentTopicThread,
+                resolved: false,
+              },
+              orderBy: { detectedAt: "asc" },
+            })
+          : Promise.resolve([]),
+        currentTopicThread
+          ? prisma.topicMastery.findUnique({
+              where: {
+                studentSessionId_topicThread: {
+                  studentSessionId,
+                  topicThread: currentTopicThread,
+                },
+              },
+            })
+          : Promise.resolve(null),
+        prisma.confidenceCheck.findFirst({
           where: {
-            studentSessionId_topicThread: {
-              studentSessionId: payload.studentSessionId,
-              topicThread: currentTopicThread,
-            },
+            studentSessionId,
+            probeAsked: true,
+            probeResult: null,
           },
-        })
-      : null;
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
 
     const softRevisitQueue = JSON.parse(studentSession.softRevisitQueue || "[]") as SoftRevisitItem[];
     const revisitTriggerAt = Math.floor(studentSession.session.maxExchanges * 0.6);
@@ -247,6 +248,9 @@ export async function POST(req: Request) {
     });
 
     const encoder = new TextEncoder();
+    let capturedDiagnosticInput: Parameters<typeof runDiagnostic>[0] | null =
+      null;
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -332,11 +336,7 @@ export async function POST(req: Request) {
             })),
           };
 
-          const diagnosticPromise = runDiagnostic(diagnosticInput).catch(
-            (err) => {
-              console.error("Background diagnostic failed:", err);
-            }
-          );
+          capturedDiagnosticInput = diagnosticInput;
 
           if (checkpointStatusMatches.length > 0) {
             const studentCheckpointMap = new Map(
@@ -489,13 +489,22 @@ export async function POST(req: Request) {
             );
           }
 
-          await diagnosticPromise;
           controller.close();
         } catch (error) {
           console.error("Streaming error:", error);
           controller.error(error);
         }
       },
+    });
+
+    after(async () => {
+      if (capturedDiagnosticInput) {
+        try {
+          await runDiagnostic(capturedDiagnosticInput);
+        } catch (err) {
+          console.error("Background diagnostic failed:", err);
+        }
+      }
     });
 
     return new Response(stream, {

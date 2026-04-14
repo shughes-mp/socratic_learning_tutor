@@ -230,6 +230,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS "TopicMastery_studentSessionId_topicThread_key
 CREATE INDEX IF NOT EXISTS "MisconceptionOverride_sessionId_idx" ON "MisconceptionOverride"("sessionId");
 CREATE INDEX IF NOT EXISTS "TeachingRecommendation_sessionId_idx" ON "TeachingRecommendation"("sessionId");
 CREATE INDEX IF NOT EXISTS "DiagnosticLog_studentSessionId_idx" ON "DiagnosticLog"("studentSessionId");
+CREATE INDEX IF NOT EXISTS "Message_studentSessionId_idx" ON "Message"("studentSessionId");
+CREATE INDEX IF NOT EXISTS "Misconception_studentSessionId_idx" ON "Misconception"("studentSessionId");
+CREATE INDEX IF NOT EXISTS "ConfidenceCheck_studentSessionId_idx" ON "ConfidenceCheck"("studentSessionId");
+CREATE INDEX IF NOT EXISTS "StudentSession_sessionId_idx" ON "StudentSession"("sessionId");
+CREATE INDEX IF NOT EXISTS "Reading_sessionId_idx" ON "Reading"("sessionId");
+CREATE INDEX IF NOT EXISTS "Assessment_sessionId_idx" ON "Assessment"("sessionId");
 `;
 
 async function getExistingColumns(
@@ -251,48 +257,55 @@ async function getExistingColumns(
   return columns;
 }
 
-async function addColumnIfMissing(
-  client: LibsqlClient,
-  tableName: string,
-  columnName: string,
-  definition: string
-) {
-  const columns = await getExistingColumns(client, tableName);
-  if (columns.has(columnName)) return;
-  await client.execute(`ALTER TABLE "${tableName}" ADD COLUMN "${columnName}" ${definition}`);
-}
-
 async function ensureTursoSchemaUpgrades(client: LibsqlClient) {
-  await addColumnIfMissing(client, "Session", "learningOutcomes", "TEXT");
-  await addColumnIfMissing(
-    client,
-    "Session",
-    "stance",
-    "TEXT NOT NULL DEFAULT 'directed'"
-  );
+  const [misconceptionCols, messageCols, sessionCols] = await Promise.all([
+    getExistingColumns(client, "Misconception"),
+    getExistingColumns(client, "Message"),
+    getExistingColumns(client, "Session"),
+  ]);
 
-  await addColumnIfMissing(client, "Misconception", "canonicalClaim", "TEXT");
-  await addColumnIfMissing(client, "Misconception", "passageAnchor", "TEXT");
-  await addColumnIfMissing(client, "Misconception", "misconceptionType", "TEXT");
-  await addColumnIfMissing(
-    client,
-    "Misconception",
-    "severity",
-    "TEXT NOT NULL DEFAULT 'medium'"
-  );
-  await addColumnIfMissing(
-    client,
-    "Misconception",
-    "confidence",
-    "TEXT NOT NULL DEFAULT 'medium'"
-  );
-  await addColumnIfMissing(client, "Misconception", "updatedAt", "DATETIME");
-  await addColumnIfMissing(client, "Misconception", "detectedAtTurn", "INTEGER");
-  await addColumnIfMissing(client, "Misconception", "resolvedAtTurn", "INTEGER");
-  await addColumnIfMissing(client, "Misconception", "resolutionConfidence", "TEXT");
-  await addColumnIfMissing(client, "Misconception", "resolutionEvidence", "TEXT");
-  await addColumnIfMissing(client, "Message", "engagementFlag", "TEXT");
-  await addColumnIfMissing(client, "Message", "engagementNote", "TEXT");
+  const alters: string[] = [];
+
+  if (!sessionCols.has("learningOutcomes")) {
+    alters.push('ALTER TABLE "Session" ADD COLUMN "learningOutcomes" TEXT');
+  }
+  if (!sessionCols.has("stance")) {
+    alters.push(
+      `ALTER TABLE "Session" ADD COLUMN "stance" TEXT NOT NULL DEFAULT 'directed'`
+    );
+  }
+
+  const misconceptionNewCols: Array<[string, string]> = [
+    ["canonicalClaim", "TEXT"],
+    ["passageAnchor", "TEXT"],
+    ["misconceptionType", "TEXT"],
+    ["severity", "TEXT NOT NULL DEFAULT 'medium'"],
+    ["confidence", "TEXT NOT NULL DEFAULT 'medium'"],
+    ["updatedAt", "DATETIME"],
+    ["detectedAtTurn", "INTEGER"],
+    ["resolvedAtTurn", "INTEGER"],
+    ["resolutionConfidence", "TEXT"],
+    ["resolutionEvidence", "TEXT"],
+  ];
+
+  for (const [columnName, definition] of misconceptionNewCols) {
+    if (!misconceptionCols.has(columnName)) {
+      alters.push(
+        `ALTER TABLE "Misconception" ADD COLUMN "${columnName}" ${definition}`
+      );
+    }
+  }
+
+  if (!messageCols.has("engagementFlag")) {
+    alters.push('ALTER TABLE "Message" ADD COLUMN "engagementFlag" TEXT');
+  }
+  if (!messageCols.has("engagementNote")) {
+    alters.push('ALTER TABLE "Message" ADD COLUMN "engagementNote" TEXT');
+  }
+
+  if (alters.length > 0) {
+    await client.executeMultiple(`${alters.join(";\n")};`);
+  }
 
   await client.execute(
     `UPDATE "Misconception" SET "updatedAt" = COALESCE("updatedAt", "detectedAt", CURRENT_TIMESTAMP)`

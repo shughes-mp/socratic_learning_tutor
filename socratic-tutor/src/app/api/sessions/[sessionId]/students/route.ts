@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
 
 export async function GET(req: Request, { params }: { params: Promise<{ sessionId: string }> }) {
   try {
+    await ensureDatabaseReady();
     const p = await params;
     const { sessionId } = p;
+    const url = new URL(req.url);
+    const studentSessionIdFilter = url.searchParams.get("studentSessionId");
 
     const studentSessions = await prisma.studentSession.findMany({
-      where: { sessionId },
+      where: {
+        sessionId,
+        ...(studentSessionIdFilter ? { id: studentSessionIdFilter } : {}),
+      },
       include: {
         messages: {
           select: {
@@ -34,6 +40,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
         },
         misconceptions: {
           orderBy: { detectedAt: "asc" },
+        },
+        confidenceChecks: {
+          orderBy: { createdAt: "asc" },
         },
       },
       orderBy: { startedAt: "desc" },

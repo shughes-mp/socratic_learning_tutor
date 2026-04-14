@@ -38,6 +38,8 @@ model Reading {
   content   String
   uploadedAt DateTime @default(now())
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model Assessment {
@@ -47,6 +49,8 @@ model Assessment {
   content   String
   uploadedAt DateTime @default(now())
   session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model Checkpoint {
@@ -97,6 +101,8 @@ model StudentSession {
   loAssessments  LOAssessment[]
   diagnosticLogs DiagnosticLog[]
   session        Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model LOAssessment {
@@ -135,6 +141,8 @@ model Message {
   engagementNote   String?
   createdAt        DateTime @default(now())
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+
+  @@index([studentSessionId])
 }
 
 model Misconception {
@@ -157,6 +165,8 @@ model Misconception {
   detectedAt       DateTime @default(now())
   updatedAt        DateTime @updatedAt
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+
+  @@index([studentSessionId])
 }
 
 model DiagnosticLog {
@@ -215,6 +225,8 @@ model ConfidenceCheck {
   probeResult      String?
   createdAt        DateTime @default(now())
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
+
+  @@index([studentSessionId])
 }
 
 model Report {
