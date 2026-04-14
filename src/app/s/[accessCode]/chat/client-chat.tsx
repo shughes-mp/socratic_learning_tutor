@@ -325,37 +325,7 @@ If course context is available, use it naturally in the first three exchanges.`,
               {sessionName}
             </h1>
           </div>
-          <div className="px-4 py-5 md:px-8 md:text-right">
-            {!isEnded && (
-              confirmingEnd ? (
-                <div className="flex items-center gap-2 justify-end">
-                  <span className="text-[13px] text-[var(--charcoal)]">End this session?</span>
-                  <button
-                    onClick={handleConfirmEnd}
-                    className="minerva-button"
-                    style={{ minHeight: "36px", padding: "0 14px", fontSize: "12px" }}
-                  >
-                    Yes, end it
-                  </button>
-                  <button
-                    onClick={handleCancelEnd}
-                    className="minerva-button minerva-button-secondary"
-                    style={{ minHeight: "36px", padding: "0 14px", fontSize: "12px" }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleEndClick}
-                  disabled={isEnding || isLoading}
-                  className="minerva-button minerva-button-secondary"
-                >
-                  {isEnding ? "Ending..." : "End Session"}
-                </button>
-              )
-            )}
-          </div>
+          <div className="px-4 py-5 md:px-8 md:text-right" />
         </header>
 
         <div className="grid flex-1 grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
@@ -491,6 +461,47 @@ If course context is available, use it naturally in the first three exchanges.`,
                 </span>
                 <span>{phaseInfo.phase}</span>
               </div>
+
+              {!isEnded && exchangeCount < maxExchanges && (
+                <div className="mt-6 border-t border-[var(--rule)] pt-4">
+                  {confirmingEnd ? (
+                    <div className="minerva-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-[14px] font-semibold text-[var(--charcoal)]">
+                          End this session now?
+                        </p>
+                        <p className="mt-1 text-[12px] text-[var(--dim-grey)]">
+                          We&apos;ll wrap up the conversation and prepare your session summary.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          onClick={handleConfirmEnd}
+                          className="minerva-button"
+                        >
+                          Yes, end it
+                        </button>
+                        <button
+                          onClick={handleCancelEnd}
+                          className="minerva-button minerva-button-secondary"
+                        >
+                          Keep going
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleEndClick}
+                        disabled={isEnding || isLoading}
+                        className="minerva-button minerva-button-secondary"
+                      >
+                        {isEnding ? "Ending..." : "End session"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {exchangeCount >= maxExchanges && !isLoading && !isEnded && (
                 <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

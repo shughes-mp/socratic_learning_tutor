@@ -7,7 +7,7 @@ const quickFacts = [
     color: "var(--teal)",
   },
   {
-    label: "What students do",
+    label: "What learners do",
     value: "Explain their thinking and work through guided questions before class",
     color: "var(--olive)",
   },
@@ -22,17 +22,17 @@ const workflow = [
   {
     step: "01",
     title: "Create the session",
-    body: "Add the title, context, learning goal, and the reading students should work through.",
+    body: "Add the title, context, learning goal, and the reading learners should work through.",
   },
   {
     step: "02",
-    title: "Share the student link",
-    body: "Students join with a simple access code and begin by explaining what they already know.",
+    title: "Share the learner link",
+    body: "Learners join with a simple access code and begin by explaining what they already know.",
   },
   {
     step: "03",
     title: "Review the evidence",
-    body: "See how students reasoned, where they got stuck, and what should be revisited in class.",
+    body: "See how learners reasoned, where they got stuck, and what should be revisited in class.",
   },
 ];
 
@@ -63,7 +63,7 @@ const proofRows = [
     detail: "session framing, readings, assessments, learning goals, prerequisite context",
   },
   {
-    title: "What students experience",
+    title: "What learners experience",
     detail: "prior-knowledge prompts, guided questioning, follow-up checks, reflection",
   },
   {
@@ -118,12 +118,12 @@ export default function HomePage() {
           <div className="px-4 py-12 md:px-8 md:py-16">
             <p className="eyebrow eyebrow-teal">What This Product Does</p>
             <h1 className="lead-copy mt-5 max-w-[10.5ch]">
-              Create guided reading sessions that show how students think.
+              Create guided reading sessions that show how learners think.
             </h1>
 
             <p className="body-copy mt-7 max-w-[38rem]">
               Socratic Tutor is a web app for instructors. Upload a reading,
-              invite students into a guided tutoring conversation, and review
+              invite learners into a guided tutoring conversation, and review
               where they were confident, confused, or still incomplete before
               class begins.
             </p>
@@ -145,7 +145,7 @@ export default function HomePage() {
 
             <p className="mt-5 text-[13px] leading-6 text-[var(--dim-grey)]">
               Setup takes under five minutes. Upload a reading, set a goal,
-              share a link — students join with an access code, no account required.
+              share a link — learners join with an access code, no account required.
             </p>
 
             <div className="proof-grid mt-10 grid grid-cols-1 md:grid-cols-3">
@@ -202,18 +202,18 @@ export default function HomePage() {
 
             <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-0">
               <div className="md:border-r md:border-[var(--rule)] md:pr-8">
-                <p className="eyebrow eyebrow-teal">For Students</p>
+                <p className="eyebrow eyebrow-teal">For Learners</p>
                 <p className="body-copy mt-5 max-w-[29rem]">
-                  Students begin by stating what they already know, then work through
+                  Learners begin by stating what they already know, then work through
                   questions tied to the uploaded reading. The tutor asks for reasoning
-                  first — students can&apos;t skip straight to the answer.
+                  first — learners can&apos;t skip straight to the answer.
                 </p>
               </div>
               <div className="md:pl-8">
                 <p className="eyebrow eyebrow-teal">For Instructors</p>
                 <p className="body-copy mt-5 max-w-[32rem]">
-                  Instructors don&apos;t just see whether students logged in.
-                  They see how students reasoned, where misconceptions appeared,
+                  Instructors don&apos;t just see whether learners logged in.
+                  They see how learners reasoned, where misconceptions appeared,
                   and what topics need follow-up in live discussion.
                 </p>
               </div>
@@ -262,7 +262,7 @@ export default function HomePage() {
                 </p>
                 <p className="body-copy muted-copy mt-6 max-w-[38rem]">
                   Start with one reading, one instructor goal, and one session.
-                  The app is most useful when student preparation is visible
+              The app is most useful when learner preparation is visible
                   enough to shape what actually happens in class.
                 </p>
               </div>
