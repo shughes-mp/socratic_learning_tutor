@@ -350,13 +350,13 @@ export default function MisconceptionDashboardPage() {
                   Session workspace
                 </Link>
                 <span>/</span>
-                <span className="text-[var(--charcoal)]">Misconceptions</span>
+                <span className="text-[var(--charcoal)]">Common misunderstandings</span>
               </nav>
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
-                Misconception analysis
+                Common misunderstandings
               </h1>
               <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
-                Review the patterns students struggled with most, decide which
+                Review the patterns learners struggled with most, decide which
                 ones need class discussion, and turn those patterns into active
                 learning moves you can use in class.
               </p>
@@ -403,7 +403,7 @@ export default function MisconceptionDashboardPage() {
                     {stats.totalStudents}
                   </p>
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                    students contributed to this analysis
+                    learners contributed to this analysis
                   </p>
                 </div>
                 <div className="minerva-card p-5">
@@ -412,7 +412,7 @@ export default function MisconceptionDashboardPage() {
                     {stats.totalMisconceptions}
                   </p>
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                    {stats.avgMisconceptionsPerStudent.toFixed(1)} per student on average
+                    {stats.avgMisconceptionsPerStudent.toFixed(1)} per learner on average
                   </p>
                 </div>
                 <div className="minerva-card p-5">
@@ -456,7 +456,7 @@ export default function MisconceptionDashboardPage() {
                           {cluster.label}
                         </h2>
                         <p className="text-sm text-[var(--dim-grey)]">
-                          {cluster.studentCount} students · {formatPercent(cluster.prevalence)} prevalence
+                          {cluster.studentCount} learners · {formatPercent(cluster.prevalence)} prevalence
                         </p>
                       </div>
 
@@ -479,7 +479,7 @@ export default function MisconceptionDashboardPage() {
                         Top misconception clusters
                       </h2>
                       <p className="mt-2 max-w-[44rem] text-sm text-[var(--dim-grey)]">
-                        These patterns combine similar student misunderstandings
+                        These patterns combine similar learner misunderstandings
                         so you can respond to themes instead of isolated quotes.
                       </p>
                     </div>
@@ -516,7 +516,7 @@ export default function MisconceptionDashboardPage() {
                           </h3>
 
                           <p className="mt-3 text-sm text-[var(--dim-grey)]">
-                            {cluster.studentCount} of {cluster.totalStudents} students ·{" "}
+                            {cluster.studentCount} of {cluster.totalStudents} learners ·{" "}
                             {formatPercent(cluster.prevalence)} prevalence ·{" "}
                             {formatPercent(cluster.resolutionRate)} resolved during the
                             session
@@ -646,7 +646,7 @@ export default function MisconceptionDashboardPage() {
                                   {cluster.label}
                                 </p>
                                 <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                                  {cluster.studentCount} students ·{" "}
+                                  {cluster.studentCount} learners ·{" "}
                                   {formatPercent(cluster.prevalence)} prevalence
                                 </p>
                               </div>

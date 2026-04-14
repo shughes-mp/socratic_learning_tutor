@@ -710,7 +710,7 @@ export default function SessionManagementPage() {
                   !isActive ? "pointer-events-none opacity-40" : ""
                 }`}
               >
-                Student Activity
+                Learner progress
               </Link>
               <Link
                 href={isActive ? `/instructor/${sessionId}/report` : "#"}
@@ -720,13 +720,13 @@ export default function SessionManagementPage() {
                   !isActive ? "pointer-events-none opacity-40" : ""
                 }`}
               >
-                Report
+                Session summaries
               </Link>
               <Link
                 href={`/instructor/${sessionId}/misconceptions`}
                 className="minerva-button minerva-button-secondary"
               >
-                Misconceptions
+                Common misunderstandings
               </Link>
             </div>
           </div>
@@ -785,7 +785,7 @@ export default function SessionManagementPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                       </svg>
-                      Copy Student Link
+                      Copy learner link
                     </>
                   )}
                 </button>
@@ -827,7 +827,7 @@ export default function SessionManagementPage() {
                 <div>
                   <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
                   <div className="text-xs text-[var(--dim-grey)]">
-                    Guides the student through probing questions. The tutor leads.
+                    Guides the learner through probing questions. The tutor leads.
                   </div>
                 </div>
               </label>
@@ -861,7 +861,7 @@ export default function SessionManagementPage() {
               Where this fits in your course
             </label>
             <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-              Background the tutor needs — what course this is for, where students are in the curriculum, what they've covered so far.
+              Background the tutor needs — what course this is for, where learners are in the curriculum, what they've covered so far.
             </p>
             <textarea
               value={session.courseContext ?? ""}
@@ -871,7 +871,7 @@ export default function SessionManagementPage() {
                 )
               }
               rows={3}
-              placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Students have read Meadows chapters 1–3 and are familiar with stocks and flows, but have not yet covered feedback loops."
+              placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Learners have read Meadows chapters 1–3 and are familiar with stocks and flows, but have not yet covered feedback loops."
               className="minerva-textarea"
             />
           </div>
@@ -881,7 +881,7 @@ export default function SessionManagementPage() {
               Learning Outcomes
             </label>
             <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-              Optional. The specific skills or understandings students should demonstrate. These are referenced in student reports.
+              Optional. The specific skills or understandings learners should demonstrate. These are referenced in learner reports.
             </p>
             <textarea
               value={session.learningOutcomes ?? ""}
@@ -891,17 +891,17 @@ export default function SessionManagementPage() {
                 )
               }
               rows={3}
-              placeholder="e.g. Students will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
+              placeholder="e.g. Learners will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
               className="minerva-textarea"
             />
           </div>
 
           <div className="space-y-2">
             <label className="minerva-label">
-              What you want students to be able to do
+              What you want learners to be able to do
             </label>
             <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-              What you want students to understand by the end of this session.
+              What you want learners to understand by the end of this session.
             </p>
             <textarea
               value={session.learningGoal ?? ""}
@@ -1020,7 +1020,7 @@ export default function SessionManagementPage() {
                 Key Questions
               </h2>
               <p className="mt-2 max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
-                Questions students should be able to answer after working through the reading. With{" "}
+              Questions learners should be able to answer after working through the reading. With{" "}
                 {session.maxExchanges} exchanges, aim for about{" "}
                 {getRecommendedCheckpoints(session.maxExchanges)} question
                 {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}.
@@ -1101,10 +1101,10 @@ export default function SessionManagementPage() {
                                 }
                                 className="minerva-input"
                               >
-                                <option value="retrieve">Find in the text — Can the student locate specific information?</option>
-                                <option value="infer">Read between the lines — Can the student draw conclusions the author implies but doesn&apos;t state?</option>
-                                <option value="integrate">Connect ideas — Can the student link ideas across different parts of the reading?</option>
-                                <option value="evaluate">Judge the argument — Can the student assess the strength of the author&apos;s reasoning?</option>
+                <option value="retrieve">Find in the text — Can the learner locate specific information?</option>
+                <option value="infer">Read between the lines — Can the learner draw conclusions the author implies but doesn&apos;t state?</option>
+                <option value="integrate">Connect ideas — Can the learner link ideas across different parts of the reading?</option>
+                <option value="evaluate">Judge the argument — Can the learner assess the strength of the author&apos;s reasoning?</option>
                               </select>
                               <input
                                 value={editingCheckpointPassageAnchors}
@@ -1253,7 +1253,7 @@ export default function SessionManagementPage() {
                 Add question
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--dim-grey)]">
-                Write a question worth discussing, not something students can answer by copying one line from the reading.
+              Write a question worth discussing, not something learners can answer by copying one line from the reading.
               </p>
             </div>
 
@@ -1277,10 +1277,10 @@ export default function SessionManagementPage() {
                   }
                   className="minerva-input"
                 >
-                  <option value="retrieve">Find in the text — Can the student locate specific information?</option>
-                  <option value="infer">Read between the lines — Can the student draw conclusions the author implies but doesn&apos;t state?</option>
-                  <option value="integrate">Connect ideas — Can the student link ideas across different parts of the reading?</option>
-                  <option value="evaluate">Judge the argument — Can the student assess the strength of the author&apos;s reasoning?</option>
+                <option value="retrieve">Find in the text — Can the learner locate specific information?</option>
+                <option value="infer">Read between the lines — Can the learner draw conclusions the author implies but doesn&apos;t state?</option>
+                <option value="integrate">Connect ideas — Can the learner link ideas across different parts of the reading?</option>
+                <option value="evaluate">Judge the argument — Can the learner assess the strength of the author&apos;s reasoning?</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -1413,7 +1413,7 @@ export default function SessionManagementPage() {
             </h2>
             <p className="mt-1 text-sm text-[var(--dim-grey)] max-w-[38rem]">
               Upload your assignments or exam questions. The tutor reads them to understand
-              what students are working toward — but will never reveal or directly answer them.
+                    what learners are working toward — but will never reveal or directly answer them.
             </p>
           </div>
 

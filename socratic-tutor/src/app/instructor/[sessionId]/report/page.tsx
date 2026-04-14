@@ -12,7 +12,7 @@ interface ReportData {
   id: string;
   sessionId: string;
   content: string;
-  stats: string; // JSON
+  stats: string;
   generatedAt: string;
   loAssessments?: Array<
     LOAssessmentRecord & {
@@ -49,8 +49,6 @@ export default function ReportPage() {
     (forceRefresh ? setIsRefreshing : setIsLoading)(true);
     setError(null);
     try {
-      // Forcing cache busting locally. If forceRefresh is on we can't really force the backend
-      // without adding a query param, but the backend uses a 5 min cache based on student activity anyway.
       const res = await fetch(`/api/sessions/${params.sessionId}/report`);
       if (!res.ok) {
         throw new Error("Failed to generate or fetch report");
@@ -67,7 +65,7 @@ export default function ReportPage() {
 
   useEffect(() => {
     fetchReport();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.sessionId]);
 
   const handleExport = async () => {
@@ -76,22 +74,34 @@ export default function ReportPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-slate-50 dark:bg-slate-950">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
-          <p className="text-slate-500 font-medium">Synthesizing interaction data...</p>
+      <main className="minerva-page">
+        <div className="minerva-shell">
+          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+            <div className="hidden border-r border-[var(--rule)] md:block" />
+            <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
+              Building session summaries...
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 min-h-screen">
-        <h2 className="text-lg font-bold mb-2">Error</h2>
-        <p>{error}</p>
-        <Link href={`/instructor/${params.sessionId}`} className="mt-4 block underline">Back to Session</Link>
-      </div>
+      <main className="minerva-page">
+        <div className="minerva-shell space-y-6 py-8">
+          <div className="border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-sm text-[var(--signal)]">
+            {error}
+          </div>
+          <Link
+            href={`/instructor/${params.sessionId}`}
+            className="minerva-button minerva-button-secondary w-max"
+          >
+            Back to session workspace
+          </Link>
+        </div>
+      </main>
     );
   }
 
@@ -117,102 +127,125 @@ export default function ReportPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12">
-      <div className="max-w-5xl mx-auto space-y-8">
-        
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <Link href={`/instructor/${params.sessionId}`} className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline mb-2 inline-block">
-              &larr; Back to Session Dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">Instructor Report</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Generated: {new Date(report.generatedAt).toLocaleString()}</p>
-          </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={() => fetchReport(true)}
-              className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-              disabled={isRefreshing}
-            >
-              {isRefreshing ? "Refreshing..." : "Refresh Report"}
-            </button>
-            <button 
-              onClick={handleExport}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
-            >
-              Export as PDF
-            </button>
-          </div>
-        </header>
+    <main className="minerva-page">
+      <div className="minerva-shell space-y-6 py-8">
+        <div className="minerva-card p-6 md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <nav className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
+                <Link href="/instructor" className="transition-colors hover:text-[var(--teal)]">
+                  Sessions
+                </Link>
+                <span>/</span>
+                <Link
+                  href={`/instructor/${params.sessionId}`}
+                  className="transition-colors hover:text-[var(--teal)]"
+                >
+                  Session workspace
+                </Link>
+                <span>/</span>
+                <span className="text-[var(--charcoal)]">Session summaries</span>
+              </nav>
+              <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
+                Session summaries
+              </h1>
+              <p className="mt-3 text-sm text-[var(--dim-grey)]">
+                Generated {new Date(report.generatedAt).toLocaleString()}
+              </p>
+            </div>
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Students</h3>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{stats.studentsCount}</p>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Total Exchanges</h3>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{stats.exchanges}</p>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Misconceptions</h3>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{stats.misconceptions}</p>
-          </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Direct Answers</h3>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{stats.directAnswers}</p>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/instructor/${params.sessionId}`}
+                className="minerva-button minerva-button-secondary"
+              >
+                Back to session workspace
+              </Link>
+              <button
+                onClick={() => fetchReport(true)}
+                className="minerva-button minerva-button-secondary"
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? "Refreshing..." : "Refresh summaries"}
+              </button>
+              <button onClick={handleExport} className="minerva-button">
+                Export PDF
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Readiness Heatmap Widget */}
-        <section className="bg-slate-100/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-3xl">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-6 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-amber-500 inline-block"></span>
-            Class Readiness Heatmap
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="minerva-card p-5">
+            <p className="eyebrow eyebrow-teal">Learners</p>
+            <p className="mt-3 text-3xl font-semibold text-[var(--charcoal)]">
+              {stats.studentsCount}
+            </p>
+          </div>
+          <div className="minerva-card p-5">
+            <p className="eyebrow eyebrow-olive">Total Exchanges</p>
+            <p className="mt-3 text-3xl font-semibold text-[var(--charcoal)]">
+              {stats.exchanges}
+            </p>
+          </div>
+          <div className="minerva-card p-5">
+            <p className="eyebrow eyebrow-rose">Common misunderstandings</p>
+            <p className="mt-3 text-3xl font-semibold text-[var(--charcoal)]">
+              {stats.misconceptions}
+            </p>
+          </div>
+          <div className="minerva-card p-5">
+            <p className="eyebrow eyebrow-teal">Direct Answers</p>
+            <p className="mt-3 text-3xl font-semibold text-[var(--charcoal)]">
+              {stats.directAnswers}
+            </p>
+          </div>
+        </div>
+
+        <section className="minerva-card p-6 md:p-8">
+          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+            Class readiness heatmap
           </h2>
-          <ReadinessHeatmap reportContent={report.content} />
+          <div className="mt-6">
+            <ReadinessHeatmap reportContent={report.content} />
+          </div>
         </section>
 
-        {/* Full Report Text Base */}
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 md:p-12 rounded-3xl shadow-sm">
-          <div className="prose prose-slate dark:prose-invert max-w-none">
+        <section className="minerva-card p-8 md:p-12">
+          <div className="prose prose-slate max-w-none text-[var(--charcoal)]">
             <ReactMarkdown>{report.content}</ReactMarkdown>
           </div>
         </section>
 
         {Object.keys(loAssessmentsByStudent).length > 0 && (
-          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 md:p-12 rounded-3xl shadow-sm">
-            <div className="border-t border-transparent pt-0">
-              <h3 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-50">
-                Learning Outcome Assessment
-              </h3>
-              <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
-                These assessments are formative and AI-generated. They reflect observed engagement during the tutoring
-                session and should be reviewed by the instructor before informing any grading decisions.
-              </p>
+          <section className="minerva-card p-8 md:p-12">
+            <h3 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+              Learning outcome review
+            </h3>
+            <p className="mt-3 max-w-[44rem] text-sm text-[var(--dim-grey)]">
+              These assessments are formative and AI-generated. They reflect observed engagement during the tutoring
+              session and should be reviewed by the instructor before informing any grading decisions.
+            </p>
 
-              <div className="space-y-8">
-                {Object.entries(loAssessmentsByStudent).map(([studentId, group]) => (
-                  <div key={studentId} className="space-y-3">
-                    <div>
-                      <h4 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                        {group.studentName}
-                      </h4>
-                    </div>
-                    <div className="space-y-3">
-                      {(group.assessments ?? []).map((assessment) => (
-                        <LOAssessmentCard key={assessment.id} assessment={assessment} />
-                      ))}
-                    </div>
+            <div className="mt-8 space-y-8">
+              {Object.entries(loAssessmentsByStudent).map(([studentId, group]) => (
+                <div key={studentId} className="space-y-3">
+                  <div>
+                    <h4 className="text-base font-semibold text-[var(--charcoal)]">
+                      {group.studentName}
+                    </h4>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-3">
+                    {(group.assessments ?? []).map((assessment) => (
+                      <LOAssessmentCard key={assessment.id} assessment={assessment} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}
-
       </div>
-    </div>
+    </main>
   );
 }

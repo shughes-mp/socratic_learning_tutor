@@ -12,7 +12,7 @@ interface ReplayProps {
 
 export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
   if (messages.length === 0) {
-    return <p className="text-slate-500 text-sm">No messages yet.</p>;
+    return <p className="text-sm text-[var(--dim-grey)]">No messages yet.</p>;
   }
 
   const visibleMessages = messages.filter(
@@ -25,7 +25,7 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
   );
 
   if (visibleMessages.length === 0) {
-    return <p className="text-slate-500 text-sm">No messages yet.</p>;
+    return <p className="text-sm text-[var(--dim-grey)]">No messages yet.</p>;
   }
 
   return (
@@ -103,8 +103,8 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
             <div
               className={`max-w-[85%] rounded-2xl px-5 py-3.5 ${
                 isStudent
-                  ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 rounded-tr-sm"
-                  : "bg-white border border-slate-200 text-slate-800 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 rounded-tl-sm shadow-sm"
+                  ? "rounded-tr-sm bg-[var(--teal)] text-white"
+                  : "rounded-tl-sm border border-[var(--rule)] bg-white text-[var(--charcoal)] shadow-sm"
               }`}
             >
               {isStudent ? (
@@ -121,10 +121,10 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
             {relatedMisconceptions.map((misconception) => (
               <div
                 key={misconception.id}
-                className="mt-2 mr-1 max-w-[80%] bg-red-50 border border-red-200 text-red-800 text-xs px-3 py-2 rounded-lg flex items-start gap-2 animate-in fade-in slide-in-from-top-1"
+                className="mt-2 mr-1 flex max-w-[80%] items-start gap-2 rounded-lg border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-3 py-2 text-xs text-[var(--signal)]"
               >
                 <svg
-                  className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0"
+                  className="mt-0.5 h-4 w-4 flex-shrink-0 text-[var(--signal)]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -137,13 +137,13 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
                   />
                 </svg>
                 <div>
-                  <span className="font-bold">Misconception Logged:</span>{" "}
+                  <span className="font-bold">Common misunderstanding logged:</span>{" "}
                   {misconception.description}
                   {misconception.resolved && (
-                    <span className="ml-2 text-emerald-700">Resolved</span>
+                    <span className="ml-2 text-[var(--teal)]">Resolved</span>
                   )}
                   {misconception.persistentlyUnresolved && (
-                    <span className="ml-2 text-red-700">Persisted</span>
+                    <span className="ml-2 text-[var(--signal)]">Persisted</span>
                   )}
                 </div>
               </div>

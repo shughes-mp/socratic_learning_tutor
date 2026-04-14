@@ -27,9 +27,11 @@ export default function StudentMonitorPage() {
       try {
         const res = await fetch(`/api/sessions/${params.sessionId}/students`);
         const data = await res.json();
-        if (Array.isArray(data)) setStudents(data);
+        if (Array.isArray(data)) {
+          setStudents(data);
+        }
       } catch (err) {
-        console.error("Failed to fetch student data:", err);
+        console.error("Failed to fetch learner progress:", err);
       } finally {
         setIsLoading(false);
       }
@@ -38,56 +40,89 @@ export default function StudentMonitorPage() {
   }, [params.sessionId]);
 
   const toggleStudent = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id);
+    setExpandedId((prev) => (prev === id ? null : id));
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-slate-50 dark:bg-slate-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
+      <main className="minerva-page">
+        <div className="minerva-shell">
+          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
+            <div className="hidden border-r border-[var(--rule)] md:block" />
+            <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
+              Loading learner progress...
+            </div>
+          </section>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12">
-      <div className="max-w-5xl mx-auto">
-        <Link href={`/instructor/${params.sessionId}`} className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline mb-4 inline-block">
-          &larr; Back to Session Dashboard
-        </Link>
+    <main className="minerva-page">
+      <div className="minerva-shell space-y-6 py-8">
+        <div className="minerva-card p-6 md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <nav className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
+                <Link href="/instructor" className="transition-colors hover:text-[var(--teal)]">
+                  Sessions
+                </Link>
+                <span>/</span>
+                <Link
+                  href={`/instructor/${params.sessionId}`}
+                  className="transition-colors hover:text-[var(--teal)]"
+                >
+                  Session workspace
+                </Link>
+                <span>/</span>
+                <span className="text-[var(--charcoal)]">Learner progress</span>
+              </nav>
+              <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
+                Learner progress
+              </h1>
+              <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
+                Review who joined the session, how far each learner got, and the
+                interaction trace behind that progress.
+              </p>
+            </div>
 
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">Student Activity Monitor</h1>
-        <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-2xl bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
-          <svg className="w-5 h-5 inline-block mr-2 text-indigo-500 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          This view shows session themes and engagement data. Full transcripts are available on request but are primarily used to identify broad misunderstandings.
-        </p>
+            <Link
+              href={`/instructor/${params.sessionId}`}
+              className="minerva-button minerva-button-secondary"
+            >
+              Back to session workspace
+            </Link>
+          </div>
+        </div>
 
         {students.length === 0 ? (
-          <div className="text-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
-            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No student activity yet.</h3>
-            <p className="text-slate-500 mt-2">When students join the session using the access code, their activity will appear here.</p>
+          <div className="minerva-card p-8">
+            <h2 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
+              No learner activity yet
+            </h2>
+            <p className="mt-3 max-w-[34rem] text-sm text-[var(--dim-grey)]">
+              When learners join with the session link, their progress and
+              interaction traces will appear here.
+            </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div className="minerva-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-700">
+              <table className="w-full text-left text-sm text-[var(--dim-grey)]">
+                <thead className="border-b border-[var(--rule)] bg-[rgba(34,34,34,0.02)]">
                   <tr>
-                    <th className="px-6 py-4 rounded-tl-2xl">Student Name</th>
-                    <th className="px-6 py-4">Total Exchanges</th>
-                    <th className="px-6 py-4">Misconceptions Logged</th>
-                    <th className="px-6 py-4">Last Active</th>
-                    <th className="px-6 py-4 text-right rounded-tr-2xl">Action</th>
+                    <th className="px-6 py-4">Learner</th>
+                    <th className="px-6 py-4">Exchanges</th>
+                    <th className="px-6 py-4">Common misunderstandings</th>
+                    <th className="px-6 py-4">Last active</th>
+                    <th className="px-6 py-4 text-right">Trace</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                <tbody className="divide-y divide-[var(--rule)]">
                   {students.map((student) => {
                     const exchanges = Math.floor(student.messages.length / 2);
                     const isExpanded = expandedId === student.id;
-
-                    // Get last active time roughly based on last message
                     let lastActive = student.startedAt;
                     if (student.messages.length > 0) {
                       lastActive = student.messages[student.messages.length - 1].createdAt;
@@ -95,41 +130,56 @@ export default function StudentMonitorPage() {
 
                     return (
                       <React.Fragment key={student.id}>
-                        <tr className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${isExpanded ? 'bg-indigo-50/30 dark:bg-indigo-900/10' : ''}`}>
-                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">
+                        <tr
+                          className={`transition-colors hover:bg-[rgba(34,34,34,0.02)] ${
+                            isExpanded ? "bg-[rgba(17,120,144,0.05)]" : ""
+                          }`}
+                        >
+                          <td className="px-6 py-4 font-medium text-[var(--charcoal)]">
                             {student.studentName}
                           </td>
                           <td className="px-6 py-4">
-                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-md font-medium text-slate-700 dark:text-slate-300">{exchanges}</span>
+                            <span className="rounded-md bg-[rgba(34,34,34,0.05)] px-2.5 py-1 font-medium text-[var(--charcoal)]">
+                              {exchanges}
+                            </span>
                           </td>
                           <td className="px-6 py-4">
                             {student.misconceptions.length > 0 ? (
-                              <span className="text-red-600 dark:text-red-400 font-medium bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-md flex items-center w-max gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                              <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(223,47,38,0.08)] px-2.5 py-1 font-medium text-[var(--signal)]">
+                                <span className="h-2 w-2 rounded-full bg-[var(--signal)]" />
                                 {student.misconceptions.length}
                               </span>
                             ) : (
-                              <span className="text-slate-400">0</span>
+                              <span className="text-[var(--dim-grey)]">0</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 text-slate-500">
-                            {new Date(lastActive).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}
+                          <td className="px-6 py-4 text-[var(--dim-grey)]">
+                            {new Date(lastActive).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <button
                               onClick={() => toggleStudent(student.id)}
-                              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium text-sm"
+                              className="text-sm font-medium text-[var(--teal)] transition-colors hover:text-[var(--charcoal)]"
                             >
-                              {isExpanded ? "Hide Trace" : "View Replay"}
+                              {isExpanded ? "Hide trace" : "View trace"}
                             </button>
                           </td>
                         </tr>
                         {isExpanded && (
                           <tr>
-                            <td colSpan={5} className="bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 p-0">
-                              <div className="p-8 border-l-2 border-indigo-500 ml-6 my-4 bg-white dark:bg-slate-900 rounded-lg shadow-sm max-w-4xl">
-                                <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">Interaction Trace</h4>
-                                <ExchangeReplay messages={student.messages} misconceptions={student.misconceptions} />
+                            <td
+                              colSpan={5}
+                              className="border-t border-[var(--rule)] bg-[rgba(34,34,34,0.02)] p-0"
+                            >
+                              <div className="mx-6 my-5 max-w-4xl border-l-2 border-[var(--teal)] bg-white p-8">
+                                <h4 className="eyebrow eyebrow-teal mb-6">Interaction Trace</h4>
+                                <ExchangeReplay
+                                  messages={student.messages}
+                                  misconceptions={student.misconceptions}
+                                />
                               </div>
                             </td>
                           </tr>
@@ -143,6 +193,6 @@ export default function StudentMonitorPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
