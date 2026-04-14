@@ -44,6 +44,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ sessionI
         confidenceChecks: {
           orderBy: { createdAt: "asc" },
         },
+        topicMastery: {
+          orderBy: { updatedAt: "desc" },
+        },
       },
       orderBy: { startedAt: "desc" },
     });

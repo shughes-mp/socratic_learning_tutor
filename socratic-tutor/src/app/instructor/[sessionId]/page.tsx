@@ -720,7 +720,7 @@ export default function SessionManagementPage() {
                   !isActive ? "pointer-events-none opacity-40" : ""
                 }`}
               >
-                Session summaries
+                Teaching brief
               </Link>
               <Link
                 href={`/instructor/${sessionId}/misconceptions`}

@@ -23,24 +23,51 @@ export async function GET(
           },
         },
         messages: {
-          select: { createdAt: true },
-          orderBy: { createdAt: "desc" },
-          take: 1,
+          select: {
+            createdAt: true,
+            engagementFlag: true,
+            role: true,
+          },
+          orderBy: { createdAt: "desc" as const },
+          take: 5,
         },
       },
       orderBy: { startedAt: "desc" },
     });
 
     return NextResponse.json(
-      studentSessions.map((studentSession) => ({
-        id: studentSession.id,
-        studentName: studentSession.studentName,
-        startedAt: studentSession.startedAt,
-        endedAt: studentSession.endedAt,
-        messageCount: studentSession._count.messages,
-        misconceptionCount: studentSession._count.misconceptions,
-        lastActiveAt: studentSession.messages[0]?.createdAt ?? studentSession.startedAt,
-      }))
+      studentSessions.map((studentSession) => {
+        const latestFlaggedMessage = studentSession.messages.find(
+          (message) =>
+            message.role === "user" &&
+            message.engagementFlag &&
+            message.engagementFlag !== "on_task"
+        );
+        const latestEngagement = studentSession.messages.find(
+          (message) => message.role === "user" && message.engagementFlag
+        );
+        const lastMessage = studentSession.messages[0];
+        const isWaitingForStudentReply = lastMessage?.role === "assistant";
+        const secondsSinceLastMessage = lastMessage
+          ? Math.floor(
+              (Date.now() - new Date(lastMessage.createdAt).getTime()) / 1000
+            )
+          : null;
+
+        return {
+          id: studentSession.id,
+          studentName: studentSession.studentName,
+          startedAt: studentSession.startedAt,
+          endedAt: studentSession.endedAt,
+          messageCount: studentSession._count.messages,
+          misconceptionCount: studentSession._count.misconceptions,
+          lastActiveAt: lastMessage?.createdAt ?? studentSession.startedAt,
+          latestEngagementFlag: latestEngagement?.engagementFlag ?? null,
+          hasRecentEngagementConcern: !!latestFlaggedMessage,
+          isWaitingForStudentReply,
+          secondsSinceLastMessage,
+        };
+      })
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
