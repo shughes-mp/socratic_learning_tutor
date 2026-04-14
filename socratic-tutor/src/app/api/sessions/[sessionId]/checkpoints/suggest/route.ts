@@ -3,6 +3,32 @@ import { anthropic } from "@/lib/anthropic";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
 import type { ApiError } from "@/types";
 
+function parseSuggestionResponse(text: string): {
+  suggestions?: Array<{
+    prompt?: string;
+    processLevel?: string;
+    passageAnchors?: string | null;
+    expectations?: string[];
+    misconceptions?: string[];
+  }>;
+} {
+  const cleaned = text
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/, "");
+
+  return JSON.parse(cleaned) as {
+    suggestions?: Array<{
+      prompt?: string;
+      processLevel?: string;
+      passageAnchors?: string | null;
+      expectations?: string[];
+      misconceptions?: string[];
+    }>;
+  };
+}
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ sessionId: string }> }
@@ -94,7 +120,7 @@ Respond ONLY with valid JSON:
 }`;
 
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-3-5-haiku-latest",
       max_tokens: 1500,
       system: systemPrompt,
       messages: [
@@ -119,15 +145,7 @@ Respond ONLY with valid JSON:
       );
     }
 
-    const parsed = JSON.parse(content.text) as {
-      suggestions?: Array<{
-        prompt?: string;
-        processLevel?: string;
-        passageAnchors?: string | null;
-        expectations?: string[];
-        misconceptions?: string[];
-      }>;
-    };
+    const parsed = parseSuggestionResponse(content.text);
 
     const validLevels = ["retrieve", "infer", "integrate", "evaluate"];
     const suggestions = (parsed.suggestions ?? [])
