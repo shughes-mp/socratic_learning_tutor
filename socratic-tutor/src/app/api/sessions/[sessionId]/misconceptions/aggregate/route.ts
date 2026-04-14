@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { anthropic } from "@/lib/anthropic";
-import { prisma } from "@/lib/db";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
 import type {
   ApiError,
   EngagementSummary,
@@ -241,6 +241,8 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    await ensureDatabaseReady();
+
     const { sessionId } = await params;
 
     const session = await prisma.session.findUnique({

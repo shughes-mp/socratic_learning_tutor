@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import {
   buildContextInstruction,
@@ -50,6 +50,8 @@ function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: strin
 
 export async function POST(req: Request) {
   try {
+    await ensureDatabaseReady();
+
     const payload = (await req.json()) as {
       studentSessionId?: string;
       messages?: Array<{ role: "user" | "assistant"; content: string }>;
@@ -330,8 +332,10 @@ export async function POST(req: Request) {
             })),
           };
 
-          runDiagnostic(diagnosticInput).catch((err) =>
-            console.error("Background diagnostic failed:", err)
+          const diagnosticPromise = runDiagnostic(diagnosticInput).catch(
+            (err) => {
+              console.error("Background diagnostic failed:", err);
+            }
           );
 
           if (checkpointStatusMatches.length > 0) {
@@ -485,6 +489,7 @@ export async function POST(req: Request) {
             );
           }
 
+          await diagnosticPromise;
           controller.close();
         } catch (error) {
           console.error("Streaming error:", error);
