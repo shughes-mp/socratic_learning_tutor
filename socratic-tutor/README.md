@@ -25,13 +25,14 @@ In short: the app is designed to support learning, not shortcut it.
 ## Core Features
 
 - Instructor session creation with shareable learner access links
-- A guided setup flow with a shared three-step indicator: name it, add a reading, share the link
+- A guided setup flow with a shared four-step indicator: name it, add a reading, add questions, share the link
 - Step-aware instructor setup progress on both the create page and the session workspace
 - Upload support for `.pdf`, `.docx`, `.txt`, and `.md` files
 - Reading-grounded tutoring conversations
 - Optional assessment upload with answer-protection behavior
-- Tutor configuration with learning goals, learning outcomes, and selectable interaction style
+- Teaching context configuration with session goals, learning outcomes to assess, course framing, and selectable interaction style
 - Instructor-authored key questions with plain-language process levels, reading anchors, and adaptive ordering
+- AI-generated key-question suggestions derived from uploaded readings, with accept/dismiss review before adding them to the session
 - AI-assisted checkpoint improvement suggestions for turning recall-heavy prompts into better interpretive questions
 - Instructor-side confirmation feedback for uploads, key-question creation, and saved configuration changes
 - Learner chat sessions with message limits
@@ -57,6 +58,8 @@ In short: the app is designed to support learning, not shortcut it.
 - Faster instructor monitoring through a lightweight learner-summary endpoint and lazy-loaded full traces only when an instructor expands a learner
 - Expanded learner traces include confidence checks and topic-mastery summaries so instructors can scan both participation and understanding quickly
 - Plain-language instructor navigation built around `Learner progress`, `Teaching brief`, and `Common misunderstandings`
+- A redesigned session workspace that prioritizes access code sharing, readings, key questions, teaching context, and assessments in setup order
+- Collapsible workspace sections that default closed for active sessions so returning instructors can get to monitoring faster
 - Hidden scaffold messages are suppressed in instructor traces, and assistant trace messages render markdown instead of raw `*` / `**` syntax
 - Shared tag-stripping keeps internal tags and diagnostic notes out of both learner chat bubbles and instructor replay views
 - Prompt-side protections suppress visible meta-reasoning, so the tutor does not narrate its own internal handling decisions to learners
@@ -78,9 +81,9 @@ In short: the app is designed to support learning, not shortcut it.
 2. Add a title and an optional note learners will see before they begin.
 3. Upload one or more readings.
 4. Optionally upload assessments the tutor should treat as protected.
-5. Add optional tutor configuration such as course framing, learning goals, institutional learning outcomes, and interaction style.
-6. Add 2-4 key questions to define the important understandings learners should reach.
-7. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
+5. Add 2-4 key questions to define the important understandings learners should reach, or generate suggested questions from the reading and accept the ones you want.
+6. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
+7. Add optional teaching context such as course framing, session goals, institutional learning outcomes, and interaction style.
 8. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
 9. Share the learner link and access code.
 10. Monitor learner progress live, including engagement concerns and learners who have been waiting several minutes to reply.
@@ -190,16 +193,17 @@ That keeps Prisma CLI on the path Prisma documents for Turso while still allowin
 Once the app is running:
 
 1. Create an instructor session.
-2. Upload a reading.
-3. Open the learner link in a second browser window.
-4. Enter a learner name and begin the tutoring conversation.
-5. Expand the "About this session" panel if you want to see the session description and instructor framing.
-6. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
-7. Watch the learner-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
-8. Return to the instructor area and add a few key questions, then try the question feedback tool on one of them.
-9. Open the misconception dashboard, mark any acceptable interpretations, and generate teaching recommendations if you want lesson-ready follow-up moves.
-10. Monitor learner progress live if needed, then generate a teaching brief with session-level insights plus per-learner learning outcome assessments.
-11. End the session and review the formatted summary screen with copy support.
+2. Upload a reading in the session workspace.
+3. Add a few key questions manually or use the reading-based suggestion tool.
+4. Open the learner link in a second browser window.
+5. Enter a learner name and begin the tutoring conversation.
+6. Expand the "About this session" panel if you want to see the session description and instructor framing.
+7. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
+8. Watch the learner-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
+9. Return to the instructor area and use the collapsible workspace sections to review readings, questions, teaching context, and assessments.
+10. Open the misconception dashboard, mark any acceptable interpretations, and generate teaching recommendations if you want lesson-ready follow-up moves.
+11. Monitor learner progress live if needed, then generate a teaching brief with session-level insights plus per-learner learning outcome assessments.
+12. End the session and review the formatted summary screen with copy support.
 
 ## Caveats
 

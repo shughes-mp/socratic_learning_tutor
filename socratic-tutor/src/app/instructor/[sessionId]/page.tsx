@@ -52,6 +52,48 @@ function formatProcessLevelLabel(processLevel: CheckpointProcessLevel) {
   }
 }
 
+function suggestProcessLevel(prompt: string): CheckpointProcessLevel {
+  const lower = prompt.toLowerCase();
+
+  if (
+    lower.includes("strength of") ||
+    lower.includes("weakness") ||
+    lower.includes("how convincing") ||
+    lower.includes("assess") ||
+    lower.includes("evaluate") ||
+    lower.includes("valid") ||
+    lower.includes("justified")
+  ) {
+    return "evaluate";
+  }
+
+  if (
+    lower.includes("connect") ||
+    lower.includes("relationship between") ||
+    lower.includes("how does") ||
+    lower.includes("relate to") ||
+    lower.includes("compare") ||
+    lower.includes("contrast") ||
+    lower.includes("tension between") ||
+    lower.includes("across")
+  ) {
+    return "integrate";
+  }
+
+  if (
+    lower.includes("what does the author say") ||
+    lower.includes("according to") ||
+    lower.includes("find in the text") ||
+    lower.includes("what is the definition") ||
+    lower.includes("list the") ||
+    lower.includes("identify the")
+  ) {
+    return "retrieve";
+  }
+
+  return "infer";
+}
+
 export default function SessionManagementPage() {
   const params = useParams();
   const sessionId = params.sessionId as string;
@@ -86,11 +128,27 @@ export default function SessionManagementPage() {
   const [newCheckpointProcessLevel, setNewCheckpointProcessLevel] =
     useState<CheckpointProcessLevel>("infer");
   const [newCheckpointPassageAnchors, setNewCheckpointPassageAnchors] = useState("");
+  const [suggestions, setSuggestions] = useState<
+    Array<{
+      prompt: string;
+      processLevel: string;
+      passageAnchors: string | null;
+      expectations: string[];
+      misconceptions: string[];
+    }>
+  >([]);
+  const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
+  const [acceptingSuggestionIndex, setAcceptingSuggestionIndex] = useState<number | null>(null);
   const [lintingCheckpointId, setLintingCheckpointId] = useState<string | null>(null);
   const [checkpointLintResult, setCheckpointLintResult] = useState<{
     checkpointId: string;
     result: CheckpointLintResult;
   } | null>(null);
+  const [showConfig, setShowConfig] = useState(true);
+  const [showQuestions, setShowQuestions] = useState(true);
+  const [showReadings, setShowReadings] = useState(true);
+  const [showAssessments, setShowAssessments] = useState(true);
+  const [sectionsInitialized, setSectionsInitialized] = useState(false);
   const readingInputRef = useRef<HTMLInputElement>(null);
   const assessmentInputRef = useRef<HTMLInputElement>(null);
 
@@ -218,6 +276,28 @@ export default function SessionManagementPage() {
     const timeout = window.setTimeout(() => setShowQuestionSavedState(false), 2400);
     return () => window.clearTimeout(timeout);
   }, [showQuestionSavedState]);
+
+  useEffect(() => {
+    if (!newCheckpointPrompt.trim()) return;
+    const timeout = window.setTimeout(() => {
+      const suggested = suggestProcessLevel(newCheckpointPrompt);
+      setNewCheckpointProcessLevel(suggested);
+    }, 800);
+    return () => window.clearTimeout(timeout);
+  }, [newCheckpointPrompt]);
+
+  useEffect(() => {
+    if (!loading && !sectionsInitialized) {
+      const hasActiveStudents = learnerCount > 0;
+      if (hasActiveStudents) {
+        setShowConfig(false);
+        setShowQuestions(false);
+        setShowReadings(false);
+        setShowAssessments(false);
+      }
+      setSectionsInitialized(true);
+    }
+  }, [loading, learnerCount, sectionsInitialized]);
 
   async function handleUpload(file: File, category: "reading" | "assessment") {
     setUploading(true);
@@ -424,6 +504,74 @@ export default function SessionManagementPage() {
     }
   }
 
+  async function generateSuggestions() {
+    setGeneratingSuggestions(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints/suggest`, {
+        method: "POST",
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to generate suggestions.");
+      }
+      setSuggestions(data?.suggestions ?? []);
+      if ((data?.suggestions ?? []).length === 0) {
+        setToast({
+          tone: "error",
+          message: "No suggestions were generated. Try adding more reading content.",
+        });
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to generate suggestions.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setGeneratingSuggestions(false);
+    }
+  }
+
+  async function acceptSuggestion(index: number) {
+    const suggestion = suggestions[index];
+    if (!suggestion) return;
+
+    setAcceptingSuggestionIndex(index);
+    setError("");
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/checkpoints`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: suggestion.prompt,
+          processLevel: suggestion.processLevel,
+          passageAnchors: suggestion.passageAnchors || null,
+          expectations: suggestion.expectations,
+          misconceptionSeeds: suggestion.misconceptions,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to add question.");
+      }
+
+      setSuggestions((prev) => prev.filter((_, suggestionIndex) => suggestionIndex !== index));
+      await fetchCheckpoints();
+      setToast({ tone: "success", message: "Question added." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add question.";
+      setError(message);
+      setToast({ tone: "error", message });
+    } finally {
+      setAcceptingSuggestionIndex(null);
+    }
+  }
+
+  function dismissSuggestion(index: number) {
+    setSuggestions((prev) => prev.filter((_, suggestionIndex) => suggestionIndex !== index));
+  }
+
   function startEditingCheckpoint(checkpoint: CheckpointRecord) {
     setEditingCheckpointId(checkpoint.id);
     setEditingCheckpointPrompt(checkpoint.prompt);
@@ -622,8 +770,14 @@ export default function SessionManagementPage() {
   const readings = files.filter((f) => f.category === "reading");
   const assessments = files.filter((f) => f.category === "assessment");
   const isActive = readings.length > 0;
-  const setupStep: 2 | 3 | null =
-    readings.length === 0 ? 2 : learnerCount === 0 ? 3 : null;
+  const setupStep: 2 | 3 | 4 | null =
+    readings.length === 0
+      ? 2
+      : checkpoints.length === 0
+        ? 3
+        : learnerCount === 0
+          ? 4
+          : null;
 
   if (loading) {
     return (
@@ -673,7 +827,7 @@ export default function SessionManagementPage() {
             >
               {toast.message}
             </div>
-          </div>
+            </div>
         )}
 
         {/* Header */}
@@ -740,7 +894,9 @@ export default function SessionManagementPage() {
         }`}>
           {readings.length === 0
             ? "Upload at least one reading to activate this session."
-            : `Ready: ${readings.length} reading${readings.length !== 1 ? "s" : ""}, ${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} uploaded.`}
+            : learnerCount === 0
+              ? `Ready: ${readings.length} reading${readings.length !== 1 ? "s" : ""}, ${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} uploaded. No learners yet.`
+              : `Active: ${learnerCount} learner${learnerCount !== 1 ? "s" : ""} connected. ${readings.length} reading${readings.length !== 1 ? "s" : ""}, ${assessments.length} assessment${assessments.length !== 1 ? "s" : ""}.`}
         </div>
 
         {error && (
@@ -794,16 +950,692 @@ export default function SessionManagementPage() {
           </div>
         )}
 
-        <div className="minerva-card space-y-4 p-6 md:p-8">
-          <div>
-            <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-              Tutor Configuration
-            </h2>
-            <p className="mt-2 text-sm text-[var(--dim-grey)]">
-              What you write here shapes how the tutor opens the session, checks for
-              understanding, and identifies gaps. Optional, but improves response quality.
-            </p>
+        {learnerCount > 0 && (
+          <div className="minerva-card p-6 md:p-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="eyebrow eyebrow-teal">Session active</p>
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  {learnerCount} learner{learnerCount !== 1 ? "s" : ""} connected
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button">
+                  Learner progress
+                </Link>
+                <Link
+                  href={`/instructor/${sessionId}/report`}
+                  className="minerva-button minerva-button-secondary"
+                >
+                  Teaching brief
+                </Link>
+                <Link
+                  href={`/instructor/${sessionId}/misconceptions`}
+                  className="minerva-button minerva-button-secondary"
+                >
+                  Common misunderstandings
+                </Link>
+              </div>
+            </div>
           </div>
+        )}
+
+        <div className="hidden">
+          <button
+            type="button"
+            onClick={() => setShowConfig((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Teaching context
+              </h2>
+              <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                Help the tutor understand your course, your goals, and what good
+                performance looks like. Optional, but meaningfully improves the quality
+                of questions and feedback.
+              </p>
+              {!showConfig && (session.courseContext || session.learningGoal || session.learningOutcomes) && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Configured
+                </p>
+              )}
+              {!showConfig && !session.courseContext && !session.learningGoal && !session.learningOutcomes && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Not yet configured
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showConfig ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showConfig && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+              <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
+                <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
+                  Interaction style
+                </legend>
+
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="directed"
+                      checked={(session.stance ?? "directed") === "directed"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Guides the learner through probing questions. The tutor leads.
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="mentor"
+                      checked={session.stance === "mentor"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Engages as a thinking partner, challenging interpretations
+                        collaboratively. Good for experienced learners.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Where this fits in your course
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  Background the tutor needs - what course this is for, where learners are in the curriculum, what they have covered so far.
+                </p>
+                <textarea
+                  value={session.courseContext ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, courseContext: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Learners have read Meadows chapters 1-3 and are familiar with stocks and flows, but have not yet covered feedback loops."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Learning outcomes to assess
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The specific skills or understandings you want to track. The tutor will assess each learner against these and include formative ratings in the teaching brief.
+                </p>
+                <textarea
+                  value={session.learningOutcomes ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningOutcomes: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Learners will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Session goal
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The overarching understanding you are building toward. This shapes how the tutor opens the session, selects questions, and frames the closing synthesis.
+                </p>
+                <textarea
+                  value={session.learningGoal ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningGoal: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Explain the difference between reinforcing and balancing feedback loops, and identify at least one example of each in the reading."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              {session.maxExchanges && (
+                <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
+                  <p className="mb-1 font-semibold text-[var(--teal)]">
+                    Question Capacity
+                  </p>
+                  <p className="leading-6 text-[var(--dim-grey)]">
+                    With <strong>{session.maxExchanges} exchanges</strong>, this
+                    session can meaningfully cover approximately{" "}
+                    <strong>
+                      {getRecommendedCheckpoints(session.maxExchanges)} key
+                      question
+                      {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}
+                    </strong>
+                    . This assumes roughly four exchanges per question, plus
+                    exchanges for orientation and wrap-up.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-2 text-xs font-semibold text-[var(--dim-grey)] hover:text-[var(--charcoal)] transition-colors"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Advanced settings
+                </button>
+
+                {showAdvanced && (
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <label className="minerva-label">
+                          Concept dependencies
+                        </label>
+                        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                          A map of which concepts build on others. You can generate this automatically from your reading.
+                        </p>
+                      </div>
+                      <button
+                        onClick={generateSuggestedMap}
+                        disabled={generatingMap || readings.length === 0}
+                        title={readings.length === 0 ? "Upload a reading first to generate a map" : undefined}
+                        className="minerva-button minerva-button-secondary"
+                      >
+                        {generatingMap ? "Generating..." : "Generate from readings"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={session.prerequisiteMap ?? ""}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, prerequisiteMap: e.target.value } : prev
+                        )
+                      }
+                      rows={8}
+                      placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
+                      className="minerva-textarea resize-y font-mono text-xs"
+                    />
+                  </>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    onClick={saveTeachingContext}
+                    disabled={savingConfig}
+                    className="minerva-button"
+                  >
+                    {savingConfig
+                      ? "Saving..."
+                      : showSavedState
+                        ? "Saved"
+                        : "Save Configuration"}
+                  </button>
+                  {(configSavedAt || showSavedState) && (
+                    <p className="text-xs text-[var(--dim-grey)]">
+                      {showSavedState
+                        ? "Settings saved."
+                        : configSavedAt
+                          ? `Last saved at ${formatSavedTime(configSavedAt)}`
+                          : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden">
+          <button
+            type="button"
+            onClick={() => setShowConfig((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Teaching context
+              </h2>
+              <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                Help the tutor understand your course, your goals, and what good
+                performance looks like. Optional, but meaningfully improves the quality
+                of questions and feedback.
+              </p>
+              {!showConfig && (session.courseContext || session.learningGoal || session.learningOutcomes) && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Configured
+                </p>
+              )}
+              {!showConfig && !session.courseContext && !session.learningGoal && !session.learningOutcomes && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Not yet configured
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showConfig ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showConfig && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+              <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
+                <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
+                  Interaction style
+                </legend>
+
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="directed"
+                      checked={(session.stance ?? "directed") === "directed"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Guides the learner through probing questions. The tutor leads.
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="mentor"
+                      checked={session.stance === "mentor"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Engages as a thinking partner, challenging interpretations
+                        collaboratively. Good for experienced learners.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Where this fits in your course
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  Background the tutor needs - what course this is for, where learners are in the curriculum, what they have covered so far.
+                </p>
+                <textarea
+                  value={session.courseContext ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, courseContext: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Learners have read Meadows chapters 1-3 and are familiar with stocks and flows, but have not yet covered feedback loops."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Learning outcomes to assess
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The specific skills or understandings you want to track. The tutor will assess each learner against these and include formative ratings in the teaching brief.
+                </p>
+                <textarea
+                  value={session.learningOutcomes ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningOutcomes: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Learners will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Session goal
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The overarching understanding you are building toward. This shapes how the tutor opens the session, selects questions, and frames the closing synthesis.
+                </p>
+                <textarea
+                  value={session.learningGoal ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningGoal: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Explain the difference between reinforcing and balancing feedback loops, and identify at least one example of each in the reading."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              {session.maxExchanges && (
+                <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
+                  <p className="mb-1 font-semibold text-[var(--teal)]">
+                    Question Capacity
+                  </p>
+                  <p className="leading-6 text-[var(--dim-grey)]">
+                    With <strong>{session.maxExchanges} exchanges</strong>, this
+                    session can meaningfully cover approximately{" "}
+                    <strong>
+                      {getRecommendedCheckpoints(session.maxExchanges)} key
+                      question
+                      {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}
+                    </strong>
+                    . This assumes roughly four exchanges per question, plus
+                    exchanges for orientation and wrap-up.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-2 text-xs font-semibold text-[var(--dim-grey)] hover:text-[var(--charcoal)] transition-colors"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Advanced settings
+                </button>
+
+                {showAdvanced && (
+                  <>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <label className="minerva-label">
+                          Concept dependencies
+                        </label>
+                        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                          A map of which concepts build on others. You can generate this automatically from your reading.
+                        </p>
+                      </div>
+                      <button
+                        onClick={generateSuggestedMap}
+                        disabled={generatingMap || readings.length === 0}
+                        title={readings.length === 0 ? "Upload a reading first to generate a map" : undefined}
+                        className="minerva-button minerva-button-secondary"
+                      >
+                        {generatingMap ? "Generating..." : "Generate from readings"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={session.prerequisiteMap ?? ""}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, prerequisiteMap: e.target.value } : prev
+                        )
+                      }
+                      rows={8}
+                      placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
+                      className="minerva-textarea resize-y font-mono text-xs"
+                    />
+                  </>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    onClick={saveTeachingContext}
+                    disabled={savingConfig}
+                    className="minerva-button"
+                  >
+                    {savingConfig
+                      ? "Saving..."
+                      : showSavedState
+                        ? "Saved"
+                        : "Save Configuration"}
+                  </button>
+                  {(configSavedAt || showSavedState) && (
+                    <p className="text-xs text-[var(--dim-grey)]">
+                      {showSavedState
+                        ? "Settings saved."
+                        : configSavedAt
+                          ? `Last saved at ${formatSavedTime(configSavedAt)}`
+                          : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        <div className="minerva-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowReadings((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Readings
+              </h2>
+              {!showReadings && readings.length > 0 && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  {readings.length} reading{readings.length !== 1 ? "s" : ""} uploaded
+                </p>
+              )}
+              {!showReadings && readings.length === 0 && (
+                <p className="mt-2 text-sm text-[#906f12]">
+                  No reading yet - upload one to activate the tutor
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showReadings ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showReadings && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+              <div
+                onDrop={(e) => handleDrop(e, "reading")}
+                onDragOver={(e) => handleDragOver(e, "reading")}
+                onDragLeave={handleDragLeave}
+                onClick={() => readingInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                  dragActive === "reading"
+                    ? "border-[var(--teal)] bg-[rgba(17,120,144,0.08)]"
+                    : "border-[var(--light-grey)] hover:border-[var(--teal)] hover:bg-[rgba(255,255,255,0.55)]"
+                }`}
+              >
+                <input
+                  ref={readingInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt,.md"
+                  onChange={(e) => handleFileChange(e, "reading")}
+                  className="hidden"
+                />
+                <svg className="mx-auto mb-2 w-8 h-8 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm text-[var(--charcoal)]">
+                  {uploadingCategory === "reading"
+                    ? "Uploading reading..."
+                    : "Drag and drop files here, or click to browse"}
+                </p>
+                <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                  PDF, DOCX, TXT, or Markdown up to 10MB
+                </p>
+                <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                  Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
+                </p>
+                {recentUploadCategory === "reading" && recentUploadName && (
+                  <p className="mt-3 text-xs font-medium text-[var(--teal)]">
+                    Uploaded: {recentUploadName}
+                  </p>
+                )}
+              </div>
+
+              {readings.length > 0 && (
+                <div className="space-y-2">
+                  {readings.map((file) => (
+                    <div
+                      key={file.id}
+                      className={`flex items-center justify-between border p-3 transition-colors ${
+                        recentUploadCategory === "reading" && recentUploadName === file.filename
+                          ? "border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.08)]"
+                          : "border-[var(--rule)] bg-[rgba(255,255,255,0.58)]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="rounded-md bg-[rgba(17,120,144,0.12)] px-2 py-0.5 text-xs font-medium uppercase text-[var(--teal)]">
+                          {file.filename.split(".").pop()}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-[var(--charcoal)]">
+                            {file.filename}
+                          </p>
+                          <p className="truncate text-xs text-[var(--dim-grey)]">
+                            {file.preview}...
+                          </p>
+                          {recentUploadCategory === "reading" && recentUploadName === file.filename && (
+                            <p className="mt-1 text-[11px] font-medium text-[var(--teal)]">
+                              Ready
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveFile(file.id, file.category)}
+                        className="flex-shrink-0 p-1.5 text-[var(--dim-grey)] transition-colors hover:bg-[rgba(223,47,38,0.08)] hover:text-[var(--signal)]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden">
+          <button
+            type="button"
+            onClick={() => setShowConfig((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Teaching context
+              </h2>
+              <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                Help the tutor understand your course, your goals, and what good
+                performance looks like. Optional, but meaningfully improves the quality
+                of questions and feedback.
+              </p>
+              {!showConfig && (session.courseContext || session.learningGoal || session.learningOutcomes) && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Configured
+                </p>
+              )}
+              {!showConfig && !session.courseContext && !session.learningGoal && !session.learningOutcomes && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Not yet configured
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showConfig ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showConfig && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
 
           <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
             <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
@@ -878,10 +1710,10 @@ export default function SessionManagementPage() {
 
           <div className="space-y-2">
             <label className="minerva-label">
-              Learning Outcomes
+              Learning outcomes to assess
             </label>
             <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-              Optional. The specific skills or understandings learners should demonstrate. These are referenced in learner reports.
+              The specific skills or understandings you want to track. The tutor will assess each learner against these and include formative ratings in the teaching brief.
             </p>
             <textarea
               value={session.learningOutcomes ?? ""}
@@ -898,10 +1730,10 @@ export default function SessionManagementPage() {
 
           <div className="space-y-2">
             <label className="minerva-label">
-              What you want learners to be able to do
+              Session goal
             </label>
             <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-              What you want learners to understand by the end of this session.
+              The overarching understanding you are building toward. This shapes how the tutor opens the session, selects questions, and frames the closing synthesis.
             </p>
             <textarea
               value={session.learningGoal ?? ""}
@@ -1011,25 +1843,314 @@ export default function SessionManagementPage() {
               )}
             </div>
           </div>
+            </div>
+          )}
         </div>
 
-        <div className="minerva-card space-y-5 p-6 md:p-8">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className="hidden">
+          <button
+            type="button"
+            onClick={() => setShowConfig((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Teaching context
+              </h2>
+              <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                Help the tutor understand your course, your goals, and what good
+                performance looks like. Optional, but meaningfully improves the quality
+                of questions and feedback.
+              </p>
+              {!showConfig && (session.courseContext || session.learningGoal || session.learningOutcomes) && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Configured
+                </p>
+              )}
+              {!showConfig && !session.courseContext && !session.learningGoal && !session.learningOutcomes && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Not yet configured
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showConfig ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showConfig && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+              <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
+                <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
+                  Interaction style
+                </legend>
+
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="directed"
+                      checked={(session.stance ?? "directed") === "directed"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Guides the learner through probing questions. The tutor leads.
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="mentor"
+                      checked={session.stance === "mentor"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Engages as a thinking partner, challenging interpretations
+                        collaboratively. Good for experienced learners.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Where this fits in your course
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  Background the tutor needs - what course this is for, where learners are in the curriculum, what they have covered so far.
+                </p>
+                <textarea
+                  value={session.courseContext ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, courseContext: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Learners have read Meadows chapters 1-3 and are familiar with stocks and flows, but have not yet covered feedback loops."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Learning outcomes to assess
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The specific skills or understandings you want to track. The tutor will assess each learner against these and include formative ratings in the teaching brief.
+                </p>
+                <textarea
+                  value={session.learningOutcomes ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningOutcomes: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Learners will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Session goal
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The overarching understanding you are building toward. This shapes how the tutor opens the session, selects questions, and frames the closing synthesis.
+                </p>
+                <textarea
+                  value={session.learningGoal ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningGoal: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Explain the difference between reinforcing and balancing feedback loops, and identify at least one example of each in the reading."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              {session.maxExchanges && (
+                <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
+                  <p className="mb-1 font-semibold text-[var(--teal)]">
+                    Question Capacity
+                  </p>
+                  <p className="leading-6 text-[var(--dim-grey)]">
+                    With <strong>{session.maxExchanges} exchanges</strong>, this
+                    session can meaningfully cover approximately{" "}
+                    <strong>
+                      {getRecommendedCheckpoints(session.maxExchanges)} key
+                      question
+                      {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}
+                    </strong>
+                    . This assumes roughly four exchanges per question, plus
+                    exchanges for orientation and wrap-up.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-2 text-xs font-semibold text-[var(--dim-grey)] hover:text-[var(--charcoal)] transition-colors"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Advanced settings
+                </button>
+
+                {showAdvanced && (
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <label className="minerva-label">
+                          Concept dependencies
+                        </label>
+                        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                          A map of which concepts build on others. You can generate this automatically from your reading.
+                        </p>
+                      </div>
+                      <button
+                        onClick={generateSuggestedMap}
+                        disabled={generatingMap || readings.length === 0}
+                        title={readings.length === 0 ? "Upload a reading first to generate a map" : undefined}
+                        className="minerva-button minerva-button-secondary"
+                      >
+                        {generatingMap ? "Generating..." : "Generate from readings"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={session.prerequisiteMap ?? ""}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, prerequisiteMap: e.target.value } : prev
+                        )
+                      }
+                      rows={8}
+                      placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
+                      className="minerva-textarea resize-y font-mono text-xs"
+                    />
+                  </>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    onClick={saveTeachingContext}
+                    disabled={savingConfig}
+                    className="minerva-button"
+                  >
+                    {savingConfig
+                      ? "Saving..."
+                      : showSavedState
+                        ? "Saved"
+                        : "Save Configuration"}
+                  </button>
+                  {(configSavedAt || showSavedState) && (
+                    <p className="text-xs text-[var(--dim-grey)]">
+                      {showSavedState
+                        ? "Settings saved."
+                        : configSavedAt
+                          ? `Last saved at ${formatSavedTime(configSavedAt)}`
+                          : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="minerva-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowQuestions((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
             <div>
               <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
                 Key Questions
               </h2>
               <p className="mt-2 max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
-              Questions learners should be able to answer after working through the reading. With{" "}
+                Questions learners should be able to answer after working through the reading. With{" "}
                 {session.maxExchanges} exchanges, aim for about{" "}
                 {getRecommendedCheckpoints(session.maxExchanges)} question
                 {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}.
               </p>
+              {!showQuestions && checkpoints.length > 0 && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  {checkpoints.length} question{checkpoints.length !== 1 ? "s" : ""}
+                </p>
+              )}
+              {!showQuestions && checkpoints.length === 0 && (
+                <p className="mt-2 text-sm text-[#906f12]">
+                  No questions yet — add 2-4 to guide the tutor
+                </p>
+              )}
             </div>
-            <p className="text-xs uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-              {checkpoints.length} question{checkpoints.length === 1 ? "" : "s"}
-            </p>
-          </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showQuestions ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showQuestions && (
+            <div className="space-y-5 px-6 pb-6 md:px-8 md:pb-8">
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={generateSuggestions}
+                    disabled={generatingSuggestions || readings.length === 0}
+                    title={readings.length === 0 ? "Upload a reading first" : undefined}
+                    className="minerva-button minerva-button-secondary"
+                  >
+                    {generatingSuggestions ? "Generating..." : "Suggest questions from reading"}
+                  </button>
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                    {checkpoints.length} question{checkpoints.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+              </div>
 
           {session.maxExchanges > 0 &&
             checkpoints.length > Math.max(3, Math.floor(session.maxExchanges / 4)) && (
@@ -1040,6 +2161,86 @@ export default function SessionManagementPage() {
                 session length.
               </div>
             )}
+
+          {suggestions.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                Suggested questions — review and accept or dismiss
+              </p>
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={`suggestion-${index}`}
+                  className="space-y-3 rounded-2xl border-2 border-dashed border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.04)] p-4"
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                          Suggestion {index + 1}
+                        </span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getProcessLevelTone(
+                            suggestion.processLevel as CheckpointProcessLevel
+                          )}`}
+                        >
+                          {formatProcessLevelLabel(
+                            suggestion.processLevel as CheckpointProcessLevel
+                          )}
+                        </span>
+                        {suggestion.passageAnchors && (
+                          <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
+                            {suggestion.passageAnchors}
+                          </span>
+                        )}
+                      </div>
+                      <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
+                        {suggestion.prompt}
+                      </p>
+                      {suggestion.expectations.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                            Expected evidence
+                          </p>
+                          <ul className="mt-1 space-y-0.5 text-xs text-[var(--dim-grey)]">
+                            {suggestion.expectations.map((expectation) => (
+                              <li key={expectation}>- {expectation}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {suggestion.misconceptions.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                            Likely misreadings
+                          </p>
+                          <ul className="mt-1 space-y-0.5 text-xs text-[var(--dim-grey)]">
+                            {suggestion.misconceptions.map((misconception) => (
+                              <li key={misconception}>- {misconception}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-shrink-0 gap-2">
+                      <button
+                        onClick={() => acceptSuggestion(index)}
+                        disabled={acceptingSuggestionIndex === index}
+                        className="minerva-button"
+                      >
+                        {acceptingSuggestionIndex === index ? "Adding..." : "Accept"}
+                      </button>
+                      <button
+                        onClick={() => dismissSuggestion(index)}
+                        className="minerva-button minerva-button-secondary"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {loadingCheckpoints ? (
             <div className="rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
@@ -1313,109 +2514,297 @@ export default function SessionManagementPage() {
               )}
             </div>
           </div>
-        </div>
-
-        {/* Readings section */}
-        <div className="minerva-card space-y-4 p-6 md:p-8">
-          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-            Readings
-          </h2>
-
-          {/* Drop zone */}
-          <div
-            onDrop={(e) => handleDrop(e, "reading")}
-            onDragOver={(e) => handleDragOver(e, "reading")}
-            onDragLeave={handleDragLeave}
-            onClick={() => readingInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-              dragActive === "reading"
-                ? "border-[var(--teal)] bg-[rgba(17,120,144,0.08)]"
-                : "border-[var(--light-grey)] hover:border-[var(--teal)] hover:bg-[rgba(255,255,255,0.55)]"
-            }`}
-          >
-            <input
-              ref={readingInputRef}
-              type="file"
-              accept=".pdf,.docx,.txt,.md"
-              onChange={(e) => handleFileChange(e, "reading")}
-              className="hidden"
-            />
-            <svg className="mx-auto mb-2 w-8 h-8 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            <p className="text-sm text-[var(--charcoal)]">
-              {uploadingCategory === "reading"
-                ? "Uploading reading..."
-                : "Drag and drop files here, or click to browse"}
-            </p>
-            <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              PDF, DOCX, TXT, or Markdown up to 10MB
-            </p>
-            <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
-            </p>
-            {recentUploadCategory === "reading" && recentUploadName && (
-              <p className="mt-3 text-xs font-medium text-[var(--teal)]">
-                Uploaded: {recentUploadName}
-              </p>
-            )}
-          </div>
-
-          {/* File list */}
-          {readings.length > 0 && (
-            <div className="space-y-2">
-              {readings.map((file) => (
-                <div
-                  key={file.id}
-                  className={`flex items-center justify-between border p-3 transition-colors ${
-                    recentUploadCategory === "reading" && recentUploadName === file.filename
-                      ? "border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.08)]"
-                      : "border-[var(--rule)] bg-[rgba(255,255,255,0.58)]"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="rounded-md bg-[rgba(17,120,144,0.12)] px-2 py-0.5 text-xs font-medium uppercase text-[var(--teal)]">
-                      {file.filename.split(".").pop()}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-[var(--charcoal)]">
-                        {file.filename}
-                      </p>
-                      <p className="truncate text-xs text-[var(--dim-grey)]">
-                        {file.preview}...
-                      </p>
-                      {recentUploadCategory === "reading" && recentUploadName === file.filename && (
-                        <p className="mt-1 text-[11px] font-medium text-[var(--teal)]">
-                          Ready
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveFile(file.id, file.category)}
-                    className="flex-shrink-0 p-1.5 text-[var(--dim-grey)] transition-colors hover:bg-[rgba(223,47,38,0.08)] hover:text-[var(--signal)]"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
             </div>
           )}
         </div>
 
-        {/* Assessments section */}
-        <div className="minerva-card space-y-4 p-6 md:p-8">
-          <div>
-            <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-              Assessments
+        <div className="minerva-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowConfig((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Teaching context
+              </h2>
+              <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                Help the tutor understand your course, your goals, and what good
+                performance looks like. Optional, but meaningfully improves the quality
+                of questions and feedback.
+              </p>
+              {!showConfig && (session.courseContext || session.learningGoal || session.learningOutcomes) && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Configured
+                </p>
+              )}
+              {!showConfig && !session.courseContext && !session.learningGoal && !session.learningOutcomes && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  Not yet configured
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showConfig ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showConfig && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+              <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
+                <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
+                  Interaction style
+                </legend>
+
+                <div className="space-y-2">
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="directed"
+                      checked={(session.stance ?? "directed") === "directed"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Guides the learner through probing questions. The tutor leads.
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex cursor-pointer items-start space-x-3">
+                    <input
+                      type="radio"
+                      name="stance"
+                      value="mentor"
+                      checked={session.stance === "mentor"}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, stance: e.target.value as "directed" | "mentor" } : prev
+                        )
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
+                      <div className="text-xs text-[var(--dim-grey)]">
+                        Engages as a thinking partner, challenging interpretations
+                        collaboratively. Good for experienced learners.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Where this fits in your course
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  Background the tutor needs - what course this is for, where learners are in the curriculum, what they have covered so far.
+                </p>
+                <textarea
+                  value={session.courseContext ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, courseContext: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Learners have read Meadows chapters 1-3 and are familiar with stocks and flows, but have not yet covered feedback loops."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Learning outcomes to assess
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The specific skills or understandings you want to track. The tutor will assess each learner against these and include formative ratings in the teaching brief.
+                </p>
+                <textarea
+                  value={session.learningOutcomes ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningOutcomes: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Learners will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="minerva-label">
+                  Session goal
+                </label>
+                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                  The overarching understanding you are building toward. This shapes how the tutor opens the session, selects questions, and frames the closing synthesis.
+                </p>
+                <textarea
+                  value={session.learningGoal ?? ""}
+                  onChange={(e) =>
+                    setSession((prev) =>
+                      prev ? { ...prev, learningGoal: e.target.value } : prev
+                    )
+                  }
+                  rows={3}
+                  placeholder="e.g. Explain the difference between reinforcing and balancing feedback loops, and identify at least one example of each in the reading."
+                  className="minerva-textarea"
+                />
+              </div>
+
+              {session.maxExchanges && (
+                <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
+                  <p className="mb-1 font-semibold text-[var(--teal)]">
+                    Question Capacity
+                  </p>
+                  <p className="leading-6 text-[var(--dim-grey)]">
+                    With <strong>{session.maxExchanges} exchanges</strong>, this
+                    session can meaningfully cover approximately{" "}
+                    <strong>
+                      {getRecommendedCheckpoints(session.maxExchanges)} key
+                      question
+                      {getRecommendedCheckpoints(session.maxExchanges) === 1 ? "" : "s"}
+                    </strong>
+                    . This assumes roughly four exchanges per question, plus
+                    exchanges for orientation and wrap-up.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-2 text-xs font-semibold text-[var(--dim-grey)] hover:text-[var(--charcoal)] transition-colors"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Advanced settings
+                </button>
+
+                {showAdvanced && (
+                  <>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <label className="minerva-label">
+                          Concept dependencies
+                        </label>
+                        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
+                          A map of which concepts build on others. You can generate this automatically from your reading.
+                        </p>
+                      </div>
+                      <button
+                        onClick={generateSuggestedMap}
+                        disabled={generatingMap || readings.length === 0}
+                        title={readings.length === 0 ? "Upload a reading first to generate a map" : undefined}
+                        className="minerva-button minerva-button-secondary"
+                      >
+                        {generatingMap ? "Generating..." : "Generate from readings"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={session.prerequisiteMap ?? ""}
+                      onChange={(e) =>
+                        setSession((prev) =>
+                          prev ? { ...prev, prerequisiteMap: e.target.value } : prev
+                        )
+                      }
+                      rows={8}
+                      placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
+                      className="minerva-textarea resize-y font-mono text-xs"
+                    />
+                  </>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    onClick={saveTeachingContext}
+                    disabled={savingConfig}
+                    className="minerva-button"
+                  >
+                    {savingConfig
+                      ? "Saving..."
+                      : showSavedState
+                        ? "Saved"
+                        : "Save Configuration"}
+                  </button>
+                  {(configSavedAt || showSavedState) && (
+                    <p className="text-xs text-[var(--dim-grey)]">
+                      {showSavedState
+                        ? "Settings saved."
+                        : configSavedAt
+                          ? `Last saved at ${formatSavedTime(configSavedAt)}`
+                          : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="minerva-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowAssessments((value) => !value)}
+            className="flex w-full items-center justify-between p-6 text-left md:p-8"
+          >
+            <div>
+              <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+                Assessments
             </h2>
-            <p className="mt-1 text-sm text-[var(--dim-grey)] max-w-[38rem]">
+            <p className="mt-1 max-w-[38rem] text-sm text-[var(--dim-grey)]">
               Upload your assignments or exam questions. The tutor reads them to understand
                     what learners are working toward — but will never reveal or directly answer them.
             </p>
-          </div>
+              {!showAssessments && assessments.length > 0 && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  {assessments.length} assessment{assessments.length !== 1 ? "s" : ""} uploaded
+                </p>
+              )}
+              {!showAssessments && assessments.length === 0 && (
+                <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                  No assessments uploaded
+                </p>
+              )}
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
+                showAssessments ? "rotate-180" : ""
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showAssessments && (
+            <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
 
           {/* Drop zone */}
           <div
@@ -1497,6 +2886,8 @@ export default function SessionManagementPage() {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
             </div>
           )}
         </div>
