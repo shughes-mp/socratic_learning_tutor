@@ -11,7 +11,7 @@ interface StudentSessionData {
   studentName: string;
   startedAt: string | Date;
   endedAt: string | Date | null;
-  messages: Array<Message & { createdAt: string | Date }>;
+  messages: Array<Message & { createdAt: string | Date; hidden?: boolean }>;
   misconceptions: Misconception[];
   confidenceChecks: ConfidenceCheck[];
 }
@@ -109,7 +109,7 @@ export default function StudentMonitorPage() {
                                 {student.misconceptions.length}
                               </span>
                             ) : (
-                              <span className="text-slate-400">None</span>
+                              <span className="text-slate-400">0</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-slate-500">

@@ -50,6 +50,9 @@ In short: the app is designed to support learning, not shortcut it.
 - Formative learning outcome assessments generated per learner inside the instructor report
 - Topic mastery tracking and revisit prompts for shaky concepts
 - Instructor monitoring view with student replay
+- Hidden scaffold messages are suppressed in instructor traces, and assistant trace messages render markdown instead of raw `*` / `**` syntax
+- Shared tag-stripping keeps internal tags and diagnostic notes out of both learner chat bubbles and instructor replay views
+- Prompt-side protections suppress visible meta-reasoning, so the tutor does not narrate its own internal handling decisions to learners
 - AI-generated session reports
 - PDF export for instructor reports
 
@@ -75,6 +78,7 @@ In short: the app is designed to support learning, not shortcut it.
 10. Monitor learner activity, review clustered misconception patterns, and generate active-learning teaching recommendations from those patterns.
 11. Generate a report afterward, including formative learning outcome assessments for each learner.
 12. Review misconception examples, learner-resolution progress, and engagement patterns without needing raw internal model tags.
+13. Open the activity monitor to review cleaned interaction traces without the hidden kickoff scaffold or leaked system tags.
 
 ### Learner flow
 
@@ -196,6 +200,8 @@ Once the app is running:
 - Structured misconception logging is captured in the database and surfaced in an instructor dashboard that groups related misconceptions into broader themes for review.
 - Misconception detection now runs in a separate post-response diagnostic pass. The tutor no longer needs to emit misconception tags for the dashboard to work.
 - Resolution tracking now reflects whether affected learners actually corrected a misconception, not just whether a tutor response claimed it was resolved.
+- The tutor prompt now explicitly forbids unbracketed meta-reasoning such as "the student is disengaged" from appearing in learner-visible responses.
+- Internal tag cleanup is centralized so new bracketed system tags are less likely to leak into the learner chat or instructor trace.
 - Teaching recommendations are AI-generated planning aids based on misconception clusters and should still be reviewed and adapted by the instructor.
 - When recommendation generation cannot be parsed into the preferred structured format, the app now falls back to deterministic recommendation cards so the dashboard remains usable.
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.

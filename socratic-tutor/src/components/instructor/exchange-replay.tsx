@@ -1,8 +1,12 @@
 import React from "react";
+import ReactMarkdown from "react-markdown";
 import type { Message, Misconception } from "@prisma/client";
+import { stripTags } from "@/lib/strip-tags";
+
+type ReplayMessage = Message & { hidden?: boolean };
 
 interface ReplayProps {
-  messages: Message[];
+  messages: ReplayMessage[];
   misconceptions: Misconception[];
 }
 
@@ -11,9 +15,22 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
     return <p className="text-slate-500 text-sm">No messages yet.</p>;
   }
 
+  const visibleMessages = messages.filter(
+    (message) =>
+      !message.hidden &&
+      !(
+        message.role === "user" &&
+        message.content.includes("OPENING SEQUENCE INSTRUCTION")
+      )
+  );
+
+  if (visibleMessages.length === 0) {
+    return <p className="text-slate-500 text-sm">No messages yet.</p>;
+  }
+
   return (
     <div className="space-y-6 mt-4">
-      {messages.map((message) => {
+      {visibleMessages.map((message) => {
         const isStudent = message.role === "user";
         const relatedMisconceptions = isStudent
           ? misconceptions.filter((item) => item.studentMessage === message.content)
@@ -90,9 +107,15 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
                   : "bg-white border border-slate-200 text-slate-800 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 rounded-tl-sm shadow-sm"
               }`}
             >
-              <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
-                {message.content}
-              </p>
+              {isStudent ? (
+                <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
+                  {message.content}
+                </p>
+              ) : (
+                <div className="prose prose-sm max-w-none text-[15px] leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:font-semibold">
+                  <ReactMarkdown>{stripTags(message.content)}</ReactMarkdown>
+                </div>
+              )}
             </div>
 
             {relatedMisconceptions.map((misconception) => (

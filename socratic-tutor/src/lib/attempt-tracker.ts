@@ -119,6 +119,8 @@ export function parseTags(rawText: string): ParseResult {
     .replace(/\[SELF_EXPLAIN_PROMPTED:\s*[\s\S]*?\]/gi, "")
     .replace(/\[COGNITIVE_CONFLICT:\s*[\s\S]*?\]/gi, "")
     .replace(/\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*[\s\S]*?\]/gi, "")
+    .replace(/\[NOTE:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[[A-Z][A-Z_]*:\s*[\s\S]*?\]/g, "")
     .trim();
 
   return { cleanedText, tags };

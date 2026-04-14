@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import { stripTags } from "@/lib/strip-tags";
 
 interface MessageBubbleProps {
   role: "user" | "assistant" | "system" | "data";
@@ -9,27 +10,7 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
   const isUser = role === "user";
   const isSystem = role === "system";
 
-  // Strip structural tags just visually for the client
-  const displayContent = content
-    .replace(/\[MODE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[TOPIC_THREAD:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[IS_GENUINE_ATTEMPT:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_CANONICAL:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_PASSAGE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_TYPE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_SEVERITY:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[DIRECT_ANSWER:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[QTYPE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[FEEDBACK_TYPE:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[EXPERT_MODEL:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[SELF_EXPLAIN_PROMPTED:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[COGNITIVE_CONFLICT:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_RESOLVED:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[CHECKPOINT_ID:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[CHECKPOINT_STATUS:\s*[\s\S]*?\]/gi, "")
-    .replace(/\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*[\s\S]*?\]/gi, "")
-    .trim();
+  const displayContent = stripTags(content);
 
   // Do not render empty messages unless it's just loading
   if (!displayContent && !isUser) return null;
