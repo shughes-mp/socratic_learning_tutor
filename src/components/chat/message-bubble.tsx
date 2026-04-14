@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { stripTags } from "@/lib/strip-tags";
 
@@ -6,11 +7,14 @@ interface MessageBubbleProps {
   content: string;
 }
 
-export function MessageBubble({ role, content }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({
+  role,
+  content,
+}: MessageBubbleProps) {
   const isUser = role === "user";
   const isSystem = role === "system";
 
-  const displayContent = stripTags(content);
+  const displayContent = useMemo(() => stripTags(content), [content]);
 
   // Do not render empty messages unless it's just loading
   if (!displayContent && !isUser) return null;
@@ -51,4 +55,4 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
       </div>
     </div>
   );
-}
+});

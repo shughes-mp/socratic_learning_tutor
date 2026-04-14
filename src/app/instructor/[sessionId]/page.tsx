@@ -115,7 +115,7 @@ export default function SessionManagementPage() {
 
   const fetchLearnerCount = useCallback(async () => {
     try {
-      const res = await fetch(`/api/sessions/${sessionId}/students`);
+      const res = await fetch(`/api/sessions/${sessionId}/students/summary`);
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {

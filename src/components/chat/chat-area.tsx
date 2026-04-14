@@ -15,10 +15,15 @@ interface ChatAreaProps {
 
 export function ChatArea({ messages, isLoading }: ChatAreaProps) {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const messageCountRef = useRef(messages.length);
 
-  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+    const isNewMessage = messages.length !== messageCountRef.current;
+    messageCountRef.current = messages.length;
+
+    endOfMessagesRef.current?.scrollIntoView({
+      behavior: isNewMessage ? "smooth" : "auto",
+    });
   }, [messages, isLoading]);
 
   return (

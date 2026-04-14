@@ -42,6 +42,8 @@ In short: the app is designed to support learning, not shortcut it.
 - A bottom-anchored end-session control in learner chat, with confirmation actions kept near the input area instead of at the top of the screen
 - Attempt tracking, confidence checks, and structured misconception logging
 - A separate diagnostic pipeline that analyzes each exchange after the tutor responds, so misconception detection and resolution tracking do not depend on tutor-emitted inline tags
+- Non-blocking post-response diagnostics scheduled after the response completes, so learners can type again as soon as the tutor finishes streaming
+- Parallelized hot-path database reads in chat startup to reduce pre-stream latency before the model begins responding
 - Instructor-side misconception dashboard with clustered patterns, learner-based prevalence, learner-based resolution rates, turn-based time-to-resolution metrics, and class-discussion triage
 - Engagement tracking on learner messages, with audit logs for each post-response diagnostic pass
 - AI-generated teaching recommendations with 5-minute, 15-minute, and 30-minute active learning moves tied to misconception clusters, plus a fallback generation path when structured model output is incomplete
@@ -51,10 +53,12 @@ In short: the app is designed to support learning, not shortcut it.
 - Formative learning outcome assessments generated per learner inside the instructor report
 - Topic mastery tracking and revisit prompts for shaky concepts
 - Instructor monitoring view with learner progress and cleaned interaction traces
+- Faster instructor monitoring through a lightweight learner-summary endpoint and lazy-loaded full traces only when an instructor expands a learner
 - Plain-language instructor navigation built around `Learner progress`, `Session summaries`, and `Common misunderstandings`
 - Hidden scaffold messages are suppressed in instructor traces, and assistant trace messages render markdown instead of raw `*` / `**` syntax
 - Shared tag-stripping keeps internal tags and diagnostic notes out of both learner chat bubbles and instructor replay views
 - Prompt-side protections suppress visible meta-reasoning, so the tutor does not narrate its own internal handling decisions to learners
+- Memoized chat message rendering and reduced scroll thrashing during streaming for smoother learner chat performance
 - AI-generated session reports
 - PDF export for instructor reports
 
@@ -147,6 +151,8 @@ This split is intentional:
 - The deployed app uses `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`
 - The SQLite adapter is loaded lazily so Vercel does not try to load the native local-development driver in production
 - The app also includes a runtime Turso bootstrap path so newly added production columns and tables can be created safely outside the local SQLite workflow
+- Hot-path foreign-key indexes are created for both Prisma-managed schema updates and the runtime Turso bootstrap path so chat and monitoring queries stay fast as data grows
+- Runtime schema upgrade checks are batched per table to reduce cold-start overhead in production
 
 ## Production Deployment
 
@@ -204,6 +210,7 @@ Once the app is running:
 - Resolution tracking now reflects whether affected learners actually corrected a misconception, not just whether a tutor response claimed it was resolved.
 - The tutor prompt now explicitly forbids unbracketed meta-reasoning such as "the learner is disengaged" from appearing in learner-visible responses.
 - Internal tag cleanup is centralized so new bracketed system tags are less likely to leak into the learner chat or instructor trace.
+- Instructor monitor tables now load summary data first and fetch full interaction traces on demand, which improves responsiveness for larger cohorts.
 - Teaching recommendations are AI-generated planning aids based on misconception clusters and should still be reviewed and adapted by the instructor.
 - When recommendation generation cannot be parsed into the preferred structured format, the app now falls back to deterministic recommendation cards so the dashboard remains usable.
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.

@@ -6,6 +6,16 @@ import Link from "next/link";
 import { ExchangeReplay } from "@/components/instructor/exchange-replay";
 import type { ConfidenceCheck, Message, Misconception } from "@prisma/client";
 
+interface StudentSummary {
+  id: string;
+  studentName: string;
+  startedAt: string | Date;
+  endedAt: string | Date | null;
+  messageCount: number;
+  misconceptionCount: number;
+  lastActiveAt: string | Date;
+}
+
 interface StudentSessionData {
   id: string;
   studentName: string;
@@ -18,14 +28,16 @@ interface StudentSessionData {
 
 export default function StudentMonitorPage() {
   const params = useParams() as { sessionId: string };
-  const [students, setStudents] = useState<StudentSessionData[]>([]);
+  const [students, setStudents] = useState<StudentSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedDetail, setExpandedDetail] = useState<StudentSessionData | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(`/api/sessions/${params.sessionId}/students`);
+        const res = await fetch(`/api/sessions/${params.sessionId}/students/summary`);
         const data = await res.json();
         if (Array.isArray(data)) {
           setStudents(data);
@@ -39,8 +51,30 @@ export default function StudentMonitorPage() {
     fetchData();
   }, [params.sessionId]);
 
-  const toggleStudent = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+  const toggleStudent = async (id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+      setExpandedDetail(null);
+      return;
+    }
+
+    setExpandedId(id);
+    setExpandedDetail(null);
+    setLoadingDetail(true);
+
+    try {
+      const res = await fetch(
+        `/api/sessions/${params.sessionId}/students?studentSessionId=${id}`
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setExpandedDetail(data[0]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch learner detail:", err);
+    } finally {
+      setLoadingDetail(false);
+    }
   };
 
   if (isLoading) {
@@ -121,12 +155,9 @@ export default function StudentMonitorPage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--rule)]">
                   {students.map((student) => {
-                    const exchanges = Math.floor(student.messages.length / 2);
+                    const exchanges = Math.floor(student.messageCount / 2);
                     const isExpanded = expandedId === student.id;
-                    let lastActive = student.startedAt;
-                    if (student.messages.length > 0) {
-                      lastActive = student.messages[student.messages.length - 1].createdAt;
-                    }
+                    const lastActive = student.lastActiveAt;
 
                     return (
                       <React.Fragment key={student.id}>
@@ -144,10 +175,10 @@ export default function StudentMonitorPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            {student.misconceptions.length > 0 ? (
+                            {student.misconceptionCount > 0 ? (
                               <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(223,47,38,0.08)] px-2.5 py-1 font-medium text-[var(--signal)]">
                                 <span className="h-2 w-2 rounded-full bg-[var(--signal)]" />
-                                {student.misconceptions.length}
+                                {student.misconceptionCount}
                               </span>
                             ) : (
                               <span className="text-[var(--dim-grey)]">0</span>
@@ -176,10 +207,21 @@ export default function StudentMonitorPage() {
                             >
                               <div className="mx-6 my-5 max-w-4xl border-l-2 border-[var(--teal)] bg-white p-8">
                                 <h4 className="eyebrow eyebrow-teal mb-6">Interaction Trace</h4>
-                                <ExchangeReplay
-                                  messages={student.messages}
-                                  misconceptions={student.misconceptions}
-                                />
+                                {loadingDetail ? (
+                                  <div className="flex items-center gap-2 py-4 text-sm text-[var(--dim-grey)]">
+                                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-[var(--teal)]" />
+                                    Loading trace...
+                                  </div>
+                                ) : expandedDetail?.id === student.id ? (
+                                  <ExchangeReplay
+                                    messages={expandedDetail.messages}
+                                    misconceptions={expandedDetail.misconceptions}
+                                  />
+                                ) : (
+                                  <p className="text-sm text-[var(--dim-grey)]">
+                                    Failed to load trace.
+                                  </p>
+                                )}
                               </div>
                             </td>
                           </tr>
