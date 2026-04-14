@@ -97,6 +97,8 @@ CREATE TABLE IF NOT EXISTS "Message" (
   "cognitiveConflictStage" TEXT,
   "misconceptionResolved" BOOLEAN NOT NULL DEFAULT false,
   "isRevisitProbe" BOOLEAN NOT NULL DEFAULT false,
+  "engagementFlag" TEXT,
+  "engagementNote" TEXT,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "Message_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -114,6 +116,10 @@ CREATE TABLE IF NOT EXISTS "Misconception" (
   "misconceptionType" TEXT,
   "severity" TEXT NOT NULL DEFAULT 'medium',
   "confidence" TEXT NOT NULL DEFAULT 'medium',
+  "detectedAtTurn" INTEGER,
+  "resolvedAtTurn" INTEGER,
+  "resolutionConfidence" TEXT,
+  "resolutionEvidence" TEXT,
   "updatedAt" DATETIME,
   CONSTRAINT "Misconception_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -203,6 +209,17 @@ CREATE TABLE IF NOT EXISTS "TeachingRecommendation" (
   "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "TeachingRecommendation_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS "DiagnosticLog" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "studentSessionId" TEXT NOT NULL,
+  "turnIndex" INTEGER NOT NULL,
+  "rawResponse" TEXT NOT NULL,
+  "misconceptionsDetected" INTEGER NOT NULL,
+  "misconceptionsResolved" INTEGER NOT NULL,
+  "engagementFlag" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "DiagnosticLog_studentSessionId_fkey" FOREIGN KEY ("studentSessionId") REFERENCES "StudentSession" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE UNIQUE INDEX IF NOT EXISTS "Session_accessCode_key" ON "Session"("accessCode");
 CREATE INDEX IF NOT EXISTS "Checkpoint_sessionId_idx" ON "Checkpoint"("sessionId");
 CREATE INDEX IF NOT EXISTS "StudentCheckpoint_studentSessionId_idx" ON "StudentCheckpoint"("studentSessionId");
@@ -212,6 +229,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "LOAssessment_studentSessionId_learningOutcome
 CREATE UNIQUE INDEX IF NOT EXISTS "TopicMastery_studentSessionId_topicThread_key" ON "TopicMastery"("studentSessionId", "topicThread");
 CREATE INDEX IF NOT EXISTS "MisconceptionOverride_sessionId_idx" ON "MisconceptionOverride"("sessionId");
 CREATE INDEX IF NOT EXISTS "TeachingRecommendation_sessionId_idx" ON "TeachingRecommendation"("sessionId");
+CREATE INDEX IF NOT EXISTS "DiagnosticLog_studentSessionId_idx" ON "DiagnosticLog"("studentSessionId");
 `;
 
 async function getExistingColumns(
@@ -269,6 +287,12 @@ async function ensureTursoSchemaUpgrades(client: LibsqlClient) {
     "TEXT NOT NULL DEFAULT 'medium'"
   );
   await addColumnIfMissing(client, "Misconception", "updatedAt", "DATETIME");
+  await addColumnIfMissing(client, "Misconception", "detectedAtTurn", "INTEGER");
+  await addColumnIfMissing(client, "Misconception", "resolvedAtTurn", "INTEGER");
+  await addColumnIfMissing(client, "Misconception", "resolutionConfidence", "TEXT");
+  await addColumnIfMissing(client, "Misconception", "resolutionEvidence", "TEXT");
+  await addColumnIfMissing(client, "Message", "engagementFlag", "TEXT");
+  await addColumnIfMissing(client, "Message", "engagementNote", "TEXT");
 
   await client.execute(
     `UPDATE "Misconception" SET "updatedAt" = COALESCE("updatedAt", "detectedAt", CURRENT_TIMESTAMP)`

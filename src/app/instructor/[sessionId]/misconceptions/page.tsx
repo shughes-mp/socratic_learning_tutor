@@ -593,11 +593,26 @@ export default function MisconceptionDashboardPage() {
                       {expandedClusterId === cluster.id && (
                         <div className="mt-6 border-t border-[var(--rule)] pt-5">
                           <p className="text-sm font-semibold text-[var(--charcoal)]">
-                            Misconception records in this cluster
+                            Examples in this cluster
                           </p>
-                          <ul className="mt-3 space-y-2 text-sm text-[var(--dim-grey)]">
-                            {cluster.misconceptionIds.map((id) => (
-                              <li key={id}>{id}</li>
+                          <ul className="mt-3 space-y-3 text-sm text-[var(--dim-grey)]">
+                            {cluster.records.map((record) => (
+                              <li
+                                key={record.id}
+                                className="rounded-md bg-[rgba(34,34,34,0.03)] px-4 py-3"
+                              >
+                                <p className="text-[var(--charcoal)]">
+                                  “{record.canonicalClaim || record.description}”
+                                </p>
+                                {record.studentMessage && (
+                                  <p className="mt-2 text-xs text-[var(--dim-grey)]">
+                                    Learner wording: “{record.studentMessage}”
+                                  </p>
+                                )}
+                                <p className="mt-2 text-xs text-[var(--dim-grey)]">
+                                  {record.resolved ? "Resolved during session" : "Still unresolved"}
+                                </p>
+                              </li>
                             ))}
                           </ul>
                         </div>

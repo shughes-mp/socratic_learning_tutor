@@ -2,7 +2,7 @@ export interface ParsedTags {
   mode: "comprehension" | "socratic" | null;
   topicThread: string | null;
   isGenuineAttempt: boolean | null;
-  misconception: string | null;
+  misconception: string | null; // DEPRECATED — now handled by diagnostic pipeline
   directAnswer: string | null;
   questionType:
     | "explain"
@@ -16,7 +16,7 @@ export interface ParsedTags {
   expertModelType: "OPENING" | "REASONING" | null;
   selfExplainPrompted: boolean;
   cognitiveConflictStage: "EXTEND" | "TENSION" | "RESOLVE" | null;
-  misconceptionResolved: boolean;
+  misconceptionResolved?: boolean; // DEPRECATED — now handled by diagnostic pipeline
   isRevisitProbe: boolean;
 }
 
@@ -27,22 +27,16 @@ interface ParseResult {
 
 const TAG_PATTERNS = {
   mode: /\[MODE:\s*(comprehension|socratic)\]/i,
-  topicThread: /\[TOPIC_THREAD:\s*(.+?)\]/i,
+  topicThread: /\[TOPIC_THREAD:\s*([\s\S]+?)\]/i,
   genuineAttempt: /\[IS_GENUINE_ATTEMPT:\s*(true|false)\]/i,
-  misconception: /\[MISCONCEPTION:\s*(.+?)\]/i,
-  misconceptionCanonical: /\[MISCONCEPTION_CANONICAL:\s*(.+?)\]/i,
-  misconceptionPassage: /\[MISCONCEPTION_PASSAGE:\s*(.+?)\]/i,
-  misconceptionType: /\[MISCONCEPTION_TYPE:\s*(.+?)\]/i,
-  misconceptionSeverity: /\[MISCONCEPTION_SEVERITY:\s*(.+?)\]/i,
-  checkpointId: /\[CHECKPOINT_ID:\s*(.+?)\]/i,
-  checkpointStatus: /\[CHECKPOINT_STATUS:\s*([^|]+)\|([^\]]+)\]/i,
-  directAnswer: /\[DIRECT_ANSWER:\s*(.+?)\]/i,
+  checkpointId: /\[CHECKPOINT_ID:\s*([\s\S]+?)\]/i,
+  checkpointStatus: /\[CHECKPOINT_STATUS:\s*([\s\S]*?)\|([\s\S]+?)\]/i,
+  directAnswer: /\[DIRECT_ANSWER:\s*([\s\S]+?)\]/i,
   questionType: /\[QTYPE:\s*(explain|predict|apply|distinguish|challenge|detect-error)\]/i,
   feedbackType: /\[FEEDBACK_TYPE:\s*(corrective|extension|redirection)\]/i,
   expertModel: /\[EXPERT_MODEL:\s*(OPENING|REASONING|true)\]/i,
   selfExplainPrompted: /\[SELF_EXPLAIN_PROMPTED:\s*true\]/i,
   cognitiveConflict: /\[COGNITIVE_CONFLICT:\s*(EXTEND|TENSION|RESOLVE|true)\]/i,
-  misconceptionResolved: /\[MISCONCEPTION_RESOLVED:\s*true\]/i,
   softRevisit: /\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*true\]/i,
 };
 
@@ -75,11 +69,6 @@ export function parseTags(rawText: string): ParseResult {
   const genuineMatch = rawText.match(TAG_PATTERNS.genuineAttempt);
   if (genuineMatch) {
     tags.isGenuineAttempt = genuineMatch[1].toLowerCase() === "true";
-  }
-
-  const misconceptionMatch = rawText.match(TAG_PATTERNS.misconception);
-  if (misconceptionMatch) {
-    tags.misconception = misconceptionMatch[1].trim();
   }
 
   const directAnswerMatch = rawText.match(TAG_PATTERNS.directAnswer);
@@ -115,28 +104,21 @@ export function parseTags(rawText: string): ParseResult {
         : (value as ParsedTags["cognitiveConflictStage"]);
   }
 
-  tags.misconceptionResolved = TAG_PATTERNS.misconceptionResolved.test(rawText);
   tags.isRevisitProbe = TAG_PATTERNS.softRevisit.test(rawText);
 
   const cleanedText = rawText
-    .replace(/\[MODE:\s*.*?\]/gi, "")
-    .replace(/\[TOPIC_THREAD:\s*.*?\]/gi, "")
-    .replace(/\[IS_GENUINE_ATTEMPT:\s*.*?\]/gi, "")
-    .replace(/\[MISCONCEPTION:\s*.*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_CANONICAL:\s*.*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_PASSAGE:\s*.*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_TYPE:\s*.*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_SEVERITY:\s*.*?\]/gi, "")
-    .replace(/\[CHECKPOINT_ID:\s*.*?\]/gi, "")
-    .replace(/\[CHECKPOINT_STATUS:\s*.*?\]/gi, "")
-    .replace(/\[DIRECT_ANSWER:\s*.*?\]/gi, "")
-    .replace(/\[QTYPE:\s*.*?\]/gi, "")
-    .replace(/\[FEEDBACK_TYPE:\s*.*?\]/gi, "")
-    .replace(/\[EXPERT_MODEL:\s*.*?\]/gi, "")
-    .replace(/\[SELF_EXPLAIN_PROMPTED:\s*.*?\]/gi, "")
-    .replace(/\[COGNITIVE_CONFLICT:\s*.*?\]/gi, "")
-    .replace(/\[MISCONCEPTION_RESOLVED:\s*.*?\]/gi, "")
-    .replace(/\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*.*?\]/gi, "")
+    .replace(/\[MODE:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[TOPIC_THREAD:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[IS_GENUINE_ATTEMPT:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[CHECKPOINT_ID:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[CHECKPOINT_STATUS:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[DIRECT_ANSWER:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[QTYPE:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[FEEDBACK_TYPE:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[EXPERT_MODEL:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[SELF_EXPLAIN_PROMPTED:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[COGNITIVE_CONFLICT:\s*[\s\S]*?\]/gi, "")
+    .replace(/\[(SOFT_REVISIT|IS_REVISIT_PROBE):\s*[\s\S]*?\]/gi, "")
     .trim();
 
   return { cleanedText, tags };

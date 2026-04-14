@@ -170,6 +170,48 @@ function parseRecommendations(
     .slice(0, 3);
 }
 
+function buildFallbackRecommendations(
+  clusters: MisconceptionClusterRecord[]
+): ParsedRecommendation[] {
+  return clusters.slice(0, 3).map((cluster) => {
+    const anchor = cluster.passageAnchor ?? cluster.topicThread ?? "the core reading";
+    const evidence = [
+      `${cluster.studentCount} of ${cluster.totalStudents} learners showed this pattern.`,
+      `Most common misunderstanding: ${cluster.label}`,
+      `Anchor the discussion in ${anchor}.`,
+    ];
+
+    return {
+      whatToAddress: cluster.label,
+      whyItMatters:
+        "If this misunderstanding persists, learners may misread the reading's central logic.",
+      evidence,
+      moves: {
+        fiveMin: {
+          description:
+            "Quick text check in pairs. Give learners one anchor passage and ask them to underline the exact sentence that challenges this misunderstanding.",
+          script:
+            "Take two minutes to find one sentence in the reading that pushes back on this idea. Then compare with a partner and explain why that sentence matters.",
+        },
+        fifteenMin: {
+          description:
+            "Small-group claim-evidence-reasoning exercise focused on the misconception cluster.",
+          script:
+            "In groups of three, write the mistaken claim, then replace it with the author's actual claim and two pieces of textual evidence. Be ready to explain why the first version is tempting but incomplete.",
+        },
+        thirtyMin: {
+          description:
+            "Structured discussion where groups test the misconception against multiple examples from the reading and report out.",
+          script:
+            "Assign each group a passage or example from the reading. Ask them to answer: what would this example look like if the misconception were true, and what does the text actually show instead? Then compare patterns across groups.",
+        },
+      },
+      sourceClusters: [cluster.label],
+      confidence: inferConfidenceFromClusters([cluster.label], clusters),
+    };
+  });
+}
+
 function serializeRecommendation(
   record: {
     id: string;
@@ -366,22 +408,17 @@ ${transcriptContext || "No transcript excerpts available."}`;
 
     const parsedRecommendations = parseRecommendations(text, relevantClusters);
 
-    if (parsedRecommendations.length === 0) {
-      return NextResponse.json<ApiError>(
-        {
-          error: "Failed to parse generated recommendations.",
-          code: "RECOMMENDATIONS_PARSE_FAILED",
-        },
-        { status: 500 }
-      );
-    }
+    const finalRecommendations =
+      parsedRecommendations.length > 0
+        ? parsedRecommendations
+        : buildFallbackRecommendations(relevantClusters);
 
     await teachingRecommendationClient.teachingRecommendation.deleteMany({
       where: { sessionId },
     });
 
     const savedRecommendations = [];
-    for (const recommendation of parsedRecommendations) {
+    for (const recommendation of finalRecommendations) {
       const saved = await teachingRecommendationClient.teachingRecommendation.create({
         data: {
           sessionId,
@@ -402,6 +439,7 @@ ${transcriptContext || "No transcript excerpts available."}`;
     return NextResponse.json({
       recommendations: savedRecommendations,
       clusterCount: relevantClusters.length,
+      fallbackUsed: parsedRecommendations.length === 0,
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
