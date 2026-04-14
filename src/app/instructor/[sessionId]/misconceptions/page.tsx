@@ -22,6 +22,19 @@ type RecommendationsResponse = {
   message?: string;
 };
 
+type CheckpointDifficultyRecord = {
+  checkpointId: string;
+  prompt: string;
+  processLevel: string;
+  passageAnchors: string | null;
+  totalStudents: number;
+  addressedCount: number;
+  masteredCount: number;
+  strugglingCount: number;
+  averageTurnsSpent: number;
+  difficultySignal: "no_data" | "easy" | "moderate" | "hard";
+};
+
 function formatPercent(value: number) {
   return `${Math.round(value * 100)}%`;
 }
@@ -89,6 +102,9 @@ export default function MisconceptionDashboardPage() {
   const [recommendationMessage, setRecommendationMessage] = useState("");
   const [detailedView, setDetailedView] = useState(true);
   const [expandedRecommendationId, setExpandedRecommendationId] = useState<string | null>(null);
+  const [checkpointDifficulty, setCheckpointDifficulty] = useState<
+    CheckpointDifficultyRecord[]
+  >([]);
   const [toast, setToast] = useState<{ tone: "success" | "error"; message: string } | null>(null);
 
   const fetchDashboard = useCallback(async () => {
@@ -160,6 +176,16 @@ export default function MisconceptionDashboardPage() {
   useEffect(() => {
     fetchDashboard();
     fetchRecommendations();
+    fetch(`/api/sessions/${sessionId}/checkpoints/difficulty`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCheckpointDifficulty(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load checkpoint difficulty:", err);
+      });
   }, [fetchDashboard, fetchRecommendations]);
 
   useEffect(() => {
@@ -414,6 +440,9 @@ export default function MisconceptionDashboardPage() {
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
                     {stats.avgMisconceptionsPerStudent.toFixed(1)} per learner on average
                   </p>
+                  <p className="mt-1 text-[11px] text-[var(--dim-grey)]">
+                    Individual instances (clustered into {clusters.length} patterns below)
+                  </p>
                 </div>
                 <div className="minerva-card p-5">
                   <p className="eyebrow eyebrow-olive">Resolution rate</p>
@@ -472,6 +501,58 @@ export default function MisconceptionDashboardPage() {
               </div>
             ) : (
               <div className="space-y-6">
+                {mode === "post-session" && checkpointDifficulty.length > 0 && (
+                  <section className="minerva-card p-6 md:p-8">
+                    <h2 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
+                      Checkpoint difficulty
+                    </h2>
+                    <p className="mt-2 max-w-[42rem] text-sm text-[var(--dim-grey)]">
+                      How your checkpoints performed across the class. Hard checkpoints
+                      may indicate content areas that need more scaffolding.
+                    </p>
+                    <div className="mt-6 space-y-3">
+                      {checkpointDifficulty.map((checkpoint) => (
+                        <div
+                          key={checkpoint.checkpointId}
+                          className="flex items-start gap-4 rounded-lg border border-[var(--rule)] p-4"
+                        >
+                          <div
+                            className={`mt-0.5 h-3 w-3 flex-shrink-0 rounded-full ${
+                              checkpoint.difficultySignal === "hard"
+                                ? "bg-[var(--signal)]"
+                                : checkpoint.difficultySignal === "moderate"
+                                  ? "bg-[#906f12]"
+                                  : checkpoint.difficultySignal === "easy"
+                                    ? "bg-[var(--teal)]"
+                                    : "bg-[var(--rule)]"
+                            }`}
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-[var(--charcoal)]">
+                              {checkpoint.prompt}
+                            </p>
+                            <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-[var(--dim-grey)]">
+                              <span>
+                                {checkpoint.addressedCount}/{checkpoint.totalStudents} attempted
+                              </span>
+                              <span>{checkpoint.masteredCount} mastered</span>
+                              {checkpoint.strugglingCount > 0 && (
+                                <span className="text-[var(--signal)]">
+                                  {checkpoint.strugglingCount} struggling
+                                </span>
+                              )}
+                              <span>Avg {checkpoint.averageTurnsSpent} turns</span>
+                              <span className="rounded bg-[rgba(34,34,34,0.05)] px-1.5 py-0.5 text-[10px] uppercase tracking-widest">
+                                {checkpoint.processLevel}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <div className="minerva-card p-6">
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>

@@ -45,6 +45,7 @@ In short: the app is designed to support learning, not shortcut it.
 - Non-blocking post-response diagnostics scheduled after the response completes, so learners can type again as soon as the tutor finishes streaming
 - Parallelized hot-path database reads in chat startup to reduce pre-stream latency before the model begins responding
 - Instructor-side misconception dashboard with clustered patterns, learner-based prevalence, learner-based resolution rates, turn-based time-to-resolution metrics, and class-discussion triage
+- Checkpoint difficulty analysis that shows which instructor-authored key questions were easy, moderate, or hard for the class
 - Engagement tracking on learner messages, with audit logs for each post-response diagnostic pass
 - AI-generated teaching recommendations with 5-minute, 15-minute, and 30-minute active learning moves tied to misconception clusters, plus a fallback generation path when structured model output is incomplete
 - Instructor-side recommendation actions for marking suggested activities as used or dismissed
@@ -52,14 +53,15 @@ In short: the app is designed to support learning, not shortcut it.
 - Checkpoint-aware tutoring with learner-level checkpoint coverage tracking and rescue-mode pacing near the end of a session
 - Formative learning outcome assessments generated per learner inside the instructor report
 - Topic mastery tracking and revisit prompts for shaky concepts
-- Instructor monitoring view with learner progress and cleaned interaction traces
+- Instructor monitoring view with learner progress, live auto-refresh, engagement alerts, reply-wait warnings, and cleaned interaction traces
 - Faster instructor monitoring through a lightweight learner-summary endpoint and lazy-loaded full traces only when an instructor expands a learner
-- Plain-language instructor navigation built around `Learner progress`, `Session summaries`, and `Common misunderstandings`
+- Expanded learner traces include confidence checks and topic-mastery summaries so instructors can scan both participation and understanding quickly
+- Plain-language instructor navigation built around `Learner progress`, `Teaching brief`, and `Common misunderstandings`
 - Hidden scaffold messages are suppressed in instructor traces, and assistant trace messages render markdown instead of raw `*` / `**` syntax
 - Shared tag-stripping keeps internal tags and diagnostic notes out of both learner chat bubbles and instructor replay views
 - Prompt-side protections suppress visible meta-reasoning, so the tutor does not narrate its own internal handling decisions to learners
 - Memoized chat message rendering and reduced scroll thrashing during streaming for smoother learner chat performance
-- AI-generated session reports
+- AI-generated teaching briefs with readiness heatmaps, next-step recommendations, and per-learner notes
 - PDF export for instructor reports
 
 ## Who It Is For
@@ -81,10 +83,10 @@ In short: the app is designed to support learning, not shortcut it.
 7. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
 8. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
 9. Share the learner link and access code.
-10. Monitor learner activity, review clustered misconception patterns, and generate active-learning teaching recommendations from those patterns.
-11. Generate a report afterward, including formative learning outcome assessments for each learner.
-12. Review misconception examples, learner-resolution progress, and engagement patterns without needing raw internal model tags.
-13. Open learner progress to review cleaned interaction traces without the hidden kickoff scaffold or leaked system tags.
+10. Monitor learner progress live, including engagement concerns and learners who have been waiting several minutes to reply.
+11. Review clustered misconception patterns, checkpoint difficulty, and teaching recommendations built from those patterns.
+12. Generate a teaching brief afterward, including readiness signals, next-step moves, and formative learning outcome assessments for each learner.
+13. Review learner-resolution progress, confidence checks, topic mastery, and cleaned interaction traces without needing raw internal model tags.
 
 ### Learner flow
 
@@ -196,7 +198,7 @@ Once the app is running:
 7. Watch the learner-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
 8. Return to the instructor area and add a few key questions, then try the question feedback tool on one of them.
 9. Open the misconception dashboard, mark any acceptable interpretations, and generate teaching recommendations if you want lesson-ready follow-up moves.
-10. Monitor activity and generate a report with session-level insights plus per-learner learning outcome assessments.
+10. Monitor learner progress live if needed, then generate a teaching brief with session-level insights plus per-learner learning outcome assessments.
 11. End the session and review the formatted summary screen with copy support.
 
 ## Caveats
@@ -206,11 +208,13 @@ Once the app is running:
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - Structured misconception logging is captured in the database and surfaced in an instructor dashboard that groups related misconceptions into broader themes for review.
+- The three main instructor surfaces now serve different jobs: `Learner progress` for live monitoring, `Teaching brief` for forward-looking synthesis, and `Common misunderstandings` for class-level diagnostic patterns.
 - Misconception detection now runs in a separate post-response diagnostic pass. The tutor no longer needs to emit misconception tags for the dashboard to work.
 - Resolution tracking now reflects whether affected learners actually corrected a misconception, not just whether a tutor response claimed it was resolved.
 - The tutor prompt now explicitly forbids unbracketed meta-reasoning such as "the learner is disengaged" from appearing in learner-visible responses.
 - Internal tag cleanup is centralized so new bracketed system tags are less likely to leak into the learner chat or instructor trace.
 - Instructor monitor tables now load summary data first and fetch full interaction traces on demand, which improves responsiveness for larger cohorts.
+- Live monitoring highlights recent engagement concerns and long reply gaps, but those signals are intentionally lightweight heuristics rather than definitive judgments.
 - Teaching recommendations are AI-generated planning aids based on misconception clusters and should still be reviewed and adapted by the instructor.
 - When recommendation generation cannot be parsed into the preferred structured format, the app now falls back to deterministic recommendation cards so the dashboard remains usable.
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.

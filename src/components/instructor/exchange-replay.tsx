@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import type { Message, Misconception } from "@prisma/client";
+import type { ConfidenceCheck, Message, Misconception } from "@prisma/client";
 import { stripTags } from "@/lib/strip-tags";
 
 type ReplayMessage = Message & { hidden?: boolean };
@@ -8,9 +8,14 @@ type ReplayMessage = Message & { hidden?: boolean };
 interface ReplayProps {
   messages: ReplayMessage[];
   misconceptions: Misconception[];
+  confidenceChecks?: ConfidenceCheck[];
 }
 
-export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
+export function ExchangeReplay({
+  messages,
+  misconceptions,
+  confidenceChecks = [],
+}: ReplayProps) {
   if (messages.length === 0) {
     return <p className="text-sm text-[var(--dim-grey)]">No messages yet.</p>;
   }
@@ -29,7 +34,44 @@ export function ExchangeReplay({ messages, misconceptions }: ReplayProps) {
   }
 
   return (
-    <div className="space-y-6 mt-4">
+    <div className="mt-4 space-y-6">
+      {confidenceChecks.length > 0 && (
+        <div className="mb-4 rounded-lg border border-[rgba(17,120,144,0.18)] bg-[rgba(17,120,144,0.04)] p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--teal)]">
+            Confidence checks
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {confidenceChecks.map((check) => (
+              <div
+                key={check.id}
+                className="flex items-center gap-2 text-xs text-[var(--dim-grey)]"
+              >
+                <span className="font-medium text-[var(--charcoal)]">
+                  {check.topicThread}
+                </span>
+                <span>→</span>
+                <span
+                  className={
+                    check.rating === "very_confident"
+                      ? "text-[var(--teal)]"
+                      : check.rating === "uncertain"
+                        ? "text-[var(--signal)]"
+                        : "text-[#906f12]"
+                  }
+                >
+                  {check.rating.replace(/_/g, " ")}
+                </span>
+                {check.probeAsked && (
+                  <span className="rounded bg-[rgba(34,34,34,0.06)] px-1.5 py-0.5 text-[10px]">
+                    Probe: {check.probeResult || "pending"}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {visibleMessages.map((message) => {
         const isStudent = message.role === "user";
         const relatedMisconceptions = isStudent

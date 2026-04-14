@@ -13,7 +13,7 @@ const quickFacts = [
   },
   {
     label: "What instructors see",
-    value: "Replay, misconceptions, confidence ratings, and session summaries",
+    value: "Replay, misconceptions, confidence ratings, and a teaching brief",
     color: "var(--rose)",
   },
 ];
@@ -68,7 +68,7 @@ const proofRows = [
   },
   {
     title: "What the app reveals",
-    detail: "misunderstandings, confidence patterns, activity replay, and session summaries",
+    detail: "misunderstandings, confidence patterns, activity replay, and a teaching brief",
   },
 ];
 

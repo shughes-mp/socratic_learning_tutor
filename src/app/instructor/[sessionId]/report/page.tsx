@@ -79,7 +79,7 @@ export default function ReportPage() {
           <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
             <div className="hidden border-r border-[var(--rule)] md:block" />
             <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
-              Building session summaries...
+              Building teaching brief...
             </div>
           </section>
         </div>
@@ -144,10 +144,10 @@ export default function ReportPage() {
                   Session workspace
                 </Link>
                 <span>/</span>
-                <span className="text-[var(--charcoal)]">Session summaries</span>
+                <span className="text-[var(--charcoal)]">Teaching brief</span>
               </nav>
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
-                Session summaries
+                Teaching brief
               </h1>
               <p className="mt-3 text-sm text-[var(--dim-grey)]">
                 Generated {new Date(report.generatedAt).toLocaleString()}
@@ -166,7 +166,7 @@ export default function ReportPage() {
                 className="minerva-button minerva-button-secondary"
                 disabled={isRefreshing}
               >
-                {isRefreshing ? "Refreshing..." : "Refresh summaries"}
+                {isRefreshing ? "Refreshing..." : "Refresh brief"}
               </button>
               <button onClick={handleExport} className="minerva-button">
                 Export PDF
@@ -195,9 +195,12 @@ export default function ReportPage() {
             </p>
           </div>
           <div className="minerva-card p-5">
-            <p className="eyebrow eyebrow-teal">Direct Answers</p>
+            <p className="eyebrow eyebrow-teal">Hints needed</p>
             <p className="mt-3 text-3xl font-semibold text-[var(--charcoal)]">
               {stats.directAnswers}
+            </p>
+            <p className="mt-1 text-[11px] text-[var(--dim-grey)]">
+              Times the tutor gave a direct answer
             </p>
           </div>
         </div>

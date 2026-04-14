@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ExchangeReplay } from "@/components/instructor/exchange-replay";
@@ -14,6 +14,10 @@ interface StudentSummary {
   messageCount: number;
   misconceptionCount: number;
   lastActiveAt: string | Date;
+  latestEngagementFlag: string | null;
+  hasRecentEngagementConcern: boolean;
+  isWaitingForStudentReply: boolean;
+  secondsSinceLastMessage: number | null;
 }
 
 interface StudentSessionData {
@@ -24,32 +28,47 @@ interface StudentSessionData {
   messages: Array<Message & { createdAt: string | Date; hidden?: boolean }>;
   misconceptions: Misconception[];
   confidenceChecks: ConfidenceCheck[];
+  topicMastery: Array<{
+    id: string;
+    topicThread: string;
+    status: string;
+    criteriamet: string;
+    hintLadderRung: number;
+  }>;
 }
 
 export default function StudentMonitorPage() {
   const params = useParams() as { sessionId: string };
+  const [mode, setMode] = useState<"snapshot" | "live">("snapshot");
   const [students, setStudents] = useState<StudentSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<StudentSessionData | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch(`/api/sessions/${params.sessionId}/students/summary`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setStudents(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch learner progress:", err);
-      } finally {
-        setIsLoading(false);
+  const fetchStudents = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sessions/${params.sessionId}/students/summary`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setStudents(data);
       }
+    } catch (err) {
+      console.error("Failed to fetch learner progress:", err);
+    } finally {
+      setIsLoading(false);
     }
-    fetchData();
   }, [params.sessionId]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  useEffect(() => {
+    if (mode !== "live") return;
+    const interval = window.setInterval(fetchStudents, 15000);
+    return () => window.clearInterval(interval);
+  }, [fetchStudents, mode]);
 
   const toggleStudent = async (id: string) => {
     if (expandedId === id) {
@@ -120,13 +139,32 @@ export default function StudentMonitorPage() {
                 interaction trace behind that progress.
               </p>
             </div>
-
-            <Link
-              href={`/instructor/${params.sessionId}`}
-              className="minerva-button minerva-button-secondary"
-            >
-              Back to session workspace
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/instructor/${params.sessionId}`}
+                className="minerva-button minerva-button-secondary"
+              >
+                Back to session workspace
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMode("snapshot")}
+                className={`minerva-button ${
+                  mode === "snapshot" ? "" : "minerva-button-secondary"
+                }`}
+              >
+                Snapshot
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("live")}
+                className={`minerva-button ${
+                  mode === "live" ? "" : "minerva-button-secondary"
+                }`}
+              >
+                Live monitoring
+              </button>
+            </div>
           </div>
         </div>
 
@@ -141,14 +179,58 @@ export default function StudentMonitorPage() {
             </p>
           </div>
         ) : (
-          <div className="minerva-card overflow-hidden">
+          <>
+            {mode === "live" &&
+              students.length > 0 &&
+              (() => {
+                const concernCount = students.filter(
+                  (student) => student.hasRecentEngagementConcern
+                ).length;
+                const waitingLong = students.filter(
+                  (student) =>
+                    student.isWaitingForStudentReply &&
+                    (student.secondsSinceLastMessage ?? 0) > 180
+                ).length;
+
+                if (concernCount === 0 && waitingLong === 0) {
+                  return (
+                    <div className="minerva-card flex items-center gap-3 p-4">
+                      <span className="h-3 w-3 rounded-full bg-[var(--teal)]" />
+                      <p className="text-sm text-[var(--charcoal)]">
+                        All learners are on task
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="minerva-card flex items-center gap-3 border-l-4 border-[#906f12] p-4">
+                    <p className="text-sm text-[var(--charcoal)]">
+                      {concernCount > 0 && (
+                        <span className="font-medium text-[#906f12]">
+                          {concernCount} learner{concernCount !== 1 ? "s" : ""} showing
+                          engagement concerns.{" "}
+                        </span>
+                      )}
+                      {waitingLong > 0 && (
+                        <span className="font-medium text-[var(--dim-grey)]">
+                          {waitingLong} waiting 3+ minutes for a reply.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                );
+              })()}
+
+            <div className="minerva-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-[var(--dim-grey)]">
                 <thead className="border-b border-[var(--rule)] bg-[rgba(34,34,34,0.02)]">
                   <tr>
                     <th className="px-6 py-4">Learner</th>
                     <th className="px-6 py-4">Exchanges</th>
-                    <th className="px-6 py-4">Common misunderstandings</th>
+                    <th className="px-6 py-4">Misconceptions detected</th>
+                    <th className="px-6 py-4">Engagement</th>
                     <th className="px-6 py-4">Last active</th>
                     <th className="px-6 py-4 text-right">Trace</th>
                   </tr>
@@ -184,11 +266,41 @@ export default function StudentMonitorPage() {
                               <span className="text-[var(--dim-grey)]">0</span>
                             )}
                           </td>
+                          <td className="px-6 py-4">
+                            {student.hasRecentEngagementConcern ? (
+                              <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(144,111,18,0.10)] px-2.5 py-1 text-xs font-medium text-[#906f12]">
+                                <span className="h-2 w-2 rounded-full bg-[#906f12]" />
+                                {student.latestEngagementFlag === "disengaged"
+                                  ? "Disengaged"
+                                  : student.latestEngagementFlag === "shallow"
+                                    ? "Low effort"
+                                    : student.latestEngagementFlag === "off_topic"
+                                      ? "Off topic"
+                                      : student.latestEngagementFlag === "hostile"
+                                        ? "Hostile"
+                                        : "Needs attention"}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-[var(--teal)]">On task</span>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-[var(--dim-grey)]">
-                            {new Date(lastActive).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            <div className="flex flex-col">
+                              <span>
+                                {new Date(lastActive).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              {student.isWaitingForStudentReply &&
+                                student.secondsSinceLastMessage !== null &&
+                                student.secondsSinceLastMessage > 180 && (
+                                  <span className="mt-0.5 text-[10px] font-medium text-[#906f12]">
+                                    Waiting {Math.floor(student.secondsSinceLastMessage / 60)}m
+                                    {" "}for reply
+                                  </span>
+                                )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 text-right">
                             <button
@@ -202,7 +314,7 @@ export default function StudentMonitorPage() {
                         {isExpanded && (
                           <tr>
                             <td
-                              colSpan={5}
+                              colSpan={6}
                               className="border-t border-[var(--rule)] bg-[rgba(34,34,34,0.02)] p-0"
                             >
                               <div className="mx-6 my-5 max-w-4xl border-l-2 border-[var(--teal)] bg-white p-8">
@@ -213,10 +325,39 @@ export default function StudentMonitorPage() {
                                     Loading trace...
                                   </div>
                                 ) : expandedDetail?.id === student.id ? (
-                                  <ExchangeReplay
-                                    messages={expandedDetail.messages}
-                                    misconceptions={expandedDetail.misconceptions}
-                                  />
+                                  <>
+                                    {expandedDetail.topicMastery.length > 0 && (
+                                      <div className="mb-4 rounded-lg border border-[var(--rule)] bg-[rgba(34,34,34,0.02)] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--dim-grey)]">
+                                          Topic mastery
+                                        </p>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                          {expandedDetail.topicMastery.map((topicMastery) => (
+                                            <span
+                                              key={topicMastery.id}
+                                              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
+                                                topicMastery.status === "mastered"
+                                                  ? "bg-[rgba(17,120,144,0.10)] text-[var(--teal)]"
+                                                  : topicMastery.status === "direct_answer_given"
+                                                    ? "bg-[rgba(144,111,18,0.10)] text-[#906f12]"
+                                                    : topicMastery.status === "in_progress"
+                                                      ? "bg-[rgba(34,34,34,0.06)] text-[var(--charcoal)]"
+                                                      : "bg-[rgba(223,47,38,0.08)] text-[var(--signal)]"
+                                              }`}
+                                            >
+                                              {topicMastery.topicThread}:{" "}
+                                              {topicMastery.status.replace(/_/g, " ")}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <ExchangeReplay
+                                      messages={expandedDetail.messages}
+                                      misconceptions={expandedDetail.misconceptions}
+                                      confidenceChecks={expandedDetail.confidenceChecks}
+                                    />
+                                  </>
                                 ) : (
                                   <p className="text-sm text-[var(--dim-grey)]">
                                     Failed to load trace.
@@ -232,7 +373,8 @@ export default function StudentMonitorPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </main>

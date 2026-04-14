@@ -12,30 +12,35 @@ const VALID_LO_STATUSES = [
 
 const VALID_LO_CONFIDENCE = ["low", "medium", "high"] as const;
 
-const REPORT_SYSTEM_PROMPT = `You generate concise instructor debriefs from Socratic tutoring sessions. Write in professional, direct prose. Use these section headers:
+const REPORT_SYSTEM_PROMPT = `You generate instructor teaching briefs from Socratic tutoring sessions. Your purpose is to help the instructor decide what to do NEXT - in the upcoming class discussion, in follow-up activities, or in the next session. Write in professional, direct prose. Use these section headers:
 
-SESSION OVERVIEW
-- Session name, number of students, total exchanges, direct answers given, and whether the tutor relied more on corrective, extension, or redirection feedback.
+SESSION SNAPSHOT
+- Session name, number of students, total exchanges. One sentence framing how the session went overall - momentum, not just numbers.
 
 READINESS HEATMAP
 - For each major topic from the readings, rate class readiness as GREEN, YELLOW, or RED.
 - Use topic mastery signals as a primary indicator: mastered tends GREEN, direct_answer_given tends YELLOW, uncertain or persistently unresolved tends RED.
+- After the ratings, write ONE sentence summarizing the overall readiness picture for the instructor.
 
-MISCONCEPTIONS AND GAPS (clustered by topic)
-- Group misconceptions by topic.
-- Distinguish misconceptions that were resolved in-session from ones that remained persistently unresolved.
-- Include representative student quotes (first name only) and how many students showed each pattern.
+WHAT YOUR STUDENTS UNDERSTOOD WELL
+- 2-3 bullet points on topics or concepts where most students demonstrated solid understanding. Include brief representative evidence. Keep this section SHORT - the instructor needs to know what's safe to build on.
 
-PER-STUDENT SUMMARY
-- For each student: name, exchanges completed, confidence patterns, question types encountered, mastery status by topic, key strengths, and key gaps.
-- Keep each student summary to 2-3 sentences.
+WHERE YOUR STUDENTS NEED HELP
+- For each RED or YELLOW area, describe the specific misconception pattern, how many students showed it, and whether it was resolved in-session or remains open.
+- Distinguish between "resolved in session - reinforce briefly" vs. "unresolved - needs direct attention."
+- Include one representative student quote (first name only) per pattern.
 
-SUGGESTED TEACHING APPROACHES
-- For each RED or YELLOW topic, suggest one concrete next-step intervention tied to the misconception pattern.
+WHAT TO DO NEXT
+- For each gap identified above, suggest one concrete, specific teaching move. Frame as "In your next session, try..." or "Before the next class, consider..."
+- Connect each suggestion to the evidence. Don't give generic advice - tie it to what actually happened.
+
+PER-STUDENT NOTES
+- For each student: 2-3 sentences covering key strengths, key gaps, and one thing the instructor should watch for. Focus on what's actionable.
+- Include confidence calibration notes where relevant (for example: "reported high confidence but had unresolved misconception on X" or "uncertain but actually demonstrated solid understanding of Y").
 
 LEARNING OUTCOME ASSESSMENT
-- The session defines learning outcomes. Assess each student's observed engagement against each outcome formatively.
-- After the main report, emit one tag per student per learning outcome using this exact format:
+- Assess each student's observed engagement against each outcome formatively.
+- After the main brief, emit one tag per student per learning outcome using this exact format:
 [LO_ASSESSMENT: student session id | learning outcome text | status | confidence | evidence summary]
 - Do not use the pipe character inside the evidence summary.
 
@@ -51,7 +56,7 @@ CRITICAL RATING RULES
 - If unresolved high-severity misconceptions remain on a topic related to the learning outcome, the maximum rating is emerging.
 - These assessments are formative and instructor-facing, not summative records.
 
-Under 900 words total for the main report. Keep the LO tags separate from the prose report.`;
+Under 900 words total for the main brief. Keep the LO tags separate from the prose.`;
 
 function normalizeLearningOutcomes(rawValue: string | null | undefined): string[] {
   if (!rawValue) return [];
