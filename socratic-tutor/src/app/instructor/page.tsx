@@ -59,8 +59,8 @@ export default function InstructorCreatePage() {
               Create a session.
             </h1>
             <p className="body-copy muted-copy mt-6 max-w-[25rem]">
-              Three steps: name your session, upload materials, then share the
-              link with your students.
+              Three steps: name your session, upload a reading, then share the
+              link with your learners.
             </p>
             <div className="mt-8">
               <StepIndicator currentStep={1} />
@@ -90,10 +90,10 @@ export default function InstructorCreatePage() {
                     htmlFor="session-description"
                     className="minerva-label"
                   >
-                    Instructions for students
+                    Instructions for learners
                   </label>
                   <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-                    Optional. Shown on the entry page before students begin.
+                    Optional. Shown on the entry page before learners begin.
                     Use this to set expectations — e.g. which sections to focus on,
                     what context to keep in mind.
                   </p>
@@ -110,7 +110,7 @@ export default function InstructorCreatePage() {
                 <div>
                   <label className="minerva-label">Session Purpose</label>
                   <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
-                    When in the learning cycle will students use this session? This shapes how the tutor questions and what the teaching brief measures.
+                    When in the learning cycle will learners use this session? This shapes how the tutor questions and what the teaching brief measures.
                   </p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {SESSION_PURPOSE_OPTIONS.map((option) => {

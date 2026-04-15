@@ -109,7 +109,7 @@ export default function StudentMonitorPage() {
           <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
             <div className="hidden border-r border-[var(--rule)] md:block" />
             <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
-              Loading student progress...
+              Loading learner progress...
             </div>
           </section>
         </div>
@@ -135,10 +135,10 @@ export default function StudentMonitorPage() {
                   Session workspace
                 </Link>
                 <span>/</span>
-                <span className="text-[var(--charcoal)]">Student progress</span>
+                <span className="text-[var(--charcoal)]">Learner progress</span>
               </nav>
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
-                Student progress
+                Learner progress
               </h1>
               <div className="mt-3 flex items-center gap-2">
                 <span
@@ -147,7 +147,7 @@ export default function StudentMonitorPage() {
                   {getSessionPurposeOption(sessionPurpose).shortLabel}
                 </span>
                 <p className="text-[15px] leading-7 text-[var(--dim-grey)]">
-                  Review who joined, how far each student got, and the full conversation behind their progress.
+                  See who joined, how far each learner got, and the conversation behind their progress.
                 </p>
               </div>
             </div>
@@ -183,10 +183,10 @@ export default function StudentMonitorPage() {
         {students.length === 0 ? (
           <div className="minerva-card p-8">
             <h2 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
-              No student activity yet
+              No learner activity yet
             </h2>
             <p className="mt-3 max-w-[34rem] text-sm text-[var(--dim-grey)]">
-              When students join with the session link, their progress and
+              When learners join with the session link, their progress and
               conversations will appear here.
             </p>
           </div>
@@ -209,7 +209,7 @@ export default function StudentMonitorPage() {
                     <div className="minerva-card flex items-center gap-3 p-4">
                       <span className="h-3 w-3 rounded-full bg-[var(--teal)]" />
                       <p className="text-sm text-[var(--charcoal)]">
-                        All students are on task
+                        All learners are on task
                       </p>
                     </div>
                   );
@@ -220,7 +220,7 @@ export default function StudentMonitorPage() {
                     <p className="text-sm text-[var(--charcoal)]">
                       {concernCount > 0 && (
                         <span className="font-medium text-[#906f12]">
-                          {concernCount} student{concernCount !== 1 ? "s" : ""} showing
+                          {concernCount} learner{concernCount !== 1 ? "s" : ""} showing
                           engagement concerns.{" "}
                         </span>
                       )}
@@ -239,7 +239,7 @@ export default function StudentMonitorPage() {
               <table className="w-full text-left text-sm text-[var(--dim-grey)]">
                 <thead className="border-b border-[var(--rule)] bg-[rgba(34,34,34,0.02)]">
                   <tr>
-                    <th className="px-6 py-4">Student</th>
+                    <th className="px-6 py-4">Learner</th>
                     <th className="px-6 py-4">Turns</th>
                     <th className="px-6 py-4">Misconceptions detected</th>
                     <th className="px-6 py-4">Engagement</th>

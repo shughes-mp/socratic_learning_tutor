@@ -3,17 +3,17 @@ import Link from "next/link";
 const quickFacts = [
   {
     label: "Who uses it",
-    value: "Instructors who want to understand how students think — before, during, and after class",
+    value: "Instructors who want to see how learners think — at any point in the learning cycle",
     color: "var(--teal)",
   },
   {
-    label: "What students do",
-    value: "Explain their reasoning and work through guided questions that require real thinking",
+    label: "What learners do",
+    value: "Work through guided questions grounded in the course reading, explaining their reasoning as they go",
     color: "var(--olive)",
   },
   {
     label: "What instructors see",
-    value: "Misconceptions, confidence patterns, full conversation replays, and a teaching brief",
+    value: "Where learners are confident, where misconceptions appear, and what to address next",
     color: "var(--rose)",
   },
 ];
@@ -22,17 +22,17 @@ const workflow = [
   {
     step: "01",
     title: "Create the session",
-    body: "Choose where in the learning cycle this session fits. Add the materials, a learning goal, and any context the tutor needs.",
+    body: "Name the session, choose its purpose in the learning cycle, upload your reading, and set a learning goal.",
   },
   {
     step: "02",
-    title: "Share the student link",
-    body: "Students join with a simple access code — no account required. They explain what they know and work through questions that require real reasoning.",
+    title: "Share the link",
+    body: "Learners join with an access code — no account needed. The tutor guides them through questions that require explanation and reasoning.",
   },
   {
     step: "03",
     title: "Review the evidence",
-    body: "See how students reasoned, where misconceptions appeared, and what to address before or during your next class.",
+    body: "See how each learner reasoned, where misconceptions surfaced, and what to prioritize when you meet.",
   },
 ];
 
@@ -41,30 +41,30 @@ const capabilities = [
     label: "Grounded tutoring",
     color: "var(--teal)",
     description:
-      "The tutor works from instructor-uploaded materials instead of improvising from generic knowledge. Students are guided through your content, not around it.",
+      "The tutor draws on the readings you upload. Learners engage with your content directly, guided by Socratic questioning.",
   },
   {
     label: "Assessment protection",
     color: "var(--olive)",
     description:
-      "Upload protected assessment materials so the tutor coaches students toward understanding without revealing the answers directly.",
+      "Upload assessment materials separately. The tutor guides learners toward understanding without revealing answers.",
   },
   {
     label: "Learning signals",
     color: "var(--rose)",
     description:
-      "Every session surfaces misconceptions, confidence patterns, and topic mastery — giving instructors something to act on, not just a completion log.",
+      "Every session surfaces misconceptions, confidence patterns, and topic mastery — evidence that tells you where to focus.",
   },
 ];
 
 const proofRows = [
   {
     title: "What instructors control",
-    detail: "session purpose, materials, learning goals, key questions, prerequisite context, exchange limit",
+    detail: "session purpose, readings, learning goals, key questions, prerequisite context",
   },
   {
-    title: "What students experience",
-    detail: "prior-knowledge prompts, guided Socratic questioning, follow-up checks, and reflection",
+    title: "What learners experience",
+    detail: "prior-knowledge prompts, Socratic questioning, follow-up checks, and reflection",
   },
   {
     title: "What the app reveals",
@@ -117,15 +117,15 @@ export default function HomePage() {
 
           <div className="px-4 py-12 md:px-8 md:py-16">
             <p className="eyebrow eyebrow-teal">What This Product Does</p>
-            <h1 className="lead-copy mt-5 max-w-[12ch]">
-              Turn student thinking into evidence you can teach from.
+            <h1 className="lead-copy mt-5 max-w-[14ch]">
+              See how your learners think — then teach accordingly.
             </h1>
 
             <p className="body-copy mt-7 max-w-[38rem]">
-              Socratic Tutor is a web app for instructors. Set up a session for
-              any point in the learning cycle — before class, during class, or
-              after — and get a clear picture of where students are confident,
-              confused, or incomplete.
+              Socratic Tutor helps instructors understand learner thinking at
+              any point in the learning cycle. Set up a session, share a link,
+              and get a clear picture of what learners understand, where
+              they&apos;re confused, and what needs attention.
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -144,8 +144,8 @@ export default function HomePage() {
             </div>
 
             <p className="mt-5 text-[13px] leading-6 text-[var(--dim-grey)]">
-              Setup takes under five minutes. Upload materials, set a goal,
-              share a link — students join with an access code, no account required.
+              Setup takes under five minutes. Upload a reading, set a goal,
+              share a link — learners join with an access code, no account required.
             </p>
 
             <div className="proof-grid mt-10 grid grid-cols-1 md:grid-cols-3">
@@ -197,24 +197,24 @@ export default function HomePage() {
           <div className="px-4 py-14 md:px-8 md:py-20">
             <p className="eyebrow eyebrow-teal">How It Works</p>
             <h2 className="section-title mt-5 max-w-[13ch]">
-              Designed around evidence you can actually act on.
+              Built around evidence you can act on.
             </h2>
 
             <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-0">
               <div className="md:border-r md:border-[var(--rule)] md:pr-8">
-                <p className="eyebrow eyebrow-teal">For Students</p>
+                <p className="eyebrow eyebrow-teal">For Learners</p>
                 <p className="body-copy mt-5 max-w-[29rem]">
-                  Students start by stating what they already know, then work through
-                  questions tied to the uploaded materials. The tutor asks for reasoning
-                  first — students can&apos;t skip straight to the answer.
+                  Learners begin by explaining what they already know, then work
+                  through questions grounded in the reading. The tutor asks for
+                  reasoning first — they can&apos;t skip straight to the answer.
                 </p>
               </div>
               <div className="md:pl-8">
                 <p className="eyebrow eyebrow-teal">For Instructors</p>
                 <p className="body-copy mt-5 max-w-[32rem]">
-                  Instructors don&apos;t just see whether students logged in.
-                  They see how students reasoned, where misconceptions appeared,
-                  and what topics need follow-up — before they walk into class.
+                  Instructors see how each learner reasoned, where misconceptions
+                  appeared, and which topics need follow-up. Every session produces
+                  a teaching brief designed to inform what happens next.
                 </p>
               </div>
             </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
               <div>
                 <p className="eyebrow eyebrow-olive">Key Capabilities</p>
                 <h2 className="section-title mt-5 max-w-[12ch]">
-                  Purposeful tutoring, not generic chat.
+                  Purposeful tutoring, grounded in your materials.
                 </h2>
               </div>
               <div className="metric-list">
@@ -257,12 +257,12 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_280px] md:items-center">
               <div>
                 <p className="lead-copy max-w-[18ch]">
-                  Arrive at class knowing where students are — not guessing.
+                  Know where your learners are before you walk into class.
                 </p>
                 <p className="body-copy muted-copy mt-6 max-w-[38rem]">
-                  Start with one session, one goal, and one set of materials.
-                  The app is most useful when student thinking is visible
-                  enough to shape what you actually do next.
+                  Start with one session, one reading, and one goal. The app
+                  works best when learner thinking is visible enough to shape
+                  what you do next.
                 </p>
               </div>
               <div className="md:justify-self-end">

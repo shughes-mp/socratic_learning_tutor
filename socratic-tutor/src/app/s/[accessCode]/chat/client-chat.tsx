@@ -99,7 +99,7 @@ export function ClientChat({
     if (!initialized.current && messages.length === 0) {
       initialized.current = true;
       sendMessage(
-        `Hi. My name is ${sname || "a student"}. I'm ready to begin the session.
+        `Hi. My name is ${sname || "a learner"}. I'm ready to begin the session.
 OPENING SEQUENCE INSTRUCTION: This is the opening exchange.
 1. Greet me by name.
 2. Ask ONE question about what I already know or believe about the main topic before doing the reading.

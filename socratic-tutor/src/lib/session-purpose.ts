@@ -19,32 +19,33 @@ export const SESSION_PURPOSE_OPTIONS: SessionPurposeOption[] = [
   {
     value: "pre_class",
     label: "Pre-class",
-    shortLabel: "Pre-class",
+    shortLabel: "Pre-Class",
     description:
-      "Assess readiness. Resolve gaps so students arrive prepared.",
+      "Surface what learners know and where gaps remain, so they arrive prepared.",
     cognitiveLevel: "Comprehension",
   },
   {
     value: "during_class_prep",
     label: "During class (prep)",
-    shortLabel: "In-class Prep",
+    shortLabel: "In-Class Prep",
     description:
-      "Activate prior knowledge. Retrieve and connect before applying.",
+      "Activate what learners already know before they apply it in class.",
     cognitiveLevel: "Activation",
   },
   {
     value: "during_class_reflection",
     label: "During class (reflect)",
-    shortLabel: "In-class Reflection",
+    shortLabel: "In-Class Reflection",
     description:
-      "Consolidate learning. Self-explain and retrieve before closing.",
+      "Help learners consolidate what they just learned by explaining it back.",
     cognitiveLevel: "Consolidation",
   },
   {
     value: "after_class",
     label: "After class",
     shortLabel: "After Class",
-    description: "Deepen and transfer. Apply learning to novel contexts.",
+    description:
+      "Push learners to apply what they learned to new situations.",
     cognitiveLevel: "Transfer",
   },
 ];

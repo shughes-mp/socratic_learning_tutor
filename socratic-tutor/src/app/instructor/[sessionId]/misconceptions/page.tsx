@@ -392,7 +392,7 @@ export default function MisconceptionDashboardPage() {
                   {getSessionPurposeOption(sessionPurpose).shortLabel}
                 </span>
                 <p className="max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
-                  Review the patterns students struggled with most, decide which need class discussion, and turn them into active learning moves.
+                  Review the patterns learners struggled with most, decide which need class discussion, and turn them into active learning moves.
                 </p>
               </div>
             </div>
@@ -438,7 +438,7 @@ export default function MisconceptionDashboardPage() {
                     {stats.totalStudents}
                   </p>
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                    students contributed to this analysis
+                    learners contributed to this analysis
                   </p>
                 </div>
                 <div className="minerva-card p-5">
@@ -447,7 +447,7 @@ export default function MisconceptionDashboardPage() {
                     {stats.totalMisconceptions}
                   </p>
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                    {stats.avgMisconceptionsPerStudent.toFixed(1)} per student on average
+                    {stats.avgMisconceptionsPerStudent.toFixed(1)} per learner on average
                   </p>
                   <p className="mt-1 text-[11px] text-[var(--dim-grey)]">
                     Individual instances (clustered into {clusters.length} patterns below)
@@ -494,7 +494,7 @@ export default function MisconceptionDashboardPage() {
                           {cluster.label}
                         </h2>
                         <p className="text-sm text-[var(--dim-grey)]">
-                          {cluster.studentCount} students · {formatPercent(cluster.prevalence)} prevalence
+                          {cluster.studentCount} learners · {formatPercent(cluster.prevalence)} prevalence
                         </p>
                       </div>
 
@@ -566,7 +566,7 @@ export default function MisconceptionDashboardPage() {
                         Top misconception clusters
                       </h2>
                       <p className="mt-2 max-w-[44rem] text-sm text-[var(--dim-grey)]">
-                        These patterns group similar student misunderstandings
+                        These patterns group similar learner misunderstandings
                         so you can respond to themes instead of isolated quotes.
                       </p>
                     </div>
@@ -603,7 +603,7 @@ export default function MisconceptionDashboardPage() {
                           </h3>
 
                           <p className="mt-3 text-sm text-[var(--dim-grey)]">
-                            {cluster.studentCount} of {cluster.totalStudents} students ·{" "}
+                            {cluster.studentCount} of {cluster.totalStudents} learners ·{" "}
                             {formatPercent(cluster.prevalence)} prevalence ·{" "}
                             {formatPercent(cluster.resolutionRate)} resolved during the
                             session
@@ -693,7 +693,7 @@ export default function MisconceptionDashboardPage() {
                                 </p>
                                 {record.studentMessage && (
                                   <p className="mt-2 text-xs text-[var(--dim-grey)]">
-                                    Student's words: “{record.studentMessage}”
+                                    Learner's words: “{record.studentMessage}”
                                   </p>
                                 )}
                                 <p className="mt-2 text-xs text-[var(--dim-grey)]">
@@ -733,7 +733,7 @@ export default function MisconceptionDashboardPage() {
                                   {cluster.label}
                                 </p>
                                 <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                                  {cluster.studentCount} students ·{" "}
+                                  {cluster.studentCount} learners ·{" "}
                                   {formatPercent(cluster.prevalence)} prevalence
                                 </p>
                               </div>

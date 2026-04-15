@@ -19,7 +19,7 @@ const serif = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Socratic Tutor",
   description:
-    "A Socratic tutoring tool for instructors. Surfaces how students think at any point in the learning cycle — before, during, or after class.",
+    "A Socratic tutoring tool for instructors. See how learners think at any point in the learning cycle — before, during, or after class.",
 };
 
 export default function RootLayout({

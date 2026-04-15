@@ -61,7 +61,7 @@ export default async function StudentEntryPage({ params }: PageProps) {
     return (
       <SessionMessage
         title="Session Closed"
-        description="This tutoring session is no longer accepting new students. Please contact your instructor if you need access."
+        description="This tutoring session is no longer accepting new learners. Please contact your instructor if you need access."
       />
     );
   }
@@ -94,9 +94,9 @@ export default async function StudentEntryPage({ params }: PageProps) {
               </p>
               <ul className="space-y-2.5">
                 {[
-                  "Start by explaining what you already know about this topic in your own words.",
-                  "The tutor will ask follow-up questions — it won't just give you answers.",
-                  "Think carefully before each response. Reasoning matters more than speed.",
+                  "Start by explaining what you already know about this topic, in your own words.",
+                  "The tutor will ask follow-up questions to deepen your thinking — it won't hand you the answers.",
+                  "Take your time. Thoughtful reasoning matters more than speed.",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
                     <span className="mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(17,120,144,0.12)]">

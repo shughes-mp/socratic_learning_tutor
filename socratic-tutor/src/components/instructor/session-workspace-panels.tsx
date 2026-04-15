@@ -67,7 +67,7 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
             {setupStep !== null && (
               <span className="text-xs text-[var(--dim-grey)]">
                 Step {setupStep} of 4 —{" "}
-                {setupStep === 2 ? "Add a reading" : setupStep === 3 ? "Add questions" : "Share with students"}
+                {setupStep === 2 ? "Add a reading" : setupStep === 3 ? "Add questions" : "Share with learners"}
               </span>
             )}
           </div>
@@ -76,7 +76,7 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
         {isActive && (
           <div className="flex flex-wrap gap-2">
             <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button minerva-button-secondary text-sm">
-              Student progress
+              Learner progress
             </Link>
             <Link href={`/instructor/${sessionId}/misconceptions`} className="minerva-button minerva-button-secondary text-sm">
               Misunderstandings
@@ -105,8 +105,8 @@ export function StatusBar({ learnerCount, readingsCount, assessmentsCount }: Sta
       {readingsCount === 0
         ? "Upload at least one reading to activate this session."
         : learnerCount === 0
-          ? `Ready: ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""} uploaded. No students yet.`
-          : `Active: ${learnerCount} student${learnerCount !== 1 ? "s" : ""} connected. ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""}.`}
+          ? `Ready: ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""} uploaded. No learners yet.`
+          : `Active: ${learnerCount} learner${learnerCount !== 1 ? "s" : ""} connected. ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""}.`}
     </div>
   );
 }
@@ -121,7 +121,7 @@ interface AccessCodeCardProps {
 }
 
 export function AccessCodeCard({ session, isActive, copied, onCopyLink }: AccessCodeCardProps) {
-  const studentUrl = typeof window !== "undefined"
+  const learnerUrl = typeof window !== "undefined"
     ? `${window.location.origin}/s/${session.accessCode}`
     : `/s/${session.accessCode}`;
 
@@ -129,8 +129,8 @@ export function AccessCodeCard({ session, isActive, copied, onCopyLink }: Access
     <div className="minerva-card p-6 md:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="eyebrow eyebrow-teal">Student link</p>
-          <p className="mt-2 font-mono text-base text-[var(--charcoal)]">{studentUrl}</p>
+          <p className="eyebrow eyebrow-teal">Learner link</p>
+          <p className="mt-2 font-mono text-base text-[var(--charcoal)]">{learnerUrl}</p>
           {!isActive && (
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
               Upload a reading to activate this session before sharing.
@@ -163,12 +163,12 @@ export function ActiveMonitoringCard({ sessionId, learnerCount }: ActiveMonitori
         <div>
           <p className="eyebrow eyebrow-teal">Session active</p>
           <p className="mt-2 text-sm text-[var(--dim-grey)]">
-            {learnerCount} student{learnerCount !== 1 ? "s" : ""} connected
+            {learnerCount} learner{learnerCount !== 1 ? "s" : ""} connected
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button">
-            Student progress
+            Learner progress
           </Link>
           <Link href={`/instructor/${sessionId}/report`} className="minerva-button minerva-button-secondary">
             Teaching brief
@@ -240,7 +240,7 @@ export function ReadingsSection({
       {open && (
         <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
           <p className="text-sm text-[var(--dim-grey)]">
-            Upload the readings students will work from. PDF, DOCX, TXT, or Markdown. Up to 50MB.
+            Upload the readings learners will work from. PDF, DOCX, TXT, or Markdown. Up to 50MB.
           </p>
 
           {/* Drop zone */}
@@ -687,7 +687,7 @@ export function TeachingContextSection({
             <div>
               <label className="minerva-label">Session purpose</label>
               <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
-                When will students use this session? The tutor adapts its questioning strategy and cognitive target
+                When will learners use this session? The tutor adapts its questioning strategy and cognitive target
                 based on this.
               </p>
             </div>
@@ -734,7 +734,7 @@ export function TeachingContextSection({
               id="courseContext"
               value={session.courseContext ?? ""}
               onChange={(e) => updateSession({ courseContext: e.target.value || null })}
-              placeholder="e.g. Week 4 of Systems Thinking. Students have covered feedback loops and delays."
+              placeholder="e.g. Week 4 of Systems Thinking. Learners have covered feedback loops and delays."
               rows={3}
               className="minerva-input w-full resize-none text-sm"
             />
@@ -765,7 +765,7 @@ export function TeachingContextSection({
               Learning outcomes to assess
             </label>
             <p className="text-xs text-[var(--dim-grey)]">
-              The specific skills or understandings you want to track. The tutor will assess each student against
+              The specific skills or understandings you want to track. The tutor will assess each learner against
               these and include formative ratings in the teaching brief.
             </p>
             <textarea
@@ -802,7 +802,7 @@ export function TeachingContextSection({
                 <div className="space-y-2">
                   <label className="minerva-label">Tutor stance</label>
                   <p className="text-xs text-[var(--dim-grey)]">
-                    Directed: guides students through questions with clear authority. Mentor: more collaborative inquiry, suited for experienced or professional students.
+                    Directed: guides learners through questions with clear authority. Mentor: more collaborative inquiry, suited for experienced or professional learners.
                   </p>
                   <div className="flex gap-3">
                     {(["directed", "mentor"] as const).map((stance) => (
@@ -977,7 +977,7 @@ export function AssessmentsSection({
       {open && (
         <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
           <p className="text-sm text-[var(--dim-grey)]">
-            Upload your assessment or exam questions. The tutor will coach students without revealing the answers.
+            Upload your assessment or exam questions. The tutor will coach learners without revealing the answers.
             Optional.
           </p>
 
