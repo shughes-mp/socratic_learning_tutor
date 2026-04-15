@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getSessionPurposeOption } from "@/lib/session-purpose";
 import StudentEntryForm from "./student-entry-form";
 
 interface PageProps {
@@ -40,6 +41,7 @@ export default async function StudentEntryPage({ params }: PageProps) {
       name: true,
       description: true,
       closesAt: true,
+      sessionPurpose: true,
       _count: {
         select: { readings: true },
       },
@@ -79,7 +81,7 @@ export default async function StudentEntryPage({ params }: PageProps) {
         <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_360px_minmax(0,1fr)]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-14 md:px-8 md:py-16">
-            <p className="eyebrow eyebrow-teal">Reading Session</p>
+            <p className="eyebrow eyebrow-teal">{getSessionPurposeOption(session.sessionPurpose).shortLabel}</p>
             <h1 className="section-title mt-5 max-w-[11ch]">{session.name}</h1>
             {session.description && (
               <p className="body-copy muted-copy mt-6 max-w-[26rem]">
@@ -92,9 +94,9 @@ export default async function StudentEntryPage({ params }: PageProps) {
               </p>
               <ul className="space-y-2.5">
                 {[
-                  "Start by sharing what you already know about the topic.",
-                  "The tutor will ask questions — not give you answers directly.",
-                  "Take your time with each response. Quality matters more than speed.",
+                  "Start by explaining what you already know about this topic in your own words.",
+                  "The tutor will ask follow-up questions — it won't just give you answers.",
+                  "Think carefully before each response. Reasoning matters more than speed.",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
                     <span className="mt-1 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[rgba(17,120,144,0.12)]">

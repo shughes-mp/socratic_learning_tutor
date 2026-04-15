@@ -3,17 +3,17 @@ import Link from "next/link";
 const quickFacts = [
   {
     label: "Who uses it",
-    value: "Instructors running reading-based or discussion-based courses",
+    value: "Instructors who want to understand how students think — before, during, and after class",
     color: "var(--teal)",
   },
   {
-    label: "What learners do",
-    value: "Explain their thinking and work through guided questions before class",
+    label: "What students do",
+    value: "Explain their reasoning and work through guided questions that require real thinking",
     color: "var(--olive)",
   },
   {
     label: "What instructors see",
-    value: "Replay, misconceptions, confidence ratings, and a teaching brief",
+    value: "Misconceptions, confidence patterns, full conversation replays, and a teaching brief",
     color: "var(--rose)",
   },
 ];
@@ -22,17 +22,17 @@ const workflow = [
   {
     step: "01",
     title: "Create the session",
-    body: "Add the title, context, learning goal, and the reading learners should work through.",
+    body: "Choose where in the learning cycle this session fits. Add the materials, a learning goal, and any context the tutor needs.",
   },
   {
     step: "02",
-    title: "Share the learner link",
-    body: "Learners join with a simple access code and begin by explaining what they already know.",
+    title: "Share the student link",
+    body: "Students join with a simple access code — no account required. They explain what they know and work through questions that require real reasoning.",
   },
   {
     step: "03",
     title: "Review the evidence",
-    body: "See how learners reasoned, where they got stuck, and what should be revisited in class.",
+    body: "See how students reasoned, where misconceptions appeared, and what to address before or during your next class.",
   },
 ];
 
@@ -41,34 +41,34 @@ const capabilities = [
     label: "Grounded tutoring",
     color: "var(--teal)",
     description:
-      "The tutor works from instructor-uploaded readings instead of improvising from generic knowledge.",
+      "The tutor works from instructor-uploaded materials instead of improvising from generic knowledge. Students are guided through your content, not around it.",
   },
   {
     label: "Assessment protection",
     color: "var(--olive)",
     description:
-      "Protected assessment materials can be uploaded so the tutor avoids directly giving away answers.",
+      "Upload protected assessment materials so the tutor coaches students toward understanding without revealing the answers directly.",
   },
   {
     label: "Learning signals",
     color: "var(--rose)",
     description:
-      "Confidence checks, misconceptions, revisit prompts, and topic mastery make preparation more visible.",
+      "Every session surfaces misconceptions, confidence patterns, and topic mastery — giving instructors something to act on, not just a completion log.",
   },
 ];
 
 const proofRows = [
   {
     title: "What instructors control",
-    detail: "session framing, readings, assessments, learning goals, prerequisite context",
+    detail: "session purpose, materials, learning goals, key questions, prerequisite context, exchange limit",
   },
   {
-    title: "What learners experience",
-    detail: "prior-knowledge prompts, guided questioning, follow-up checks, reflection",
+    title: "What students experience",
+    detail: "prior-knowledge prompts, guided Socratic questioning, follow-up checks, and reflection",
   },
   {
     title: "What the app reveals",
-    detail: "misunderstandings, confidence patterns, activity replay, and a teaching brief",
+    detail: "misconceptions, confidence patterns, conversation replays, and a teaching brief",
   },
 ];
 
@@ -117,15 +117,15 @@ export default function HomePage() {
 
           <div className="px-4 py-12 md:px-8 md:py-16">
             <p className="eyebrow eyebrow-teal">What This Product Does</p>
-            <h1 className="lead-copy mt-5 max-w-[10.5ch]">
-              Create guided reading sessions that show how learners think.
+            <h1 className="lead-copy mt-5 max-w-[12ch]">
+              Turn student thinking into evidence you can teach from.
             </h1>
 
             <p className="body-copy mt-7 max-w-[38rem]">
-              Socratic Tutor is a web app for instructors. Upload a reading,
-              invite learners into a guided tutoring conversation, and review
-              where they were confident, confused, or still incomplete before
-              class begins.
+              Socratic Tutor is a web app for instructors. Set up a session for
+              any point in the learning cycle — before class, during class, or
+              after — and get a clear picture of where students are confident,
+              confused, or incomplete.
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -144,8 +144,8 @@ export default function HomePage() {
             </div>
 
             <p className="mt-5 text-[13px] leading-6 text-[var(--dim-grey)]">
-              Setup takes under five minutes. Upload a reading, set a goal,
-              share a link — learners join with an access code, no account required.
+              Setup takes under five minutes. Upload materials, set a goal,
+              share a link — students join with an access code, no account required.
             </p>
 
             <div className="proof-grid mt-10 grid grid-cols-1 md:grid-cols-3">
@@ -196,25 +196,25 @@ export default function HomePage() {
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-14 md:px-8 md:py-20">
             <p className="eyebrow eyebrow-teal">How It Works</p>
-            <h2 className="section-title mt-5 max-w-[11ch]">
-              The workflow is designed around preparation you can actually use.
+            <h2 className="section-title mt-5 max-w-[13ch]">
+              Designed around evidence you can actually act on.
             </h2>
 
             <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-0">
               <div className="md:border-r md:border-[var(--rule)] md:pr-8">
-                <p className="eyebrow eyebrow-teal">For Learners</p>
+                <p className="eyebrow eyebrow-teal">For Students</p>
                 <p className="body-copy mt-5 max-w-[29rem]">
-                  Learners begin by stating what they already know, then work through
-                  questions tied to the uploaded reading. The tutor asks for reasoning
-                  first — learners can&apos;t skip straight to the answer.
+                  Students start by stating what they already know, then work through
+                  questions tied to the uploaded materials. The tutor asks for reasoning
+                  first — students can&apos;t skip straight to the answer.
                 </p>
               </div>
               <div className="md:pl-8">
                 <p className="eyebrow eyebrow-teal">For Instructors</p>
                 <p className="body-copy mt-5 max-w-[32rem]">
-                  Instructors don&apos;t just see whether learners logged in.
-                  They see how learners reasoned, where misconceptions appeared,
-                  and what topics need follow-up in live discussion.
+                  Instructors don&apos;t just see whether students logged in.
+                  They see how students reasoned, where misconceptions appeared,
+                  and what topics need follow-up — before they walk into class.
                 </p>
               </div>
             </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
               <div>
                 <p className="eyebrow eyebrow-olive">Key Capabilities</p>
                 <h2 className="section-title mt-5 max-w-[12ch]">
-                  Built for guided learning, not generic chat.
+                  Purposeful tutoring, not generic chat.
                 </h2>
               </div>
               <div className="metric-list">
@@ -256,14 +256,13 @@ export default function HomePage() {
           <div className="px-4 py-16 md:px-8 md:py-20">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_280px] md:items-center">
               <div>
-                <p className="lead-copy max-w-[17ch]">
-                  Use pre-class tutoring to arrive at better class discussion,
-                  not just more logged-in activity.
+                <p className="lead-copy max-w-[18ch]">
+                  Arrive at class knowing where students are — not guessing.
                 </p>
                 <p className="body-copy muted-copy mt-6 max-w-[38rem]">
-                  Start with one reading, one instructor goal, and one session.
-              The app is most useful when learner preparation is visible
-                  enough to shape what actually happens in class.
+                  Start with one session, one goal, and one set of materials.
+                  The app is most useful when student thinking is visible
+                  enough to shape what you actually do next.
                 </p>
               </div>
               <div className="md:justify-self-end">

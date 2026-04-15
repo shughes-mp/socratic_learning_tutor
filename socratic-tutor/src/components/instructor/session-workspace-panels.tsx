@@ -67,7 +67,7 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
             {setupStep !== null && (
               <span className="text-xs text-[var(--dim-grey)]">
                 Step {setupStep} of 4 —{" "}
-                {setupStep === 2 ? "Add a reading" : setupStep === 3 ? "Add questions" : "Share with learners"}
+                {setupStep === 2 ? "Add a reading" : setupStep === 3 ? "Add questions" : "Share with students"}
               </span>
             )}
           </div>
@@ -76,7 +76,7 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
         {isActive && (
           <div className="flex flex-wrap gap-2">
             <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button minerva-button-secondary text-sm">
-              Learner progress
+              Student progress
             </Link>
             <Link href={`/instructor/${sessionId}/misconceptions`} className="minerva-button minerva-button-secondary text-sm">
               Misunderstandings
@@ -105,8 +105,8 @@ export function StatusBar({ learnerCount, readingsCount, assessmentsCount }: Sta
       {readingsCount === 0
         ? "Upload at least one reading to activate this session."
         : learnerCount === 0
-          ? `Ready: ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""} uploaded. No learners yet.`
-          : `Active: ${learnerCount} learner${learnerCount !== 1 ? "s" : ""} connected. ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""}.`}
+          ? `Ready: ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""} uploaded. No students yet.`
+          : `Active: ${learnerCount} student${learnerCount !== 1 ? "s" : ""} connected. ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""}.`}
     </div>
   );
 }
@@ -163,12 +163,12 @@ export function ActiveMonitoringCard({ sessionId, learnerCount }: ActiveMonitori
         <div>
           <p className="eyebrow eyebrow-teal">Session active</p>
           <p className="mt-2 text-sm text-[var(--dim-grey)]">
-            {learnerCount} learner{learnerCount !== 1 ? "s" : ""} connected
+            {learnerCount} student{learnerCount !== 1 ? "s" : ""} connected
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button">
-            Learner progress
+            Student progress
           </Link>
           <Link href={`/instructor/${sessionId}/report`} className="minerva-button minerva-button-secondary">
             Teaching brief
@@ -240,7 +240,7 @@ export function ReadingsSection({
       {open && (
         <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
           <p className="text-sm text-[var(--dim-grey)]">
-            Upload the reading students will be tutored on. PDF, DOCX, TXT, or Markdown. Up to 50MB.
+            Upload the readings students will work from. PDF, DOCX, TXT, or Markdown. Up to 50MB.
           </p>
 
           {/* Drop zone */}
@@ -765,7 +765,7 @@ export function TeachingContextSection({
               Learning outcomes to assess
             </label>
             <p className="text-xs text-[var(--dim-grey)]">
-              The specific skills or understandings you want to track. The tutor will assess each learner against
+              The specific skills or understandings you want to track. The tutor will assess each student against
               these and include formative ratings in the teaching brief.
             </p>
             <textarea
@@ -802,8 +802,7 @@ export function TeachingContextSection({
                 <div className="space-y-2">
                   <label className="minerva-label">Tutor stance</label>
                   <p className="text-xs text-[var(--dim-grey)]">
-                    Directed: formal authority guiding comprehension. Mentor: collaborative inquiry, suited for
-                    professional learners.
+                    Directed: guides students through questions with clear authority. Mentor: more collaborative inquiry, suited for experienced or professional students.
                   </p>
                   <div className="flex gap-3">
                     {(["directed", "mentor"] as const).map((stance) => (

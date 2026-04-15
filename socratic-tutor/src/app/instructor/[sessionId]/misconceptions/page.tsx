@@ -392,7 +392,7 @@ export default function MisconceptionDashboardPage() {
                   {getSessionPurposeOption(sessionPurpose).shortLabel}
                 </span>
                 <p className="max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
-                  Review the patterns learners struggled with most, decide which need class discussion, and turn them into active learning moves.
+                  Review the patterns students struggled with most, decide which need class discussion, and turn them into active learning moves.
                 </p>
               </div>
             </div>
@@ -438,7 +438,7 @@ export default function MisconceptionDashboardPage() {
                     {stats.totalStudents}
                   </p>
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                    learners contributed to this analysis
+                    students contributed to this analysis
                   </p>
                 </div>
                 <div className="minerva-card p-5">
@@ -447,7 +447,7 @@ export default function MisconceptionDashboardPage() {
                     {stats.totalMisconceptions}
                   </p>
                   <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                    {stats.avgMisconceptionsPerStudent.toFixed(1)} per learner on average
+                    {stats.avgMisconceptionsPerStudent.toFixed(1)} per student on average
                   </p>
                   <p className="mt-1 text-[11px] text-[var(--dim-grey)]">
                     Individual instances (clustered into {clusters.length} patterns below)
@@ -486,7 +486,7 @@ export default function MisconceptionDashboardPage() {
                           </span>
                           {cluster.overrideType === "needs_discussion" && (
                             <span className="rounded-full bg-[rgba(223,47,38,0.08)] px-3 py-1 text-[12px] font-semibold text-[var(--signal)]">
-                              Marked for discussion
+                              Marked for class discussion
                             </span>
                           )}
                         </div>
@@ -494,7 +494,7 @@ export default function MisconceptionDashboardPage() {
                           {cluster.label}
                         </h2>
                         <p className="text-sm text-[var(--dim-grey)]">
-                          {cluster.studentCount} learners · {formatPercent(cluster.prevalence)} prevalence
+                          {cluster.studentCount} students · {formatPercent(cluster.prevalence)} prevalence
                         </p>
                       </div>
 
@@ -513,11 +513,11 @@ export default function MisconceptionDashboardPage() {
                 {mode === "post-session" && checkpointDifficulty.length > 0 && (
                   <section className="minerva-card p-6 md:p-8">
                     <h2 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
-                      Checkpoint difficulty
+                      Question difficulty
                     </h2>
                     <p className="mt-2 max-w-[42rem] text-sm text-[var(--dim-grey)]">
-                      How your checkpoints performed across the class. Hard checkpoints
-                      may indicate content areas that need more scaffolding.
+                      How each question performed across the class. Hard questions
+                      may indicate content areas that need more support.
                     </p>
                     <div className="mt-6 space-y-3">
                       {checkpointDifficulty.map((checkpoint) => (
@@ -566,7 +566,7 @@ export default function MisconceptionDashboardPage() {
                         Top misconception clusters
                       </h2>
                       <p className="mt-2 max-w-[44rem] text-sm text-[var(--dim-grey)]">
-                        These patterns combine similar learner misunderstandings
+                        These patterns group similar student misunderstandings
                         so you can respond to themes instead of isolated quotes.
                       </p>
                     </div>
@@ -603,7 +603,7 @@ export default function MisconceptionDashboardPage() {
                           </h3>
 
                           <p className="mt-3 text-sm text-[var(--dim-grey)]">
-                            {cluster.studentCount} of {cluster.totalStudents} learners ·{" "}
+                            {cluster.studentCount} of {cluster.totalStudents} students ·{" "}
                             {formatPercent(cluster.prevalence)} prevalence ·{" "}
                             {formatPercent(cluster.resolutionRate)} resolved during the
                             session
@@ -693,7 +693,7 @@ export default function MisconceptionDashboardPage() {
                                 </p>
                                 {record.studentMessage && (
                                   <p className="mt-2 text-xs text-[var(--dim-grey)]">
-                                    Learner wording: “{record.studentMessage}”
+                                    Student's words: “{record.studentMessage}”
                                   </p>
                                 )}
                                 <p className="mt-2 text-xs text-[var(--dim-grey)]">
@@ -733,7 +733,7 @@ export default function MisconceptionDashboardPage() {
                                   {cluster.label}
                                 </p>
                                 <p className="mt-1 text-sm text-[var(--dim-grey)]">
-                                  {cluster.studentCount} learners ·{" "}
+                                  {cluster.studentCount} students ·{" "}
                                   {formatPercent(cluster.prevalence)} prevalence
                                 </p>
                               </div>

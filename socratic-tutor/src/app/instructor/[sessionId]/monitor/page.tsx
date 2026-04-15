@@ -56,7 +56,7 @@ export default function StudentMonitorPage() {
         setStudents(data);
       }
     } catch (err) {
-      console.error("Failed to fetch learner progress:", err);
+      console.error("Failed to fetch student progress:", err);
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +96,7 @@ export default function StudentMonitorPage() {
         setExpandedDetail(data[0]);
       }
     } catch (err) {
-      console.error("Failed to fetch learner detail:", err);
+      console.error("Failed to fetch student detail:", err);
     } finally {
       setLoadingDetail(false);
     }
@@ -109,7 +109,7 @@ export default function StudentMonitorPage() {
           <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
             <div className="hidden border-r border-[var(--rule)] md:block" />
             <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
-              Loading learner progress...
+              Loading student progress...
             </div>
           </section>
         </div>
@@ -135,10 +135,10 @@ export default function StudentMonitorPage() {
                   Session workspace
                 </Link>
                 <span>/</span>
-                <span className="text-[var(--charcoal)]">Learner progress</span>
+                <span className="text-[var(--charcoal)]">Student progress</span>
               </nav>
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
-                Learner progress
+                Student progress
               </h1>
               <div className="mt-3 flex items-center gap-2">
                 <span
@@ -147,7 +147,7 @@ export default function StudentMonitorPage() {
                   {getSessionPurposeOption(sessionPurpose).shortLabel}
                 </span>
                 <p className="text-[15px] leading-7 text-[var(--dim-grey)]">
-                  Review who joined, how far each learner got, and the interaction trace behind that progress.
+                  Review who joined, how far each student got, and the full conversation behind their progress.
                 </p>
               </div>
             </div>
@@ -183,11 +183,11 @@ export default function StudentMonitorPage() {
         {students.length === 0 ? (
           <div className="minerva-card p-8">
             <h2 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
-              No learner activity yet
+              No student activity yet
             </h2>
             <p className="mt-3 max-w-[34rem] text-sm text-[var(--dim-grey)]">
-              When learners join with the session link, their progress and
-              interaction traces will appear here.
+              When students join with the session link, their progress and
+              conversations will appear here.
             </p>
           </div>
         ) : (
@@ -209,7 +209,7 @@ export default function StudentMonitorPage() {
                     <div className="minerva-card flex items-center gap-3 p-4">
                       <span className="h-3 w-3 rounded-full bg-[var(--teal)]" />
                       <p className="text-sm text-[var(--charcoal)]">
-                        All learners are on task
+                        All students are on task
                       </p>
                     </div>
                   );
@@ -220,7 +220,7 @@ export default function StudentMonitorPage() {
                     <p className="text-sm text-[var(--charcoal)]">
                       {concernCount > 0 && (
                         <span className="font-medium text-[#906f12]">
-                          {concernCount} learner{concernCount !== 1 ? "s" : ""} showing
+                          {concernCount} student{concernCount !== 1 ? "s" : ""} showing
                           engagement concerns.{" "}
                         </span>
                       )}
@@ -239,17 +239,17 @@ export default function StudentMonitorPage() {
               <table className="w-full text-left text-sm text-[var(--dim-grey)]">
                 <thead className="border-b border-[var(--rule)] bg-[rgba(34,34,34,0.02)]">
                   <tr>
-                    <th className="px-6 py-4">Learner</th>
-                    <th className="px-6 py-4">Exchanges</th>
+                    <th className="px-6 py-4">Student</th>
+                    <th className="px-6 py-4">Turns</th>
                     <th className="px-6 py-4">Misconceptions detected</th>
                     <th className="px-6 py-4">Engagement</th>
                     <th className="px-6 py-4">Last active</th>
-                    <th className="px-6 py-4 text-right">Trace</th>
+                    <th className="px-6 py-4 text-right">Conversation</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--rule)]">
                   {students.map((student) => {
-                    const exchanges = Math.floor(student.messageCount / 2);
+                    const turns = Math.floor(student.messageCount / 2);
                     const isExpanded = expandedId === student.id;
                     const lastActive = student.lastActiveAt;
 
@@ -265,7 +265,7 @@ export default function StudentMonitorPage() {
                           </td>
                           <td className="px-6 py-4">
                             <span className="rounded-md bg-[rgba(34,34,34,0.05)] px-2.5 py-1 font-medium text-[var(--charcoal)]">
-                              {exchanges}
+                              {turns}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -319,7 +319,7 @@ export default function StudentMonitorPage() {
                               onClick={() => toggleStudent(student.id)}
                               className="text-sm font-medium text-[var(--teal)] transition-colors hover:text-[var(--charcoal)]"
                             >
-                              {isExpanded ? "Hide trace" : "View trace"}
+                              {isExpanded ? "Hide conversation" : "View conversation"}
                             </button>
                           </td>
                         </tr>
@@ -330,11 +330,11 @@ export default function StudentMonitorPage() {
                               className="border-t border-[var(--rule)] bg-[rgba(34,34,34,0.02)] p-0"
                             >
                               <div className="mx-6 my-5 max-w-4xl border-l-2 border-[var(--teal)] bg-white p-8">
-                                <h4 className="eyebrow eyebrow-teal mb-6">Interaction Trace</h4>
+                                <h4 className="eyebrow eyebrow-teal mb-6">Full Conversation</h4>
                                 {loadingDetail ? (
                                   <div className="flex items-center gap-2 py-4 text-sm text-[var(--dim-grey)]">
                                     <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-[var(--teal)]" />
-                                    Loading trace...
+                                    Loading conversation...
                                   </div>
                                 ) : expandedDetail?.id === student.id ? (
                                   <>
@@ -372,7 +372,7 @@ export default function StudentMonitorPage() {
                                   </>
                                 ) : (
                                   <p className="text-sm text-[var(--dim-grey)]">
-                                    Failed to load trace.
+                                    Failed to load conversation.
                                   </p>
                                 )}
                               </div>

@@ -56,11 +56,11 @@ export default function InstructorCreatePage() {
           <div className="px-4 py-12 md:px-8 md:py-16">
             <p className="eyebrow eyebrow-teal">Setup</p>
             <h1 className="section-title mt-5 max-w-[10ch]">
-              Create a reading session.
+              Create a session.
             </h1>
             <p className="body-copy muted-copy mt-6 max-w-[25rem]">
-              Three steps: name your session, upload a reading, then share the
-              link with your learners.
+              Three steps: name your session, upload materials, then share the
+              link with your students.
             </p>
             <div className="mt-8">
               <StepIndicator currentStep={1} />
@@ -90,12 +90,12 @@ export default function InstructorCreatePage() {
                     htmlFor="session-description"
                     className="minerva-label"
                   >
-                    Instructions for learners
+                    Instructions for students
                   </label>
                   <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-                    Optional. Shown on the entry page before learners begin.
-                    Use this to set expectations — e.g. which sections to read,
-                    what to focus on.
+                    Optional. Shown on the entry page before students begin.
+                    Use this to set expectations — e.g. which sections to focus on,
+                    what context to keep in mind.
                   </p>
                   <textarea
                     id="session-description"
