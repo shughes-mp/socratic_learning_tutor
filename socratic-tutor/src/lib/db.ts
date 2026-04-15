@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS "Session" (
   "opensAt" DATETIME,
   "closesAt" DATETIME,
   "maxExchanges" INTEGER NOT NULL DEFAULT 20,
-  "stance" TEXT NOT NULL DEFAULT 'directed'
+  "stance" TEXT NOT NULL DEFAULT 'directed',
+  "sessionPurpose" TEXT NOT NULL DEFAULT 'pre_class'
 );
 CREATE TABLE IF NOT EXISTS "Reading" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -272,6 +273,11 @@ async function ensureTursoSchemaUpgrades(client: LibsqlClient) {
   if (!sessionCols.has("stance")) {
     alters.push(
       `ALTER TABLE "Session" ADD COLUMN "stance" TEXT NOT NULL DEFAULT 'directed'`
+    );
+  }
+  if (!sessionCols.has("sessionPurpose")) {
+    alters.push(
+      `ALTER TABLE "Session" ADD COLUMN "sessionPurpose" TEXT NOT NULL DEFAULT 'pre_class'`
     );
   }
 
