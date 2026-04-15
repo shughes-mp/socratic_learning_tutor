@@ -40,8 +40,27 @@ interface WorkspaceHeaderProps {
   setupStep: 2 | 3 | 4 | null;
 }
 
+function getPurposeLinks(sessionId: string, purpose: string) {
+  const monitor = { href: `/instructor/${sessionId}/monitor`, label: "Learner progress" };
+  const misconceptions = { href: `/instructor/${sessionId}/misconceptions`, label: "Misunderstandings" };
+  const report = { href: `/instructor/${sessionId}/report`, label: "Teaching brief" };
+
+  switch (purpose) {
+    case "during_class_prep":
+      return [monitor, misconceptions, report];
+    case "during_class_reflection":
+      return [misconceptions, monitor, report];
+    case "after_class":
+      return [report, misconceptions, monitor];
+    case "pre_class":
+    default:
+      return [report, misconceptions, monitor];
+  }
+}
+
 export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: WorkspaceHeaderProps) {
   const purposeOption = getSessionPurposeOption(session.sessionPurpose);
+  const links = getPurposeLinks(sessionId, session.sessionPurpose);
 
   return (
     <div className="minerva-card p-6 md:p-8">
@@ -74,15 +93,15 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
 
         {isActive && (
           <div className="flex flex-wrap gap-2">
-            <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button minerva-button-secondary text-sm">
-              Learner progress
-            </Link>
-            <Link href={`/instructor/${sessionId}/misconceptions`} className="minerva-button minerva-button-secondary text-sm">
-              Misunderstandings
-            </Link>
-            <Link href={`/instructor/${sessionId}/report`} className="minerva-button minerva-button-secondary text-sm">
-              Teaching brief
-            </Link>
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="minerva-button minerva-button-secondary text-sm"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         )}
       </div>
@@ -148,33 +167,209 @@ export function AccessCodeCard({ session, isActive, copied, onCopyLink }: Access
   );
 }
 
-// ─── ActiveMonitoringCard ──────────────────────────────────────────────────────
+// ─── SessionInsightsCard (purpose-aware) ──────────────────────────────────────
 
-interface ActiveMonitoringCardProps {
-  sessionId: string;
-  learnerCount: number;
+interface LiveLearnerStatus {
+  id: string;
+  studentName: string;
+  hasRecentEngagementConcern: boolean;
+  latestEngagementFlag: string | null;
+  isWaitingForStudentReply: boolean;
+  secondsSinceLastMessage: number | null;
+  endedAt: string | Date | null;
 }
 
-export function ActiveMonitoringCard({ sessionId, learnerCount }: ActiveMonitoringCardProps) {
-  return (
-    <div className="minerva-card p-6 md:p-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="eyebrow eyebrow-teal">Session active</p>
-          <p className="mt-2 text-sm text-[var(--dim-grey)]">
-            {learnerCount} learner{learnerCount !== 1 ? "s" : ""} connected
+interface SessionInsightsCardProps {
+  sessionId: string;
+  sessionPurpose: string;
+  learnerCount: number;
+  liveStatus: LiveLearnerStatus[];
+}
+
+function isLiveMode(purpose: string) {
+  return purpose === "during_class_prep" || purpose === "during_class_reflection";
+}
+
+export function SessionInsightsCard({
+  sessionId,
+  sessionPurpose,
+  learnerCount,
+  liveStatus,
+}: SessionInsightsCardProps) {
+  const live = isLiveMode(sessionPurpose);
+  const links = getPurposeLinks(sessionId, sessionPurpose);
+  const primary = links[0];
+
+  if (live) {
+    const activeLearners = liveStatus.filter((l) => !l.endedAt);
+    const completedLearners = liveStatus.filter((l) => l.endedAt);
+    const concernCount = activeLearners.filter((l) => l.hasRecentEngagementConcern).length;
+    const waitingLong = activeLearners.filter(
+      (l) => l.isWaitingForStudentReply && (l.secondsSinceLastMessage ?? 0) > 180
+    ).length;
+    const hasConcerns = concernCount > 0 || waitingLong > 0;
+
+    return (
+      <div className="minerva-card overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-[var(--rule)] px-6 py-4 md:px-8">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${hasConcerns ? "bg-[#906f12]" : "bg-[var(--teal)]"}`}
+          />
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
+            Live monitoring
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button">
-            Learner progress
+
+        <div className="px-6 py-5 md:px-8">
+          {/* Stats row */}
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="text-[28px] font-bold leading-none text-[var(--charcoal)]">
+                {activeLearners.length}
+              </p>
+              <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                active now
+              </p>
+            </div>
+            {completedLearners.length > 0 && (
+              <div>
+                <p className="text-[28px] font-bold leading-none text-[var(--charcoal)]">
+                  {completedLearners.length}
+                </p>
+                <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                  completed
+                </p>
+              </div>
+            )}
+            {concernCount > 0 && (
+              <div>
+                <p className="text-[28px] font-bold leading-none text-[#906f12]">
+                  {concernCount}
+                </p>
+                <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                  engagement concern{concernCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            )}
+            {waitingLong > 0 && (
+              <div>
+                <p className="text-[28px] font-bold leading-none text-[var(--dim-grey)]">
+                  {waitingLong}
+                </p>
+                <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                  waiting 3+ min
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Alert banner */}
+          {hasConcerns && (
+            <div className="mt-4 rounded-lg border border-[rgba(144,111,18,0.2)] bg-[rgba(144,111,18,0.06)] px-4 py-3">
+              <p className="text-sm text-[var(--charcoal)]">
+                {concernCount > 0 && (
+                  <span className="font-medium text-[#906f12]">
+                    {concernCount} learner{concernCount !== 1 ? "s" : ""} showing
+                    engagement concerns.{" "}
+                  </span>
+                )}
+                {waitingLong > 0 && (
+                  <span className="text-[var(--dim-grey)]">
+                    {waitingLong} waiting 3+ minutes for a reply.
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Purpose-ordered CTAs */}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href={primary.href} className="minerva-button">
+              {primary.label}
+            </Link>
+            {links.slice(1).map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="minerva-button minerva-button-secondary"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Review mode (pre-class / after-class) ──
+
+  const completed = liveStatus.filter((l) => l.endedAt).length;
+  const total = liveStatus.length;
+  const participationLabel =
+    sessionPurpose === "pre_class"
+      ? "Learner readiness"
+      : "Session results";
+  const contextLine =
+    sessionPurpose === "pre_class"
+      ? "Review what learners know before class."
+      : "Review how learners applied the material.";
+
+  return (
+    <div className="minerva-card overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-[var(--rule)] px-6 py-4 md:px-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
+          {participationLabel}
+        </p>
+      </div>
+
+      <div className="px-6 py-5 md:px-8">
+        {/* Participation health check */}
+        <div className="flex flex-wrap gap-6">
+          <div>
+            <p className="text-[28px] font-bold leading-none text-[var(--charcoal)]">
+              {total}
+            </p>
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
+              learner{total !== 1 ? "s" : ""} participated
+            </p>
+          </div>
+          <div>
+            <p className="text-[28px] font-bold leading-none text-[var(--charcoal)]">
+              {completed}
+            </p>
+            <p className="mt-1 text-xs text-[var(--dim-grey)]">
+              completed
+            </p>
+          </div>
+          {total - completed > 0 && (
+            <div>
+              <p className="text-[28px] font-bold leading-none text-[var(--dim-grey)]">
+                {total - completed}
+              </p>
+              <p className="mt-1 text-xs text-[var(--dim-grey)]">
+                still in progress
+              </p>
+            </div>
+          )}
+        </div>
+
+        <p className="mt-4 text-sm text-[var(--dim-grey)]">{contextLine}</p>
+
+        {/* Purpose-ordered CTAs */}
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link href={primary.href} className="minerva-button">
+            {primary.label}
           </Link>
-          <Link href={`/instructor/${sessionId}/report`} className="minerva-button minerva-button-secondary">
-            Teaching brief
-          </Link>
-          <Link href={`/instructor/${sessionId}/misconceptions`} className="minerva-button minerva-button-secondary">
-            Common misunderstandings
-          </Link>
+          {links.slice(1).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="minerva-button minerva-button-secondary"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

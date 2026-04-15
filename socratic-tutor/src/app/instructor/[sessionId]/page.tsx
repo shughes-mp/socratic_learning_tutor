@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   AccessCodeCard,
-  ActiveMonitoringCard,
+  SessionInsightsCard,
   AssessmentsSection,
   QuestionsSection,
   ReadingsSection,
@@ -54,6 +54,17 @@ export default function SessionManagementPage() {
   const [showSavedState, setShowSavedState] = useState(false);
   const [dragActive, setDragActive] = useState<"reading" | "assessment" | null>(null);
   const [learnerCount, setLearnerCount] = useState(0);
+  const [liveStatus, setLiveStatus] = useState<
+    Array<{
+      id: string;
+      studentName: string;
+      hasRecentEngagementConcern: boolean;
+      latestEngagementFlag: string | null;
+      isWaitingForStudentReply: boolean;
+      secondsSinceLastMessage: number | null;
+      endedAt: string | Date | null;
+    }>
+  >([]);
   const [checkpoints, setCheckpoints] = useState<CheckpointRecord[]>([]);
   const [loadingCheckpoints, setLoadingCheckpoints] = useState(true);
   const [savingCheckpoint, setSavingCheckpoint] = useState(false);
@@ -112,10 +123,17 @@ export default function SessionManagementPage() {
         throw new Error(data?.error || "Failed to load learners.");
       }
 
-      setLearnerCount(Array.isArray(data) ? data.length : 0);
+      if (Array.isArray(data)) {
+        setLearnerCount(data.length);
+        setLiveStatus(data);
+      } else {
+        setLearnerCount(0);
+        setLiveStatus([]);
+      }
     } catch (err) {
       console.error("Failed to load learners:", err);
       setLearnerCount(0);
+      setLiveStatus([]);
     }
   }, [sessionId]);
 
@@ -211,6 +229,17 @@ export default function SessionManagementPage() {
     const timeout = window.setTimeout(() => setShowQuestionSavedState(false), 2400);
     return () => window.clearTimeout(timeout);
   }, [showQuestionSavedState]);
+
+  // Auto-poll learner status for in-class (live) modes
+  useEffect(() => {
+    if (!session) return;
+    const isLive =
+      session.sessionPurpose === "during_class_prep" ||
+      session.sessionPurpose === "during_class_reflection";
+    if (!isLive || learnerCount === 0) return;
+    const interval = window.setInterval(fetchLearnerCount, 15000);
+    return () => window.clearInterval(interval);
+  }, [session, learnerCount, fetchLearnerCount]);
 
   useEffect(() => {
     if (!loading && !sectionsInitialized) {
@@ -725,8 +754,13 @@ export default function SessionManagementPage() {
           onCopyLink={copyLink}
         />
 
-        {learnerCount > 0 ? (
-          <ActiveMonitoringCard sessionId={sessionId} learnerCount={learnerCount} />
+        {learnerCount > 0 && session ? (
+          <SessionInsightsCard
+            sessionId={sessionId}
+            sessionPurpose={session.sessionPurpose}
+            learnerCount={learnerCount}
+            liveStatus={liveStatus}
+          />
         ) : null}
 
         <ReadingsSection
