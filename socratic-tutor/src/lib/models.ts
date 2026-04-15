@@ -26,4 +26,4 @@ export const MODEL_PRIMARY =
  * in both local dev and Vercel unless an explicit override is set.
  */
 export const MODEL_FAST =
-  process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5";
+  process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5-20251001";

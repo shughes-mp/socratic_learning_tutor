@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import {
-  SESSION_PURPOSE_OPTIONS,
   getSessionPurposeBadgeClasses,
   getSessionPurposeOption,
 } from "@/lib/session-purpose";
@@ -682,46 +681,6 @@ export function TeachingContextSection({
 
       {open && (
         <div className="space-y-8 px-6 pb-8 md:px-8">
-          {/* Session Purpose Selector */}
-          <div className="space-y-3">
-            <div>
-              <label className="minerva-label">Session purpose</label>
-              <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
-                When will learners use this session? The tutor adapts its questioning strategy and cognitive target
-                based on this.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {SESSION_PURPOSE_OPTIONS.map((option) => {
-                const isSelected = session.sessionPurpose === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => updateSession({ sessionPurpose: option.value })}
-                    className={`rounded-2xl border p-4 text-left transition-colors ${
-                      isSelected
-                        ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
-                        : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.3)] hover:bg-[rgba(17,120,144,0.02)]"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(option.value)}`}
-                      >
-                        {option.shortLabel}
-                      </span>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--dim-grey)]">
-                        {option.cognitiveLevel}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-5 text-[var(--charcoal)]">{option.description}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Course context */}
           <div className="space-y-2">
             <label className="minerva-label" htmlFor="courseContext">

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { anthropic } from "@/lib/anthropic";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { MODEL_FAST } from "@/lib/models";
 
@@ -158,12 +157,18 @@ ${session.readings
   .join("\n\n")}`;
 
   try {
-    const { text } = await generateText({
-      model: anthropic(MODEL_FAST),
-      prompt,
+    const response = await anthropic.messages.create({
+      model: MODEL_FAST,
+      max_tokens: 1024,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const mapValue = normalizeMapValue(parseMapResponse(text));
+    const content = response.content[0];
+    if (!content || content.type !== "text") {
+      throw new Error("Model returned no text content.");
+    }
+
+    const mapValue = normalizeMapValue(parseMapResponse(content.text));
 
     if (!Array.isArray(mapValue.concepts) || mapValue.concepts.length === 0) {
       throw new Error("Generated map was not valid.");
