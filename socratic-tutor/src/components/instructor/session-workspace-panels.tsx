@@ -932,7 +932,7 @@ interface AssessmentsSectionProps {
     recentUploadCategory: "reading" | "assessment" | null;
     recentUploadName: string | null;
   };
-  assessmentInputRef: React.RefObject<HTMLInputElement>;
+  assessmentInputRef: React.RefObject<HTMLInputElement | null>;
   handlers: {
     onDrop: (e: React.DragEvent, category: "reading" | "assessment") => void;
     onDragOver: (e: React.DragEvent, category: "reading" | "assessment") => void;
