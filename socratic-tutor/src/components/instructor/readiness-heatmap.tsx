@@ -1,61 +1,132 @@
+"use client";
+
 import React from "react";
+import { getHeatmapTitle } from "@/lib/session-purpose";
+
+interface HeatmapItem {
+  topic: string;
+  status: "green" | "yellow" | "red";
+  explanation: string;
+}
 
 interface HeatmapProps {
   reportContent: string;
+  sessionPurpose?: string | null;
 }
 
-export function ReadinessHeatmap({ reportContent }: HeatmapProps) {
-  // Extract the READINESS HEATMAP section
-  const sectionRegex = /READINESS HEATMAP\s*([\s\S]*?)(?=MISCONCEPTIONS AND GAPS|PER-STUDENT SUMMARY|SESSION OVERVIEW|SUGGESTED TEACHING APPROACHES|$)/i;
-  const match = reportContent.match(sectionRegex);
+// Matches lines like: - **Topic name**: [GREEN] explanation
+// or: - Topic name: [YELLOW] explanation
+const STRUCTURED_REGEX = /[-*]\s*\*{0,2}([^*\n:]+?)\*{0,2}\s*:\s*\[(GREEN|YELLOW|RED)\]\s*(.+)/gi;
 
-  if (!match || !match[1].trim()) {
-    return <div className="text-slate-500 italic text-sm">No readiness data available.</div>;
+// Fallback: find any line containing GREEN/YELLOW/RED (handles freeform prose)
+const FALLBACK_REGEX = /^[-*•]?\s*(.+?)\s*[:\-–]\s*\[(GREEN|YELLOW|RED)\]\s*(.+)/gim;
+
+function parseHeatmapItems(content: string, heatmapTitle: string): HeatmapItem[] {
+  // Extract just the heatmap section
+  // Match the section title (e.g. READINESS HEATMAP, ACTIVATION HEATMAP, etc.)
+  const escapedTitle = heatmapTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const sectionRegex = new RegExp(
+    `${escapedTitle}\\s*([\\s\\S]*?)(?=\\n##?\\s+[A-Z]|\\nWHAT YOUR|\\nWHERE YOUR|\\nWHAT TO DO|\\nPER-STUDENT|\\nLEARNING OUTCOME|$)`,
+    "i"
+  );
+  const sectionMatch = content.match(sectionRegex);
+  const sectionContent = sectionMatch?.[1] ?? content;
+
+  // Try structured regex first
+  const items: HeatmapItem[] = [];
+  let match: RegExpExecArray | null;
+
+  STRUCTURED_REGEX.lastIndex = 0;
+  while ((match = STRUCTURED_REGEX.exec(sectionContent)) !== null) {
+    items.push({
+      topic: match[1].trim(),
+      status: match[2].toLowerCase() as HeatmapItem["status"],
+      explanation: match[3].trim(),
+    });
   }
 
-  const lines = match[1].trim().split('\n').filter(l => l.trim().length > 0);
+  if (items.length > 0) return items;
 
-  const parsedItems = lines.map(line => {
-    // Attempt to parse "GREEN: Topic Name - explanation" or "- [GREEN] Topic: explanation"
-    const lowerLine = line.toLowerCase();
-    let status: "green" | "yellow" | "red" | "unknown" = "unknown";
-    
-    if (lowerLine.includes("green")) status = "green";
-    else if (lowerLine.includes("yellow")) status = "yellow";
-    else if (lowerLine.includes("red")) status = "red";
+  // Fallback: looser matching
+  FALLBACK_REGEX.lastIndex = 0;
+  while ((match = FALLBACK_REGEX.exec(sectionContent)) !== null) {
+    items.push({
+      topic: match[1].trim(),
+      status: match[2].toLowerCase() as HeatmapItem["status"],
+      explanation: match[3].trim(),
+    });
+  }
 
-    return { rawText: line.replace(/^-\s*/, '').trim(), status };
-  });
+  if (items.length > 0) return items;
+
+  // Last resort: scan for GREEN/YELLOW/RED keywords per line
+  const lines = sectionContent.split("\n").filter((l) => l.trim());
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    let status: HeatmapItem["status"] | null = null;
+    if (lower.includes("[green]") || lower.startsWith("green")) status = "green";
+    else if (lower.includes("[yellow]") || lower.startsWith("yellow")) status = "yellow";
+    else if (lower.includes("[red]") || lower.startsWith("red")) status = "red";
+    if (status) {
+      items.push({ topic: "", status, explanation: line.replace(/^[-*•]\s*/, "").trim() });
+    }
+  }
+
+  return items;
+}
+
+const STATUS_CONFIG = {
+  green: {
+    badge: "bg-[rgba(96,140,34,0.12)] text-[#5b7f22] border-[rgba(96,140,34,0.22)]",
+    dot: "bg-[#5b7f22]",
+    label: "Ready",
+  },
+  yellow: {
+    badge: "bg-[rgba(144,111,18,0.10)] text-[#906f12] border-[rgba(144,111,18,0.22)]",
+    dot: "bg-[#906f12]",
+    label: "Partial",
+  },
+  red: {
+    badge: "bg-[rgba(223,47,38,0.08)] text-[var(--signal)] border-[rgba(223,47,38,0.20)]",
+    dot: "bg-[var(--signal)]",
+    label: "Needs work",
+  },
+};
+
+export function ReadinessHeatmap({ reportContent, sessionPurpose }: HeatmapProps) {
+  const heatmapTitle = getHeatmapTitle(sessionPurpose) ?? "Readiness Heatmap";
+  const upperTitle = heatmapTitle.toUpperCase();
+  const items = parseHeatmapItems(reportContent, upperTitle);
+
+  if (items.length === 0) {
+    return (
+      <p className="text-sm italic text-[var(--dim-grey)]">
+        Heatmap data not available for this report. Regenerate the brief to include it.
+      </p>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {parsedItems.map((item, idx) => {
-        let badgeColor = "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700";
-        let displayStatus = "UNKNOWN";
-        
-        switch (item.status) {
-          case "green":
-            badgeColor = "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800";
-            displayStatus = "READY";
-            break;
-          case "yellow":
-            badgeColor = "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800";
-            displayStatus = "REVIEW";
-            break;
-          case "red":
-            badgeColor = "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800";
-            displayStatus = "CRITICAL";
-            break;
-        }
-
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {items.map((item, idx) => {
+        const config = STATUS_CONFIG[item.status];
         return (
-          <div key={idx} className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-md border uppercase tracking-wider ${badgeColor}`}>
-              {displayStatus}
+          <div
+            key={idx}
+            className="flex items-start gap-3 rounded-xl border border-[var(--rule)] bg-white p-4"
+          >
+            <span
+              className={`mt-0.5 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${config.badge} flex-shrink-0`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
+              {config.label}
             </span>
-            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-              {item.rawText}
-            </p>
+            <div className="min-w-0">
+              {item.topic && (
+                <p className="text-sm font-semibold text-[var(--charcoal)]">{item.topic}</p>
+              )}
+              <p className="mt-0.5 text-sm leading-5 text-[var(--dim-grey)]">{item.explanation}</p>
+            </div>
           </div>
         );
       })}

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ExchangeReplay } from "@/components/instructor/exchange-replay";
+import { getSessionPurposeBadgeClasses, getSessionPurposeOption } from "@/lib/session-purpose";
 import type { ConfidenceCheck, Message, Misconception } from "@prisma/client";
 
 interface StudentSummary {
@@ -45,6 +46,7 @@ export default function StudentMonitorPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<StudentSessionData | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [sessionPurpose, setSessionPurpose] = useState<string>("pre_class");
 
   const fetchStudents = useCallback(async () => {
     try {
@@ -62,7 +64,11 @@ export default function StudentMonitorPage() {
 
   useEffect(() => {
     fetchStudents();
-  }, [fetchStudents]);
+    fetch(`/api/sessions/${params.sessionId}`)
+      .then((res) => res.json())
+      .then((data) => { if (data?.sessionPurpose) setSessionPurpose(data.sessionPurpose); })
+      .catch(() => {});
+  }, [fetchStudents, params.sessionId]);
 
   useEffect(() => {
     if (mode !== "live") return;
@@ -134,10 +140,16 @@ export default function StudentMonitorPage() {
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
                 Learner progress
               </h1>
-              <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
-                Review who joined the session, how far each learner got, and the
-                interaction trace behind that progress.
-              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(sessionPurpose)}`}
+                >
+                  {getSessionPurposeOption(sessionPurpose).shortLabel}
+                </span>
+                <p className="text-[15px] leading-7 text-[var(--dim-grey)]">
+                  Review who joined, how far each learner got, and the interaction trace behind that progress.
+                </p>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link

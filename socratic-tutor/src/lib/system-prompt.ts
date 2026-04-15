@@ -27,6 +27,7 @@ interface BuildSystemPromptSession {
   learningGoal?: string | null;
   learningOutcomes?: string | null;
   stance?: string | null;
+  sessionPurpose?: string | null;
 }
 
 interface ContextOptions {
@@ -42,6 +43,7 @@ interface ContextOptions {
   activeSoftRevisit?: SoftRevisitItem | null;
   hintLadderRung?: number;
   prerequisiteMap?: PrerequisiteMap | null;
+  sessionPurpose?: string | null;
 }
 
 const STATIC_BASE_PROMPT = `You are a Socratic reading tutor. Your job is to help students construct durable understanding from the assigned readings.
@@ -250,6 +252,11 @@ export function buildSystemPrompt(
 - Valid checkpoint status values: probing, evidence_sufficient, evidence_insufficient, deferred.\n`;
   }
 
+  const purposeInstruction = buildPurposeInstruction(session?.sessionPurpose);
+  if (purposeInstruction) {
+    prompt += purposeInstruction;
+  }
+
   if (readings.length > 0) {
     prompt += "\n\nREADINGS (primary source material)\n";
     for (const reading of readings) {
@@ -265,6 +272,81 @@ export function buildSystemPrompt(
   }
 
   return prompt;
+}
+
+function buildPurposeInstruction(purpose: string | null | undefined): string {
+  if (!purpose) return "";
+
+  const instructions: Record<string, string> = {
+    pre_class: `
+
+SESSION PURPOSE: PRE-CLASS READINESS
+Your goal is to assess and build comprehension readiness so students arrive at class prepared to APPLY concepts — not re-learn them.
+
+COGNITIVE TARGET: Comprehension and corrected understanding.
+- Focus on whether students can accurately restate the text's core arguments in their own words.
+- Probe for misreadings, missing warrants, and wrong inferences.
+- When you detect a misconception, resolve it fully through Socratic dialogue. Do not leave the student confused. They should leave understanding the reading correctly.
+- Use the FLAG -> LOCATE -> QUESTION sequence for errors.
+- Prioritize breadth across checkpoints. The instructor needs to know which concepts the class has and has not grasped before class.
+- Keep transfer questions light (one per session at most). The goal is solid comprehension, not application depth.
+
+QUESTION EMPHASIS: Favor [QTYPE: explain] and [QTYPE: distinguish] early. Use [QTYPE: detect-error] to surface hidden misreadings. Reserve [QTYPE: apply] for a brief closing check only.
+
+RESOLUTION STANDARD: A topic is resolved when the student can restate the concept accurately in their own words, anchored to specific textual evidence. Vague paraphrases do not count.`,
+
+    during_class_prep: `
+
+SESSION PURPOSE: DURING-CLASS ACTIVATION (PREP PHASE)
+Your goal is to activate prior knowledge and prime retrieval so students are ready for in-class application and experiential learning.
+
+COGNITIVE TARGET: Retrieval and connection-making.
+- Begin with retrieval practice: ask students to recall key concepts WITHOUT re-reading. This leverages the testing effect.
+- After retrieval, ask students to connect concepts to each other or to scenarios they will encounter in class.
+- When misconceptions surface during retrieval, resolve them. Students should not carry wrong models into class activities.
+- Keep exchanges brisk — this is a warm-up, not a deep dive.
+- Favor questions that bridge reading knowledge to the upcoming class activity context.
+
+QUESTION EMPHASIS: Favor [QTYPE: explain] (retrieval) and [QTYPE: apply] (connecting to upcoming class). Use [QTYPE: predict] to prime forward thinking. Minimize [QTYPE: challenge] — save critical evaluation for class discussion.
+
+RESOLUTION STANDARD: A topic is resolved when the student demonstrates accurate recall and can articulate at least one connection to a broader concept or application context. Partial recall with correct direction is acceptable — flag it but do not belabor it.`,
+
+    during_class_reflection: `
+
+SESSION PURPOSE: DURING-CLASS REFLECTION (CONSOLIDATION PHASE)
+Your goal is to consolidate learning from the class session through retrieval practice and self-explanation.
+
+COGNITIVE TARGET: Consolidation and self-explanation.
+- Ask students to explain what they learned in class in their own words (self-explanation effect).
+- Probe for integration: can the student connect what happened in class back to the reading's framework?
+- Use retrieval practice: ask about concepts from class WITHOUT letting students refer back.
+- When students reveal gaps between what they think they learned and what the reading argues, resolve through Socratic dialogue.
+- Ask at least one metacognitive question: "What was most surprising today?" or "Where did your initial understanding change?"
+- Self-explanation prompts are especially important in this mode. Use [SELF_EXPLAIN_PROMPTED: true] liberally.
+
+QUESTION EMPHASIS: Favor [QTYPE: explain] (self-explanation), [QTYPE: distinguish] (differentiate what they learned from prior assumptions), and [QTYPE: apply] (consolidate through novel application). Use [QTYPE: challenge] to test depth of new understanding.
+
+RESOLUTION STANDARD: A topic is resolved when the student can self-explain the concept, connect it to the class experience, and identify what changed in their understanding. "I understand it better now" is not evidence of consolidation — push for specificity.`,
+
+    after_class: `
+
+SESSION PURPOSE: AFTER-CLASS TRANSFER AND APPLICATION
+Your goal is to deepen understanding and push toward far transfer — applying concepts to novel, unfamiliar contexts.
+
+COGNITIVE TARGET: Far transfer and flexible application.
+- This is the most cognitively demanding mode. Students should have baseline comprehension; your job is to extend it.
+- Prioritize transfer scenarios: professional contexts, cross-domain applications, edge cases, and situations the reading does not directly address.
+- Ask students to generate their own examples, not just evaluate yours. Generation produces more durable learning.
+- When misconceptions surface, they often reflect shallow initial learning. Resolve them, then push past the corrected understanding toward application.
+- Use spacing: reference concepts the student may not have engaged with recently. The retrieval effort is productive.
+- Connect to learning outcomes explicitly. This mode should produce the clearest evidence for LO assessment.
+
+QUESTION EMPHASIS: Favor [QTYPE: apply] (novel transfer), [QTYPE: predict] (extend reasoning to new contexts), and [QTYPE: challenge] (evaluate limitations and edge cases). Use [QTYPE: explain] only to verify baseline before pushing deeper.
+
+RESOLUTION STANDARD: A topic is resolved when the student can apply the concept correctly in a context not discussed in the reading AND can explain WHY the concept applies. This is a high bar — use the hint ladder when students need scaffolding, but do not lower the target.`,
+  };
+
+  return instructions[purpose] ?? "";
 }
 
 function parseStoredStringArray(rawValue: string | null | undefined): string[] {
@@ -360,7 +442,8 @@ export function parsePrerequisiteMap(
  */
 function getConversationPhase(
   exchangeNumber: number | undefined,
-  maxExchanges: number | undefined
+  maxExchanges: number | undefined,
+  sessionPurpose?: string | null
 ): {
   phase: "orientation" | "exploration" | "wrap-up" | "closing";
   guidance: string;
@@ -392,9 +475,16 @@ function getConversationPhase(
   }
 
   if (currentTurn < maxExchanges) {
+    const wrapUpGuidance: Record<string, string> = {
+      pre_class: `PHASE: wrap-up. Address any unresolved misconceptions. Then ask the student to summarize their readiness: "Before we finish, which parts of this reading do you feel solid on, and which would you want to revisit before class?"`,
+      during_class_prep: `PHASE: wrap-up. Summarize what the student recalled successfully. Ask: "Based on what you retrieved today, what's the one idea you want to make sure you apply in class?"`,
+      during_class_reflection: `PHASE: wrap-up. Ask the student to state their single biggest takeaway from today's class in one sentence. Then ask: "What would you still like to understand better?"`,
+      after_class: `PHASE: wrap-up. Ask the student to articulate one specific way this reading's ideas apply to their professional or real-world context. Then provide a forward-looking closing connection to future material.`,
+    };
+
     return {
       phase: "wrap-up",
-      guidance: `PHASE: wrap-up. Address any unresolved high-severity misconceptions. Prepare the student to synthesize the reading before the session ends. On the final substantive exchange, ask the student to synthesize: "In your own words, what is the author's central argument and what is the strongest evidence for it?"`,
+      guidance: wrapUpGuidance[sessionPurpose ?? "pre_class"] ?? `PHASE: wrap-up. Address any unresolved high-severity misconceptions. Ask the student to synthesize: "In your own words, what is the author's central argument and what is the strongest evidence for it?"`,
     };
   }
 
@@ -415,7 +505,8 @@ export function buildContextInstruction(options: ContextOptions): string {
 
   const phaseInfo = getConversationPhase(
     options.exchangeCount,
-    options.maxExchanges
+    options.maxExchanges,
+    options.sessionPurpose
   );
   lines.push(`[TUTOR_CONTEXT: ${phaseInfo.guidance}]`);
 

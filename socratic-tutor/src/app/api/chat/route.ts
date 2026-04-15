@@ -196,6 +196,7 @@ export async function POST(req: Request) {
         learningGoal: studentSession.session.learningGoal,
         learningOutcomes: studentSession.session.learningOutcomes,
         stance: studentSession.session.stance,
+        sessionPurpose: studentSession.session.sessionPurpose,
       },
       checkpoints
     );
@@ -213,6 +214,7 @@ export async function POST(req: Request) {
       activeSoftRevisit,
       hintLadderRung: topicMastery?.hintLadderRung ?? 0,
       prerequisiteMap: activePrerequisiteMap,
+      sessionPurpose: studentSession.session.sessionPurpose,
     });
 
     let currentConfidenceCheckId: string | null = null;

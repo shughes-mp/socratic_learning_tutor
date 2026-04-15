@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { getSessionPurposeBadgeClasses, getSessionPurposeOption } from "@/lib/session-purpose";
 import type {
   ApiError,
   MisconceptionClusterRecord,
@@ -104,6 +105,7 @@ export default function MisconceptionDashboardPage() {
     CheckpointDifficultyRecord[]
   >([]);
   const [toast, setToast] = useState<{ tone: "success" | "error"; message: string } | null>(null);
+  const [sessionPurpose, setSessionPurpose] = useState<string>("pre_class");
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -174,6 +176,10 @@ export default function MisconceptionDashboardPage() {
   useEffect(() => {
     fetchDashboard();
     fetchRecommendations();
+    fetch(`/api/sessions/${sessionId}`)
+      .then((res) => res.json())
+      .then((data) => { if (data?.sessionPurpose) setSessionPurpose(data.sessionPurpose); })
+      .catch(() => {});
     fetch(`/api/sessions/${sessionId}/checkpoints/difficulty`)
       .then((response) => response.json())
       .then((data) => {
@@ -379,11 +385,16 @@ export default function MisconceptionDashboardPage() {
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
                 Common misunderstandings
               </h1>
-              <p className="mt-3 max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
-                Review the patterns learners struggled with most, decide which
-                ones need class discussion, and turn those patterns into active
-                learning moves you can use in class.
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(sessionPurpose)}`}
+                >
+                  {getSessionPurposeOption(sessionPurpose).shortLabel}
+                </span>
+                <p className="max-w-[42rem] text-[15px] leading-7 text-[var(--dim-grey)]">
+                  Review the patterns learners struggled with most, decide which need class discussion, and turn them into active learning moves.
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">

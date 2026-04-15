@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { SESSION_PURPOSE_OPTIONS, getSessionPurposeBadgeClasses } from "@/lib/session-purpose";
 
 export default function InstructorCreatePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [sessionPurpose, setSessionPurpose] = useState("pre_class");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -28,6 +30,7 @@ export default function InstructorCreatePage() {
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
+          sessionPurpose,
         }),
       });
 
@@ -102,6 +105,42 @@ export default function InstructorCreatePage() {
                     rows={3}
                     className="minerva-textarea"
                   />
+                </div>
+
+                <div>
+                  <label className="minerva-label">Session Purpose</label>
+                  <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
+                    When in the learning cycle will students use this session? This shapes how the tutor questions and what the teaching brief measures.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {SESSION_PURPOSE_OPTIONS.map((option) => {
+                      const isSelected = sessionPurpose === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setSessionPurpose(option.value)}
+                          className={`rounded-xl border p-3 text-left transition-colors ${
+                            isSelected
+                              ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
+                              : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.3)]"
+                          }`}
+                        >
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(option.value)}`}
+                          >
+                            {option.shortLabel}
+                          </span>
+                          <p className="mt-1.5 text-xs font-medium text-[var(--charcoal)]">
+                            {option.cognitiveLevel}
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-4 text-[var(--dim-grey)]">
+                            {option.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {error && (

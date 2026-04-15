@@ -13,32 +13,10 @@ const VALID_LO_STATUSES = [
 
 const VALID_LO_CONFIDENCE = ["low", "medium", "high"] as const;
 
-const REPORT_SYSTEM_PROMPT = `You generate instructor teaching briefs from Socratic tutoring sessions. Your purpose is to help the instructor decide what to do NEXT - in the upcoming class discussion, in follow-up activities, or in the next session. Write in professional, direct prose. Use these section headers:
+// Legacy static prompt — kept for reference. Use buildReportSystemPrompt() instead.
+const REPORT_SYSTEM_PROMPT_LEGACY = `You generate instructor teaching briefs from Socratic tutoring sessions.`;
 
-SESSION SNAPSHOT
-- Session name, number of students, total exchanges. One sentence framing how the session went overall - momentum, not just numbers.
-
-READINESS HEATMAP
-- For each major topic from the readings, rate class readiness as GREEN, YELLOW, or RED.
-- Use topic mastery signals as a primary indicator: mastered tends GREEN, direct_answer_given tends YELLOW, uncertain or persistently unresolved tends RED.
-- After the ratings, write ONE sentence summarizing the overall readiness picture for the instructor.
-
-WHAT YOUR STUDENTS UNDERSTOOD WELL
-- 2-3 bullet points on topics or concepts where most students demonstrated solid understanding. Include brief representative evidence. Keep this section SHORT - the instructor needs to know what's safe to build on.
-
-WHERE YOUR STUDENTS NEED HELP
-- For each RED or YELLOW area, describe the specific misconception pattern, how many students showed it, and whether it was resolved in-session or remains open.
-- Distinguish between "resolved in session - reinforce briefly" vs. "unresolved - needs direct attention."
-- Include one representative student quote (first name only) per pattern.
-
-WHAT TO DO NEXT
-- For each gap identified above, suggest one concrete, specific teaching move. Frame as "In your next session, try..." or "Before the next class, consider..."
-- Connect each suggestion to the evidence. Don't give generic advice - tie it to what actually happened.
-
-PER-STUDENT NOTES
-- For each student: 2-3 sentences covering key strengths, key gaps, and one thing the instructor should watch for. Focus on what's actionable.
-- Include confidence calibration notes where relevant (for example: "reported high confidence but had unresolved misconception on X" or "uncertain but actually demonstrated solid understanding of Y").
-
+const LO_ASSESSMENT_RULES = `
 LEARNING OUTCOME ASSESSMENT
 - Assess each student's observed engagement against each outcome formatively.
 - After the main brief, emit one tag per student per learning outcome using this exact format:
@@ -55,9 +33,113 @@ CRITICAL RATING RULES
 - Require at least two distinct question-type opportunities before rating meets or exceeds.
 - Score text grounding and reasoning quality, not polish or vocabulary.
 - If unresolved high-severity misconceptions remain on a topic related to the learning outcome, the maximum rating is emerging.
-- These assessments are formative and instructor-facing, not summative records.
+- These assessments are formative and instructor-facing, not summative records.`;
 
-Under 900 words total for the main brief. Keep the LO tags separate from the prose.`;
+interface ReportPurposeFraming {
+  overallFrame: string;
+  heatmapTitle: string;
+  heatmapInstruction: string;
+  strengthsSectionTitle: string;
+  gapsSectionTitle: string;
+  nextStepsInstruction: string;
+  perStudentInstruction: string;
+}
+
+function getReportPurposeFraming(purpose: string): ReportPurposeFraming {
+  const framings: Record<string, ReportPurposeFraming> = {
+    pre_class: {
+      overallFrame: "This was a PRE-CLASS session. Help the instructor decide whether students are READY for the upcoming class. Frame everything around readiness to apply, not depth of mastery.",
+      heatmapTitle: "READINESS HEATMAP",
+      heatmapInstruction: `Rate class READINESS on each major topic as GREEN (ready to apply in class), YELLOW (understands basics but has gaps that may surface during application), or RED (significant misunderstandings that will block productive class work).
+After the ratings, write ONE sentence: "Overall, the class is [ready/mostly ready/not yet ready] for [topic]."
+IMPORTANT: Format as a structured list, one topic per line:
+- **Topic name**: [GREEN] Brief explanation
+- **Topic name**: [YELLOW] Brief explanation
+- **Topic name**: [RED] Brief explanation`,
+      strengthsSectionTitle: "WHAT YOUR STUDENTS ARE READY FOR",
+      gapsSectionTitle: "WHERE YOUR STUDENTS ARE NOT YET READY",
+      nextStepsInstruction: `For each gap, suggest what the instructor should do BEFORE or AT THE START of the upcoming class. Frame as "Before class, consider..." or "At the start of class, try..." Prioritize: what will most block productive class time if unaddressed?`,
+      perStudentInstruction: "For each student: 2-3 sentences covering readiness level, key gaps to watch for during class, and one strength to build on. Flag students who may need extra support during class activities.",
+    },
+    during_class_prep: {
+      overallFrame: "This was a DURING-CLASS PREP session (activation phase). Help the instructor understand what prior knowledge students activated and where retrieval gaps exist — so they can adapt the class session that is about to begin.",
+      heatmapTitle: "ACTIVATION HEATMAP",
+      heatmapInstruction: `Rate ACTIVATION LEVEL on each major topic as GREEN (strong retrieval, ready for application), YELLOW (partial retrieval, may need brief review before applying), or RED (failed to retrieve or retrieved incorrectly).
+Write ONE sentence summarizing what the class is primed for.
+IMPORTANT: Format as a structured list, one topic per line:
+- **Topic name**: [GREEN] Brief explanation
+- **Topic name**: [YELLOW] Brief explanation
+- **Topic name**: [RED] Brief explanation`,
+      strengthsSectionTitle: "WHAT YOUR STUDENTS RECALLED WELL",
+      gapsSectionTitle: "WHERE RETRIEVAL WAS WEAK",
+      nextStepsInstruction: "For each weak area, suggest a quick in-class move the instructor can use in the NEXT FEW MINUTES. Keep suggestions actionable within the current class period: 'Before starting the activity, briefly clarify...' or 'During the debrief, revisit...'",
+      perStudentInstruction: "For each student: 1-2 sentences on what they activated successfully and what the instructor should watch for during the upcoming activity. Keep very brief — the instructor is about to start teaching.",
+    },
+    during_class_reflection: {
+      overallFrame: "This was a DURING-CLASS REFLECTION session (consolidation phase). Help the instructor understand what students consolidated from the class session and what remains fragile before they leave.",
+      heatmapTitle: "CONSOLIDATION HEATMAP",
+      heatmapInstruction: `Rate CONSOLIDATION LEVEL on each major topic as GREEN (student can self-explain accurately), YELLOW (partial consolidation — remembers but cannot fully explain), or RED (did not consolidate or consolidated incorrectly).
+Write ONE sentence on overall consolidation.
+IMPORTANT: Format as a structured list, one topic per line:
+- **Topic name**: [GREEN] Brief explanation
+- **Topic name**: [YELLOW] Brief explanation
+- **Topic name**: [RED] Brief explanation`,
+      strengthsSectionTitle: "WHAT YOUR STUDENTS CONSOLIDATED",
+      gapsSectionTitle: "WHAT REMAINS FRAGILE",
+      nextStepsInstruction: "For each fragile area, suggest what the instructor should do BEFORE THE NEXT CLASS to reinforce it. Frame as 'For homework, ask students to...' or 'In the next session, start by...' Leverage spacing — suggest revisiting fragile topics after a delay.",
+      perStudentInstruction: "For each student: 2-3 sentences on what they consolidated, their key takeaway, and what the instructor should follow up on. Note gaps between student confidence and actual understanding.",
+    },
+    after_class: {
+      overallFrame: "This was an AFTER-CLASS session focused on far transfer and application depth. Help the instructor assess whether students can apply concepts flexibly in novel contexts, not just recall them.",
+      heatmapTitle: "TRANSFER HEATMAP",
+      heatmapInstruction: `Rate TRANSFER READINESS on each major topic as GREEN (can apply flexibly to novel contexts), YELLOW (can apply to familiar contexts but struggles with novel ones), or RED (cannot transfer beyond the original reading context).
+Write ONE sentence on overall depth.
+IMPORTANT: Format as a structured list, one topic per line:
+- **Topic name**: [GREEN] Brief explanation
+- **Topic name**: [YELLOW] Brief explanation
+- **Topic name**: [RED] Brief explanation`,
+      strengthsSectionTitle: "WHERE YOUR STUDENTS SHOWED DEPTH",
+      gapsSectionTitle: "WHERE TRANSFER BROKE DOWN",
+      nextStepsInstruction: "For each transfer gap, suggest how the instructor can build toward transfer in future sessions or assignments. Frame as 'In a future session, try...' or 'For the next assignment, consider...' Note which learning outcomes have sufficient evidence for assessment.",
+      perStudentInstruction: "For each student: 2-3 sentences on transfer capability, strongest application examples, and areas where understanding remains surface-level. Include LO evidence quality — which outcomes have strong evidence and which need more opportunities?",
+    },
+  };
+
+  return framings[purpose] ?? framings.pre_class;
+}
+
+function buildReportSystemPrompt(sessionPurpose: string): string {
+  const framing = getReportPurposeFraming(sessionPurpose);
+
+  return `You generate instructor teaching briefs from Socratic tutoring sessions. ${framing.overallFrame} Write in professional, direct prose. Use these section headers exactly:
+
+SESSION SNAPSHOT
+- Session name, number of students, total exchanges, session purpose. One sentence framing how the session went overall — momentum, not just numbers.
+
+WHAT TO DO NEXT
+- For each gap identified in the session, suggest one concrete, specific teaching move. ${framing.nextStepsInstruction}
+- Connect each suggestion to the evidence. Do not give generic advice — tie it to what actually happened.
+
+${framing.heatmapTitle}
+${framing.heatmapInstruction}
+
+${framing.strengthsSectionTitle}
+- 2-3 bullet points on topics or concepts where most students demonstrated solid understanding. Include brief representative evidence. Keep this section SHORT — the instructor needs to know what's safe to build on.
+
+${framing.gapsSectionTitle}
+- For each area of concern, describe the specific pattern, how many students showed it, and whether it was resolved in-session or remains open.
+- Distinguish between "resolved in session — reinforce briefly" vs. "unresolved — needs direct attention."
+- Include one representative student quote (first name only) per pattern.
+
+PER-STUDENT NOTES
+${framing.perStudentInstruction}
+Include confidence calibration notes where relevant (e.g., "reported high confidence but had unresolved misconception on X").
+${LO_ASSESSMENT_RULES}
+
+Under 900 words total for the main brief. Keep the LO tags separate from the prose.
+
+IMPORTANT: Use the section headers exactly as written above. The heatmap section must be titled "${framing.heatmapTitle}". Format heatmap entries as: - **Topic**: [GREEN/YELLOW/RED] explanation`;
+}
 
 function normalizeLearningOutcomes(rawValue: string | null | undefined): string[] {
   if (!rawValue) return [];
@@ -133,7 +215,7 @@ export async function generateInstructorReport(sessionId: string) {
 
   const learningOutcomes = normalizeLearningOutcomes(session.learningOutcomes);
 
-  let transcriptData = `SESSION: ${session.name}\n\n`;
+  let transcriptData = `SESSION: ${session.name}\nSESSION PURPOSE: ${session.sessionPurpose ?? "pre_class"}\n\n`;
   let totalExchanges = 0;
   let totalDirectAnswers = 0;
   let totalMisconceptions = 0;
@@ -229,7 +311,7 @@ export async function generateInstructorReport(sessionId: string) {
 
   const { text } = await generateText({
     model: anthropic(MODEL_PRIMARY),
-    system: REPORT_SYSTEM_PROMPT,
+    system: buildReportSystemPrompt(session.sessionPurpose ?? "pre_class"),
     prompt,
   });
 

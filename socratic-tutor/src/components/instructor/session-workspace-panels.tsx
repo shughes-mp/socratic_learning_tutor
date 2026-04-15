@@ -1,208 +1,108 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
-import { StepIndicator } from "@/components/ui/step-indicator";
+import {
+  SESSION_PURPOSE_OPTIONS,
+  getSessionPurposeBadgeClasses,
+  getSessionPurposeOption,
+} from "@/lib/session-purpose";
 import type { CheckpointRecord, FileInfo, SessionDetails } from "@/types";
 
-export interface QuestionSuggestion {
-  prompt: string;
-  processLevel: string;
-  focusArea: string | null;
-  rationale: string;
-  qualityLabels: string[];
-  expectations: string[];
-  misconceptions: string[];
-}
+// ─── Shared helpers ────────────────────────────────────────────────────────────
 
-type UploadCategory = "reading" | "assessment";
-type UploadHandlers = {
-  onDrop: (event: React.DragEvent, category: UploadCategory) => void;
-  onDragOver: (event: React.DragEvent, category: UploadCategory) => void;
-  onDragLeave: () => void;
-  onFileChange: (
-    event: React.ChangeEvent<HTMLInputElement>,
-    category: UploadCategory
-  ) => void;
-  onRemoveFile: (fileId: string, category: string) => void | Promise<void>;
-};
-
-type UploadUiState = {
-  dragActive: UploadCategory | null;
-  uploadingCategory: UploadCategory | null;
-  recentUploadCategory: UploadCategory | null;
-  recentUploadName: string | null;
-};
-
-type QuestionActions = {
-  onGenerateSuggestions: () => void | Promise<void>;
-  onAcceptSuggestion: (index: number) => void | Promise<void>;
-  onDismissSuggestion: (index: number) => void;
-  onCreateCheckpoint: () => void | Promise<void>;
-  onDragStartCheckpoint: (checkpointId: string) => void;
-  onDragOverCheckpoint: (event: React.DragEvent, checkpointId: string) => void;
-  onDropCheckpoint: (checkpointId: string) => void | Promise<void>;
-  onEndDragCheckpoint: () => void;
-  onStartEditingCheckpoint: (checkpoint: CheckpointRecord) => void;
-  onCancelEditingCheckpoint: () => void;
-  onSaveCheckpointEdit: (checkpointId: string) => void | Promise<void>;
-  onRemoveCheckpoint: (checkpointId: string) => void | Promise<void>;
-};
-
-type QuestionUiState = {
-  loadingCheckpoints: boolean;
-  savingCheckpoint: boolean;
-  generatingSuggestions: boolean;
-  suggestions: QuestionSuggestion[];
-  acceptingSuggestionIndex: number | null;
-  editingCheckpointId: string | null;
-  editingCheckpointPrompt: string;
-  draggedCheckpointId: string | null;
-  dragTargetCheckpointId: string | null;
-  showQuestionSavedState: boolean;
-  newCheckpointPrompt: string;
-};
-
-type TeachingContextActions = {
-  onGenerateSuggestedMap: () => void | Promise<void>;
-  onSaveTeachingContext: () => void | Promise<void>;
-};
-
-type TeachingContextUiState = {
-  showAdvanced: boolean;
-  generatingMap: boolean;
-  savingConfig: boolean;
-  showSavedState: boolean;
-  configSavedAt: Date | null;
-};
-
-function CollapsibleSection(props: {
-  title: string;
-  description?: string;
-  open: boolean;
-  onToggle: () => void;
-  summary?: ReactNode;
-  children: ReactNode;
-}) {
-  const { title, description, open, onToggle, summary, children } = props;
-
+function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <div className="minerva-card overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between p-6 text-left md:p-8"
-      >
-        <div>
-          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-            {title}
-          </h2>
-          {description ? (
-            <p className="mt-2 max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
-              {description}
-            </p>
-          ) : null}
-          {!open && summary ? <div className="mt-2">{summary}</div> : null}
-        </div>
-        <svg
-          className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {open ? <div className="space-y-5 px-6 pb-6 md:px-8 md:pb-8">{children}</div> : null}
-    </div>
+    <svg
+      className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform ${open ? "rotate-180" : ""}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
   );
 }
 
-export function WorkspaceHeader(props: {
+function FileIcon() {
+  return (
+    <svg className="h-4 w-4 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+}
+
+// ─── WorkspaceHeader ───────────────────────────────────────────────────────────
+
+interface WorkspaceHeaderProps {
   sessionId: string;
   session: SessionDetails;
   isActive: boolean;
   setupStep: 2 | 3 | 4 | null;
-}) {
-  const { sessionId, session, isActive, setupStep } = props;
+}
+
+export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: WorkspaceHeaderProps) {
+  const purposeOption = getSessionPurposeOption(session.sessionPurpose);
 
   return (
     <div className="minerva-card p-6 md:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <nav className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
             <Link href="/instructor" className="transition-colors hover:text-[var(--teal)]">
               Sessions
             </Link>
             <span>/</span>
-            <span className="text-[var(--charcoal)]">{session.name}</span>
+            <span className="text-[var(--charcoal)]">Workspace</span>
           </nav>
           <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
             {session.name}
           </h1>
-          {session.description ? (
-            <p className="mt-3 max-w-[36rem] text-[15px] leading-7 text-[var(--dim-grey)]">
-              {session.description}
-            </p>
-          ) : null}
-          {setupStep !== null ? (
-            <div className="mt-4">
-              <StepIndicator currentStep={setupStep} />
-            </div>
-          ) : null}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(session.sessionPurpose)}`}
+            >
+              {purposeOption.shortLabel}
+            </span>
+            {setupStep !== null && (
+              <span className="text-xs text-[var(--dim-grey)]">
+                Step {setupStep} of 4 —{" "}
+                {setupStep === 2 ? "Add a reading" : setupStep === 3 ? "Add questions" : "Share with learners"}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={isActive ? `/instructor/${sessionId}/monitor` : "#"}
-            aria-disabled={!isActive}
-            title={!isActive ? "Upload a reading to activate this session first" : undefined}
-            className={`minerva-button minerva-button-secondary ${
-              !isActive ? "pointer-events-none opacity-40" : ""
-            }`}
-          >
-            Learner progress
-          </Link>
-          <Link
-            href={isActive ? `/instructor/${sessionId}/report` : "#"}
-            aria-disabled={!isActive}
-            title={!isActive ? "Upload a reading to activate this session first" : undefined}
-            className={`minerva-button minerva-button-secondary ${
-              !isActive ? "pointer-events-none opacity-40" : ""
-            }`}
-          >
-            Teaching brief
-          </Link>
-          <Link
-            href={`/instructor/${sessionId}/misconceptions`}
-            className="minerva-button minerva-button-secondary"
-          >
-            Common misunderstandings
-          </Link>
-        </div>
+
+        {isActive && (
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button minerva-button-secondary text-sm">
+              Learner progress
+            </Link>
+            <Link href={`/instructor/${sessionId}/misconceptions`} className="minerva-button minerva-button-secondary text-sm">
+              Misunderstandings
+            </Link>
+            <Link href={`/instructor/${sessionId}/report`} className="minerva-button minerva-button-secondary text-sm">
+              Teaching brief
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-export function StatusBar(props: {
+// ─── StatusBar ─────────────────────────────────────────────────────────────────
+
+interface StatusBarProps {
   learnerCount: number;
   readingsCount: number;
   assessmentsCount: number;
-}) {
-  const { learnerCount, readingsCount, assessmentsCount } = props;
-  const inactive = readingsCount === 0;
+}
 
+export function StatusBar({ learnerCount, readingsCount, assessmentsCount }: StatusBarProps) {
   return (
-    <div
-      className={`px-4 py-3 text-sm ${
-        inactive
-          ? "border border-[rgba(144,111,18,0.22)] bg-[rgba(144,111,18,0.08)] text-[#906f12]"
-          : "border border-[rgba(17,120,144,0.18)] bg-[rgba(17,120,144,0.08)] text-[var(--teal)]"
-      }`}
-    >
-      {inactive
+    <div className="border border-[var(--rule)] bg-[rgba(17,120,144,0.04)] px-6 py-3 text-sm text-[var(--dim-grey)]">
+      {readingsCount === 0
         ? "Upload at least one reading to activate this session."
         : learnerCount === 0
           ? `Ready: ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""} uploaded. No learners yet.`
@@ -211,52 +111,52 @@ export function StatusBar(props: {
   );
 }
 
-export function AccessCodeCard(props: {
+// ─── AccessCodeCard ────────────────────────────────────────────────────────────
+
+interface AccessCodeCardProps {
   session: SessionDetails;
   isActive: boolean;
   copied: boolean;
-  onCopyLink: () => void | Promise<void>;
-}) {
-  const { session, isActive, copied, onCopyLink } = props;
+  onCopyLink: () => void;
+}
+
+export function AccessCodeCard({ session, isActive, copied, onCopyLink }: AccessCodeCardProps) {
+  const studentUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/s/${session.accessCode}`
+    : `/s/${session.accessCode}`;
 
   return (
-    <div className="minerva-card p-5">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <div className="minerva-card p-6 md:p-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className={`eyebrow ${isActive ? "eyebrow-teal" : "eyebrow-rose"}`}>
-            {isActive ? "Access Code" : "Access Code - Not yet active"}
-          </p>
-          <p
-            className={`mt-1 text-lg font-mono font-semibold ${
-              isActive
-                ? "text-[var(--charcoal)]"
-                : "select-none text-[var(--dim-grey)] blur-[3px]"
-            }`}
-          >
-            {session.accessCode}
-          </p>
-          {!isActive ? (
+          <p className="eyebrow eyebrow-teal">Student link</p>
+          <p className="mt-2 font-mono text-base text-[var(--charcoal)]">{studentUrl}</p>
+          {!isActive && (
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              Upload at least one reading below to activate this session.
+              Upload a reading to activate this session before sharing.
             </p>
-          ) : null}
+          )}
         </div>
-        {isActive ? (
-          <button onClick={onCopyLink} className="minerva-button">
-            {copied ? "Copied" : "Copy learner link"}
-          </button>
-        ) : null}
+        <button
+          onClick={onCopyLink}
+          disabled={!isActive}
+          className={`minerva-button ${!isActive ? "opacity-40 cursor-not-allowed" : ""}`}
+        >
+          {copied ? "Copied!" : "Copy link"}
+        </button>
       </div>
     </div>
   );
 }
 
-export function ActiveMonitoringCard(props: {
+// ─── ActiveMonitoringCard ──────────────────────────────────────────────────────
+
+interface ActiveMonitoringCardProps {
   sessionId: string;
   learnerCount: number;
-}) {
-  const { sessionId, learnerCount } = props;
+}
 
+export function ActiveMonitoringCard({ sessionId, learnerCount }: ActiveMonitoringCardProps) {
   return (
     <div className="minerva-card p-6 md:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -270,16 +170,10 @@ export function ActiveMonitoringCard(props: {
           <Link href={`/instructor/${sessionId}/monitor`} className="minerva-button">
             Learner progress
           </Link>
-          <Link
-            href={`/instructor/${sessionId}/report`}
-            className="minerva-button minerva-button-secondary"
-          >
+          <Link href={`/instructor/${sessionId}/report`} className="minerva-button minerva-button-secondary">
             Teaching brief
           </Link>
-          <Link
-            href={`/instructor/${sessionId}/misconceptions`}
-            className="minerva-button minerva-button-secondary"
-          >
+          <Link href={`/instructor/${sessionId}/misconceptions`} className="minerva-button minerva-button-secondary">
             Common misunderstandings
           </Link>
         </div>
@@ -288,311 +182,193 @@ export function ActiveMonitoringCard(props: {
   );
 }
 
-export function ReadingsSection(props: {
+// ─── ReadingsSection ───────────────────────────────────────────────────────────
+
+interface ReadingsSectionProps {
   open: boolean;
   onToggle: () => void;
   readings: FileInfo[];
-  uiState: UploadUiState;
-  readingInputRef: RefObject<HTMLInputElement | null>;
-  handlers: UploadHandlers;
-}) {
-  const {
-    open,
-    onToggle,
-    readings,
-    uiState,
-    readingInputRef,
-    handlers,
-  } = props;
+  uiState: {
+    dragActive: "reading" | "assessment" | null;
+    uploadingCategory: "reading" | "assessment" | null;
+    recentUploadCategory: "reading" | "assessment" | null;
+    recentUploadName: string | null;
+  };
+  readingInputRef: React.RefObject<HTMLInputElement>;
+  handlers: {
+    onDrop: (e: React.DragEvent, category: "reading" | "assessment") => void;
+    onDragOver: (e: React.DragEvent, category: "reading" | "assessment") => void;
+    onDragLeave: () => void;
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, category: "reading" | "assessment") => void;
+    onRemoveFile: (fileId: string, category: string) => void;
+  };
+}
+
+export function ReadingsSection({
+  open,
+  onToggle,
+  readings,
+  uiState,
+  readingInputRef,
+  handlers,
+}: ReadingsSectionProps) {
   const { dragActive, uploadingCategory, recentUploadCategory, recentUploadName } = uiState;
-  const { onDrop, onDragOver, onDragLeave, onFileChange, onRemoveFile } = handlers;
 
   return (
-    <CollapsibleSection
-      title="Readings"
-      open={open}
-      onToggle={onToggle}
-      summary={
-        readings.length > 0 ? (
-          <p className="text-sm text-[var(--dim-grey)]">
-            {readings.length} reading{readings.length !== 1 ? "s" : ""} uploaded
-          </p>
-        ) : (
-          <p className="text-sm text-[#906f12]">
-            No reading yet - upload one to activate the tutor
-          </p>
-        )
-      }
-    >
-      <div
-        onDrop={(event) => onDrop(event, "reading")}
-        onDragOver={(event) => onDragOver(event, "reading")}
-        onDragLeave={onDragLeave}
-        onClick={() => readingInputRef.current?.click()}
-        className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-          dragActive === "reading"
-            ? "border-[var(--teal)] bg-[rgba(17,120,144,0.08)]"
-            : "border-[var(--light-grey)] hover:border-[var(--teal)] hover:bg-[rgba(255,255,255,0.55)]"
-        }`}
+    <div className="minerva-card overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-6 text-left md:p-8"
       >
-        <input
-          ref={readingInputRef}
-          type="file"
-          accept=".pdf,.docx,.txt,.md"
-          onChange={(event) => onFileChange(event, "reading")}
-          className="hidden"
-        />
-        <p className="text-sm text-[var(--charcoal)]">
-          {uploadingCategory === "reading"
-            ? "Uploading reading..."
-            : "Drag and drop files here, or click to browse"}
-        </p>
-        <p className="mt-1 text-xs text-[var(--dim-grey)]">
-          PDF, DOCX, TXT, or Markdown up to 10MB
-        </p>
-        <p className="mt-1 text-xs text-[var(--dim-grey)]">
-          Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
-        </p>
-        {recentUploadCategory === "reading" && recentUploadName ? (
-          <p className="mt-3 text-xs font-medium text-[var(--teal)]">
-            Uploaded: {recentUploadName}
-          </p>
-        ) : null}
-      </div>
-
-      {readings.length > 0 ? (
-        <div className="space-y-2">
-          {readings.map((file) => (
-            <div
-              key={file.id}
-              className="flex items-center justify-between border p-3 transition-colors"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-[var(--charcoal)]">
-                  {file.filename}
-                </p>
-                <p className="mt-1 truncate text-xs text-[var(--dim-grey)]">{file.preview}</p>
-              </div>
-              <button
-                onClick={() => onRemoveFile(file.id, "reading")}
-                className="minerva-button minerva-button-secondary ml-4"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </CollapsibleSection>
-  );
-}
-
-function QuestionSuggestionCard(props: {
-  suggestion: QuestionSuggestion;
-  index: number;
-  acceptingSuggestionIndex: number | null;
-  onAcceptSuggestion: (index: number) => void | Promise<void>;
-  onDismissSuggestion: (index: number) => void;
-}) {
-  const { suggestion, index, acceptingSuggestionIndex, onAcceptSuggestion, onDismissSuggestion } = props;
-
-  return (
-    <div className="space-y-3 rounded-2xl border-2 border-dashed border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.04)] p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-            Suggestion {index + 1}
-          </span>
-          <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
-            {suggestion.prompt}
-          </p>
-          <p className="max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
-            {suggestion.rationale}
-          </p>
-          {suggestion.expectations.length > 0 ? (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-                Expected evidence
-              </p>
-              <ul className="mt-1 space-y-0.5 text-xs text-[var(--dim-grey)]">
-                {suggestion.expectations.map((expectation) => (
-                  <li key={expectation}>- {expectation}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {suggestion.misconceptions.length > 0 ? (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-                Likely misreadings
-              </p>
-              <ul className="mt-1 space-y-0.5 text-xs text-[var(--dim-grey)]">
-                {suggestion.misconceptions.map((misconception) => (
-                  <li key={misconception}>- {misconception}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-        <div className="flex flex-shrink-0 gap-2">
-          <button
-            onClick={() => onAcceptSuggestion(index)}
-            disabled={acceptingSuggestionIndex === index}
-            className="minerva-button"
-          >
-            {acceptingSuggestionIndex === index ? "Adding..." : "Accept"}
-          </button>
-          <button
-            onClick={() => onDismissSuggestion(index)}
-            className="minerva-button minerva-button-secondary"
-          >
-            Dismiss
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CheckpointCard(props: {
-  checkpoint: CheckpointRecord;
-  index: number;
-  isEditing: boolean;
-  editingCheckpointPrompt: string;
-  setEditingCheckpointPrompt: Dispatch<SetStateAction<string>>;
-  savingCheckpoint: boolean;
-  isDragging: boolean;
-  isDropTarget: boolean;
-  onDragStartCheckpoint: (checkpointId: string) => void;
-  onDragOverCheckpoint: (event: React.DragEvent, checkpointId: string) => void;
-  onDropCheckpoint: (checkpointId: string) => void | Promise<void>;
-  onEndDragCheckpoint: () => void;
-  onStartEditingCheckpoint: (checkpoint: CheckpointRecord) => void;
-  onCancelEditingCheckpoint: () => void;
-  onSaveCheckpointEdit: (checkpointId: string) => void | Promise<void>;
-  onRemoveCheckpoint: (checkpointId: string) => void | Promise<void>;
-}) {
-  const {
-    checkpoint,
-    index,
-    isEditing,
-    editingCheckpointPrompt,
-    setEditingCheckpointPrompt,
-    savingCheckpoint,
-    isDragging,
-    isDropTarget,
-    onDragStartCheckpoint,
-    onDragOverCheckpoint,
-    onDropCheckpoint,
-    onEndDragCheckpoint,
-    onStartEditingCheckpoint,
-    onCancelEditingCheckpoint,
-    onSaveCheckpointEdit,
-    onRemoveCheckpoint,
-  } = props;
-
-  return (
-    <div
-      draggable={!isEditing && !savingCheckpoint}
-      onDragStart={() => onDragStartCheckpoint(checkpoint.id)}
-      onDragOver={(event) => onDragOverCheckpoint(event, checkpoint.id)}
-      onDrop={() => onDropCheckpoint(checkpoint.id)}
-      onDragEnd={onEndDragCheckpoint}
-      className={`space-y-4 rounded-2xl border bg-[rgba(255,255,255,0.62)] p-4 transition-all ${
-        isDropTarget
-          ? "border-[var(--teal)] shadow-[0_0_0_2px_rgba(17,120,144,0.12)]"
-          : "border-[var(--rule)]"
-      } ${isDragging ? "cursor-grabbing opacity-60" : "cursor-grab"}`}
-    >
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-              Question {index + 1}
-            </span>
-            {!isEditing ? (
-              <span className="text-xs text-[var(--dim-grey)]">Drag to reorder</span>
-            ) : null}
-          </div>
-
-          {isEditing ? (
-            <textarea
-              value={editingCheckpointPrompt}
-              onChange={(event) => setEditingCheckpointPrompt(event.target.value)}
-              rows={4}
-              className="minerva-textarea"
-            />
-          ) : (
-            <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
-              {checkpoint.prompt}
+        <div>
+          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+            Readings
+          </h2>
+          {!open && readings.length > 0 && (
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">
+              {readings.length} reading{readings.length !== 1 ? "s" : ""} uploaded
             </p>
           )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {isEditing ? (
-            <>
-              <button
-                onClick={() => onSaveCheckpointEdit(checkpoint.id)}
-                disabled={savingCheckpoint}
-                className="minerva-button"
-              >
-                {savingCheckpoint ? "Saving..." : "Save"}
-              </button>
-              <button
-                onClick={onCancelEditingCheckpoint}
-                disabled={savingCheckpoint}
-                className="minerva-button minerva-button-secondary"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => onStartEditingCheckpoint(checkpoint)}
-                className="minerva-button minerva-button-secondary"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onRemoveCheckpoint(checkpoint.id)}
-                aria-label={`Delete question ${index + 1}`}
-                title="Delete question"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(223,47,38,0.24)] text-[20px] leading-none text-[var(--signal)] transition-colors hover:bg-[rgba(223,47,38,0.08)]"
-              >
-                ×
-              </button>
-            </>
+          {!open && readings.length === 0 && (
+            <p className="mt-2 text-sm text-[#906f12]">No readings yet — upload to activate this session</p>
           )}
         </div>
-      </div>
+        <ChevronIcon open={open} />
+      </button>
+
+      {open && (
+        <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+          <p className="text-sm text-[var(--dim-grey)]">
+            Upload the reading students will be tutored on. PDF, DOCX, TXT, or Markdown. Up to 50MB.
+          </p>
+
+          {/* Drop zone */}
+          <div
+            onDrop={(e) => handlers.onDrop(e, "reading")}
+            onDragOver={(e) => handlers.onDragOver(e, "reading")}
+            onDragLeave={handlers.onDragLeave}
+            className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+              dragActive === "reading"
+                ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
+                : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.4)] hover:bg-[rgba(17,120,144,0.02)]"
+            }`}
+            onClick={() => readingInputRef.current?.click()}
+          >
+            {uploadingCategory === "reading" ? (
+              <p className="text-sm text-[var(--dim-grey)]">Uploading…</p>
+            ) : (
+              <>
+                <svg className="h-7 w-7 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm text-[var(--dim-grey)]">
+                  <span className="font-medium text-[var(--teal)]">Click to upload</span> or drag and drop
+                </p>
+              </>
+            )}
+            <input
+              ref={readingInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,.md"
+              className="sr-only"
+              onChange={(e) => handlers.onFileChange(e, "reading")}
+            />
+          </div>
+
+          {/* Recent upload banner */}
+          {recentUploadCategory === "reading" && recentUploadName && (
+            <p className="text-xs text-[var(--teal)]">✓ {recentUploadName} uploaded</p>
+          )}
+
+          {/* File list */}
+          {readings.length > 0 && (
+            <ul className="space-y-2">
+              {readings.map((file) => (
+                <li
+                  key={file.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--rule)] px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileIcon />
+                    <span className="truncate text-sm text-[var(--charcoal)]">{file.filename}</span>
+                  </div>
+                  <button
+                    onClick={() => handlers.onRemoveFile(file.id, "reading")}
+                    className="flex-shrink-0 text-xs text-[var(--dim-grey)] hover:text-[var(--signal)]"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-export function QuestionsSection(props: {
+// ─── QuestionsSection ──────────────────────────────────────────────────────────
+
+interface Suggestion {
+  prompt: string;
+  processLevel: string;
+  focusArea: string | null;
+  rationale: string;
+  qualityLabels: string[];
+  expectations: string[];
+  misconceptions: string[];
+}
+
+interface QuestionsSectionProps {
   open: boolean;
   onToggle: () => void;
   session: SessionDetails;
   readingsCount: number;
   checkpoints: CheckpointRecord[];
-  uiState: QuestionUiState;
-  setEditingCheckpointPrompt: Dispatch<SetStateAction<string>>;
-  setNewCheckpointPrompt: Dispatch<SetStateAction<string>>;
-  actions: QuestionActions;
-}) {
-  const {
-    open,
-    onToggle,
-    session,
-    readingsCount,
-    checkpoints,
-    uiState,
-    setEditingCheckpointPrompt,
-    setNewCheckpointPrompt,
-    actions,
-  } = props;
+  uiState: {
+    loadingCheckpoints: boolean;
+    savingCheckpoint: boolean;
+    generatingSuggestions: boolean;
+    suggestions: Suggestion[];
+    acceptingSuggestionIndex: number | null;
+    editingCheckpointId: string | null;
+    editingCheckpointPrompt: string;
+    draggedCheckpointId: string | null;
+    dragTargetCheckpointId: string | null;
+    showQuestionSavedState: boolean;
+    newCheckpointPrompt: string;
+  };
+  setEditingCheckpointPrompt: (value: string) => void;
+  setNewCheckpointPrompt: (value: string) => void;
+  actions: {
+    onGenerateSuggestions: () => void;
+    onAcceptSuggestion: (index: number) => void;
+    onDismissSuggestion: (index: number) => void;
+    onCreateCheckpoint: () => void;
+    onDragStartCheckpoint: (id: string) => void;
+    onDragOverCheckpoint: (e: React.DragEvent, id: string) => void;
+    onDropCheckpoint: (id: string) => void;
+    onEndDragCheckpoint: () => void;
+    onStartEditingCheckpoint: (checkpoint: CheckpointRecord) => void;
+    onCancelEditingCheckpoint: () => void;
+    onSaveCheckpointEdit: (id: string) => void;
+    onRemoveCheckpoint: (id: string) => void;
+  };
+}
+
+export function QuestionsSection({
+  open,
+  onToggle,
+  session,
+  readingsCount,
+  checkpoints,
+  uiState,
+  setEditingCheckpointPrompt,
+  setNewCheckpointPrompt,
+  actions,
+}: QuestionsSectionProps) {
   const {
     loadingCheckpoints,
     savingCheckpoint,
@@ -606,481 +382,666 @@ export function QuestionsSection(props: {
     showQuestionSavedState,
     newCheckpointPrompt,
   } = uiState;
-  const {
-    onGenerateSuggestions,
-    onAcceptSuggestion,
-    onDismissSuggestion,
-    onCreateCheckpoint,
-    onDragStartCheckpoint,
-    onDragOverCheckpoint,
-    onDropCheckpoint,
-    onEndDragCheckpoint,
-    onStartEditingCheckpoint,
-    onCancelEditingCheckpoint,
-    onSaveCheckpointEdit,
-    onRemoveCheckpoint,
-  } = actions;
 
-  const recommendedCount = Math.floor((session.maxExchanges - 4) / 4);
-  const upperBound = Math.max(3, Math.floor(session.maxExchanges / 4));
+  const recommendedCount = Math.max(2, Math.floor((session.maxExchanges - 4) / 4));
+  const tooMany = checkpoints.length > recommendedCount + 2;
 
   return (
-    <CollapsibleSection
-      title="Key Questions"
-      description={`Questions learners should be able to answer after working through the reading. With ${session.maxExchanges} exchanges, aim for about ${recommendedCount} question${recommendedCount === 1 ? "" : "s"}.`}
-      open={open}
-      onToggle={onToggle}
-      summary={
-        checkpoints.length > 0 ? (
-          <p className="text-sm text-[var(--dim-grey)]">
-            {checkpoints.length} question{checkpoints.length !== 1 ? "s" : ""}
-          </p>
-        ) : (
-          <p className="text-sm text-[#906f12]">
-            No questions yet - add 2-4 to guide the tutor
-          </p>
-        )
-      }
-    >
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onGenerateSuggestions}
-            disabled={generatingSuggestions || readingsCount === 0}
-            title={readingsCount === 0 ? "Upload a reading first" : undefined}
-            className="minerva-button minerva-button-secondary"
-          >
-            {generatingSuggestions ? "Generating..." : "Suggest questions from reading"}
-          </button>
-          <p className="text-xs uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-            {checkpoints.length} question{checkpoints.length === 1 ? "" : "s"}
-          </p>
-        </div>
-      </div>
-
-      {session.maxExchanges > 0 && checkpoints.length > upperBound ? (
-        <div className="rounded-xl border border-[rgba(144,111,18,0.22)] bg-[rgba(144,111,18,0.08)] px-4 py-3 text-sm text-[#906f12]">
-          You have {checkpoints.length} questions with {session.maxExchanges} exchanges.
-          Consider trimming this to roughly {recommendedCount} to {upperBound} questions for this
-          session length.
-        </div>
-      ) : null}
-
-      {suggestions.length > 0 ? (
-        <div className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-            Suggested questions - review and accept or dismiss
-          </p>
-          {suggestions.map((suggestion, index) => (
-            <QuestionSuggestionCard
-              key={`suggestion-${index}`}
-              suggestion={suggestion}
-              index={index}
-              acceptingSuggestionIndex={acceptingSuggestionIndex}
-              onAcceptSuggestion={onAcceptSuggestion}
-              onDismissSuggestion={onDismissSuggestion}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {loadingCheckpoints ? (
-        <div className="rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
-          Loading questions...
-        </div>
-      ) : checkpoints.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--light-grey)] bg-[rgba(255,255,255,0.48)] px-4 py-5 text-sm text-[var(--dim-grey)]">
-          No questions yet. Add 2-4 strong questions to guide the tutor through the reading.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {checkpoints.map((checkpoint, index) => (
-            <CheckpointCard
-              key={checkpoint.id}
-              checkpoint={checkpoint}
-              index={index}
-              isEditing={editingCheckpointId === checkpoint.id}
-              editingCheckpointPrompt={editingCheckpointPrompt}
-              setEditingCheckpointPrompt={setEditingCheckpointPrompt}
-              savingCheckpoint={savingCheckpoint}
-              isDragging={draggedCheckpointId === checkpoint.id}
-              isDropTarget={dragTargetCheckpointId === checkpoint.id}
-              onDragStartCheckpoint={onDragStartCheckpoint}
-              onDragOverCheckpoint={onDragOverCheckpoint}
-              onDropCheckpoint={onDropCheckpoint}
-              onEndDragCheckpoint={onEndDragCheckpoint}
-              onStartEditingCheckpoint={onStartEditingCheckpoint}
-              onCancelEditingCheckpoint={onCancelEditingCheckpoint}
-              onSaveCheckpointEdit={onSaveCheckpointEdit}
-              onRemoveCheckpoint={onRemoveCheckpoint}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="space-y-4 rounded-2xl border border-[var(--rule)] bg-[rgba(255,255,255,0.5)] p-4">
+    <div className="minerva-card overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-6 text-left md:p-8"
+      >
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-            Add question
-          </p>
-          <p className="mt-2 text-sm leading-6 text-[var(--dim-grey)]">
-            Write a question worth discussing, not something learners can answer by copying one line from the reading.
-          </p>
-        </div>
-
-        <textarea
-          value={newCheckpointPrompt}
-          onChange={(event) => setNewCheckpointPrompt(event.target.value)}
-          rows={4}
-          placeholder="e.g. Why does the author's argument about system behavior depend on the claim that structure drives outcomes?"
-          className="minerva-textarea"
-        />
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            onClick={onCreateCheckpoint}
-            disabled={savingCheckpoint}
-            className="minerva-button"
-          >
-            {savingCheckpoint ? "Saving..." : "Add question"}
-          </button>
-          {showQuestionSavedState ? (
-            <p className="text-xs font-medium text-[var(--teal)]">
-              Question added and ready to use.
-            </p>
-          ) : (
-            <p className="text-xs text-[var(--dim-grey)]">
-              Aim for 2-4 strong questions for most sessions.
+          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+            Key questions
+          </h2>
+          {!open && checkpoints.length > 0 && (
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">
+              {checkpoints.length} question{checkpoints.length !== 1 ? "s" : ""}
             </p>
           )}
+          {!open && checkpoints.length === 0 && (
+            <p className="mt-2 text-sm text-[#906f12]">No questions yet — add 2–4 to guide the tutor</p>
+          )}
         </div>
-      </div>
-    </CollapsibleSection>
+        <ChevronIcon open={open} />
+      </button>
+
+      {open && (
+        <div className="space-y-6 px-6 pb-6 md:px-8 md:pb-8">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <p className="max-w-[44rem] text-sm text-[var(--dim-grey)]">
+              These guide what the tutor focuses on. Aim for {recommendedCount}–{recommendedCount + 1} questions that
+              require interpretation, inference, or synthesis — not recall.
+            </p>
+            <button
+              onClick={actions.onGenerateSuggestions}
+              disabled={generatingSuggestions || readingsCount === 0}
+              title={readingsCount === 0 ? "Upload a reading first" : undefined}
+              className="minerva-button minerva-button-secondary flex-shrink-0 text-sm"
+            >
+              {generatingSuggestions ? "Generating…" : "Suggest from reading"}
+            </button>
+          </div>
+
+          {tooMany && (
+            <p className="text-xs text-[#906f12]">
+              {checkpoints.length} questions for {session.maxExchanges} exchanges may be too many. Consider removing
+              lower-priority questions or increasing the exchange limit.
+            </p>
+          )}
+
+          {/* Suggestions */}
+          {suggestions.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                Suggested questions — review and accept or dismiss
+              </p>
+              {suggestions.map((suggestion, index) => (
+                <div
+                  key={`suggestion-${index}`}
+                  className="space-y-3 rounded-2xl border-2 border-dashed border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.04)] p-4"
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+                          Suggestion {index + 1}
+                        </span>
+                        {suggestion.focusArea && (
+                          <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
+                            {suggestion.focusArea}
+                          </span>
+                        )}
+                      </div>
+                      <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
+                        {suggestion.prompt}
+                      </p>
+                      {suggestion.rationale && (
+                        <p className="text-xs text-[var(--dim-grey)]">{suggestion.rationale}</p>
+                      )}
+                      {suggestion.expectations.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                            Expected evidence
+                          </p>
+                          <ul className="mt-1 space-y-0.5 text-xs text-[var(--dim-grey)]">
+                            {suggestion.expectations.map((e, i) => (
+                              <li key={i}>— {e}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {suggestion.misconceptions.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
+                            Likely misreadings
+                          </p>
+                          <ul className="mt-1 space-y-0.5 text-xs text-[var(--dim-grey)]">
+                            {suggestion.misconceptions.map((m, i) => (
+                              <li key={i}>— {m}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-shrink-0 gap-2">
+                      <button
+                        onClick={() => actions.onAcceptSuggestion(index)}
+                        disabled={acceptingSuggestionIndex === index}
+                        className="minerva-button text-sm"
+                      >
+                        {acceptingSuggestionIndex === index ? "Adding…" : "Accept"}
+                      </button>
+                      <button
+                        onClick={() => actions.onDismissSuggestion(index)}
+                        className="minerva-button minerva-button-secondary text-sm"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Existing checkpoints */}
+          {loadingCheckpoints ? (
+            <p className="text-sm text-[var(--dim-grey)]">Loading questions…</p>
+          ) : checkpoints.length > 0 ? (
+            <ul className="space-y-2">
+              {checkpoints.map((checkpoint, index) => (
+                <li
+                  key={checkpoint.id}
+                  draggable
+                  onDragStart={() => actions.onDragStartCheckpoint(checkpoint.id)}
+                  onDragOver={(e) => actions.onDragOverCheckpoint(e, checkpoint.id)}
+                  onDrop={() => actions.onDropCheckpoint(checkpoint.id)}
+                  onDragEnd={actions.onEndDragCheckpoint}
+                  className={`rounded-xl border px-4 py-3 transition-colors ${
+                    draggedCheckpointId === checkpoint.id
+                      ? "opacity-40"
+                      : dragTargetCheckpointId === checkpoint.id && draggedCheckpointId !== checkpoint.id
+                        ? "border-[var(--teal)] bg-[rgba(17,120,144,0.04)]"
+                        : "border-[var(--rule)] bg-white"
+                  }`}
+                >
+                  {editingCheckpointId === checkpoint.id ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={editingCheckpointPrompt}
+                        onChange={(e) => setEditingCheckpointPrompt(e.target.value)}
+                        rows={3}
+                        className="minerva-input w-full resize-none text-sm"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => actions.onSaveCheckpointEdit(checkpoint.id)}
+                          disabled={savingCheckpoint}
+                          className="minerva-button text-sm"
+                        >
+                          {savingCheckpoint ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          onClick={actions.onCancelEditingCheckpoint}
+                          className="minerva-button minerva-button-secondary text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="mt-0.5 flex-shrink-0 text-xs font-semibold text-[var(--dim-grey)]">
+                          {index + 1}
+                        </span>
+                        <p className="text-sm leading-6 text-[var(--charcoal)]">{checkpoint.prompt}</p>
+                      </div>
+                      <div className="flex flex-shrink-0 gap-2">
+                        <button
+                          onClick={() => actions.onStartEditingCheckpoint(checkpoint)}
+                          className="text-xs text-[var(--dim-grey)] hover:text-[var(--teal)]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => actions.onRemoveCheckpoint(checkpoint.id)}
+                          className="text-xs text-[var(--dim-grey)] hover:text-[var(--signal)]"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {/* Add new checkpoint */}
+          <div className="space-y-3 border-t border-[var(--rule)] pt-5">
+            <label className="minerva-label">Add a question</label>
+            <textarea
+              value={newCheckpointPrompt}
+              onChange={(e) => setNewCheckpointPrompt(e.target.value)}
+              placeholder="e.g. What does Meadows mean by 'system behavior is intrinsic'?"
+              rows={3}
+              className="minerva-input w-full resize-none text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  actions.onCreateCheckpoint();
+                }
+              }}
+            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={actions.onCreateCheckpoint}
+                disabled={savingCheckpoint || !newCheckpointPrompt.trim()}
+                className="minerva-button text-sm"
+              >
+                {savingCheckpoint ? "Adding…" : "Add question"}
+              </button>
+              {showQuestionSavedState && (
+                <p className="text-xs text-[var(--teal)]">Question added.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-export function TeachingContextSection(props: {
+// ─── TeachingContextSection ────────────────────────────────────────────────────
+
+interface TeachingContextSectionProps {
   open: boolean;
   onToggle: () => void;
   session: SessionDetails;
-  setSession: Dispatch<SetStateAction<SessionDetails | null>>;
-  setShowAdvanced: Dispatch<SetStateAction<boolean>>;
+  setSession: React.Dispatch<React.SetStateAction<SessionDetails | null>>;
+  setShowAdvanced: React.Dispatch<React.SetStateAction<boolean>>;
   readingsCount: number;
-  uiState: TeachingContextUiState;
-  actions: TeachingContextActions;
+  uiState: {
+    showAdvanced: boolean;
+    generatingMap: boolean;
+    savingConfig: boolean;
+    showSavedState: boolean;
+    configSavedAt: Date | null;
+  };
+  actions: {
+    onGenerateSuggestedMap: () => void;
+    onSaveTeachingContext: () => void;
+  };
   recommendedCheckpoints: number;
   formatSavedTime: (date: Date) => string;
-}) {
-  const {
-    open,
-    onToggle,
-    session,
-    setSession,
-    setShowAdvanced,
-    readingsCount,
-    uiState,
-    actions,
-    recommendedCheckpoints,
-    formatSavedTime,
-  } = props;
-  const { showAdvanced, generatingMap, savingConfig, showSavedState, configSavedAt } = uiState;
-  const { onGenerateSuggestedMap, onSaveTeachingContext } = actions;
+}
 
-  const hasConfig = Boolean(
-    session.courseContext || session.learningGoal || session.learningOutcomes
-  );
+export function TeachingContextSection({
+  open,
+  onToggle,
+  session,
+  setSession,
+  setShowAdvanced,
+  readingsCount,
+  uiState,
+  actions,
+  formatSavedTime,
+}: TeachingContextSectionProps) {
+  const { showAdvanced, generatingMap, savingConfig, showSavedState, configSavedAt } = uiState;
+  const isConfigured = !!(session.courseContext || session.learningGoal || session.learningOutcomes);
+
+  function updateSession(updates: Partial<SessionDetails>) {
+    setSession((prev) => (prev ? { ...prev, ...updates } : prev));
+  }
 
   return (
-    <CollapsibleSection
-      title="Teaching context"
-      description="Help the tutor understand your course, your goals, and what good performance looks like. Optional, but meaningfully improves the quality of questions and feedback."
-      open={open}
-      onToggle={onToggle}
-      summary={
-        <p className="text-sm text-[var(--dim-grey)]">
-          {hasConfig ? "Configured" : "Not yet configured"}
-        </p>
-      }
-    >
-      <fieldset className="space-y-3 rounded-xl border border-[var(--rule)] bg-[rgba(255,255,255,0.42)] p-4">
-        <legend className="px-1 text-sm font-medium text-[var(--charcoal)]">
-          Interaction style
-        </legend>
-
-        <div className="space-y-2">
-          <label className="flex cursor-pointer items-start space-x-3">
-            <input
-              type="radio"
-              name="stance"
-              value="directed"
-              checked={(session.stance ?? "directed") === "directed"}
-              onChange={(event) =>
-                setSession((prev) =>
-                  prev ? { ...prev, stance: event.target.value as "directed" | "mentor" } : prev
-                )
-              }
-              className="mt-1"
-            />
-            <div>
-              <div className="text-sm font-medium text-[var(--charcoal)]">Directed Tutor</div>
-              <div className="text-xs text-[var(--dim-grey)]">
-                Guides the learner through probing questions. The tutor leads.
-              </div>
-            </div>
-          </label>
-
-          <label className="flex cursor-pointer items-start space-x-3">
-            <input
-              type="radio"
-              name="stance"
-              value="mentor"
-              checked={session.stance === "mentor"}
-              onChange={(event) =>
-                setSession((prev) =>
-                  prev ? { ...prev, stance: event.target.value as "directed" | "mentor" } : prev
-                )
-              }
-              className="mt-1"
-            />
-            <div>
-              <div className="text-sm font-medium text-[var(--charcoal)]">Peer Mentor</div>
-              <div className="text-xs text-[var(--dim-grey)]">
-                Engages as a thinking partner, challenging interpretations collaboratively. Good for experienced learners.
-              </div>
-            </div>
-          </label>
+    <div className="minerva-card overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-6 text-left md:p-8"
+      >
+        <div>
+          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+            Teaching context
+          </h2>
+          {!open && isConfigured && (
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">Configured</p>
+          )}
+          {!open && !isConfigured && (
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">Not yet configured</p>
+          )}
         </div>
-      </fieldset>
+        <ChevronIcon open={open} />
+      </button>
 
-      <div className="space-y-2">
-        <label className="minerva-label">Where this fits in your course</label>
-        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-          Background the tutor needs - what course this is for, where learners are in the curriculum, and what they have covered so far.
-        </p>
-        <textarea
-          value={session.courseContext ?? ""}
-          onChange={(event) =>
-            setSession((prev) => (prev ? { ...prev, courseContext: event.target.value } : prev))
-          }
-          rows={3}
-          placeholder="e.g. This is Week 4 of a 10-week unit on systems thinking. Learners have read Meadows chapters 1-3 and are familiar with stocks and flows, but have not yet covered feedback loops."
-          className="minerva-textarea"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="minerva-label">Learning outcomes to assess</label>
-        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-          The specific skills or understandings you want to track. The tutor will assess each learner against these and include formative ratings in the teaching brief.
-        </p>
-        <textarea
-          value={session.learningOutcomes ?? ""}
-          onChange={(event) =>
-            setSession((prev) =>
-              prev ? { ...prev, learningOutcomes: event.target.value } : prev
-            )
-          }
-          rows={3}
-          placeholder="e.g. Learners will be able to reconstruct the author's central argument, identify unstated assumptions, and evaluate the strength of the evidence presented."
-          className="minerva-textarea"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className="minerva-label">Session goal</label>
-        <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-          The overarching understanding you are building toward. This shapes how the tutor opens the session, selects questions, and frames the closing synthesis.
-        </p>
-        <textarea
-          value={session.learningGoal ?? ""}
-          onChange={(event) =>
-            setSession((prev) => (prev ? { ...prev, learningGoal: event.target.value } : prev))
-          }
-          rows={3}
-          placeholder="e.g. Explain the difference between reinforcing and balancing feedback loops, and identify at least one example of each in the reading."
-          className="minerva-textarea"
-        />
-      </div>
-
-      {session.maxExchanges ? (
-        <div className="minerva-panel p-4 text-sm text-[var(--charcoal)]">
-          <p className="mb-1 font-semibold text-[var(--teal)]">Question capacity</p>
-          <p className="leading-6 text-[var(--dim-grey)]">
-            With <strong>{session.maxExchanges} exchanges</strong>, this session can meaningfully cover approximately{" "}
-            <strong>
-              {recommendedCheckpoints} key question{recommendedCheckpoints === 1 ? "" : "s"}
-            </strong>
-            . This assumes roughly four exchanges per question, plus exchanges for orientation and wrap-up.
-          </p>
-        </div>
-      ) : null}
-
-      <div className="space-y-3">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced((value) => !value)}
-          className="flex items-center gap-2 text-xs font-semibold text-[var(--dim-grey)] transition-colors hover:text-[var(--charcoal)]"
-        >
-          <svg
-            className={`h-3.5 w-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          Advanced settings
-        </button>
-
-        {showAdvanced ? (
-          <>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <label className="minerva-label">Concept dependencies</label>
-                <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-                  A map of which concepts build on others. You can generate this automatically from your reading.
-                </p>
-              </div>
-              <button
-                onClick={onGenerateSuggestedMap}
-                disabled={generatingMap || readingsCount === 0}
-                title={readingsCount === 0 ? "Upload a reading first to generate a map" : undefined}
-                className="minerva-button minerva-button-secondary"
-              >
-                {generatingMap ? "Generating..." : "Generate from readings"}
-              </button>
+      {open && (
+        <div className="space-y-8 px-6 pb-8 md:px-8">
+          {/* Session Purpose Selector */}
+          <div className="space-y-3">
+            <div>
+              <label className="minerva-label">Session purpose</label>
+              <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
+                When will students use this session? The tutor adapts its questioning strategy and cognitive target
+                based on this.
+              </p>
             </div>
-            <textarea
-              value={session.prerequisiteMap ?? ""}
-              onChange={(event) =>
-                setSession((prev) =>
-                  prev ? { ...prev, prerequisiteMap: event.target.value } : prev
-                )
-              }
-              rows={8}
-              placeholder='{"concepts":[{"id":"foundations","label":"Foundations","level":"foundational","prerequisites":[]}]}'
-              className="minerva-textarea resize-y font-mono text-xs"
-            />
-          </>
-        ) : null}
-      </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {SESSION_PURPOSE_OPTIONS.map((option) => {
+                const isSelected = session.sessionPurpose === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => updateSession({ sessionPurpose: option.value })}
+                    className={`rounded-2xl border p-4 text-left transition-colors ${
+                      isSelected
+                        ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
+                        : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.3)] hover:bg-[rgba(17,120,144,0.02)]"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(option.value)}`}
+                      >
+                        {option.shortLabel}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--dim-grey)]">
+                        {option.cognitiveLevel}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-5 text-[var(--charcoal)]">{option.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-      <div className="pt-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            onClick={onSaveTeachingContext}
-            disabled={savingConfig}
-            className="minerva-button"
-          >
-            {savingConfig ? "Saving..." : showSavedState ? "Saved" : "Save configuration"}
-          </button>
-          {configSavedAt || showSavedState ? (
+          {/* Course context */}
+          <div className="space-y-2">
+            <label className="minerva-label" htmlFor="courseContext">
+              Where this fits in your course
+            </label>
             <p className="text-xs text-[var(--dim-grey)]">
-              {showSavedState
-                ? "Settings saved."
-                : configSavedAt
-                  ? `Last saved at ${formatSavedTime(configSavedAt)}`
-                  : ""}
+              Optional. Helps the tutor connect this reading to larger course themes and prior sessions.
             </p>
-          ) : null}
+            <textarea
+              id="courseContext"
+              value={session.courseContext ?? ""}
+              onChange={(e) => updateSession({ courseContext: e.target.value || null })}
+              placeholder="e.g. Week 4 of Systems Thinking. Students have covered feedback loops and delays."
+              rows={3}
+              className="minerva-input w-full resize-none text-sm"
+            />
+          </div>
+
+          {/* Session goal */}
+          <div className="space-y-2">
+            <label className="minerva-label" htmlFor="learningGoal">
+              Session goal
+            </label>
+            <p className="text-xs text-[var(--dim-grey)]">
+              The overarching understanding you&apos;re building toward. Shapes how the tutor opens and closes the
+              session.
+            </p>
+            <textarea
+              id="learningGoal"
+              value={session.learningGoal ?? ""}
+              onChange={(e) => updateSession({ learningGoal: e.target.value || null })}
+              placeholder="e.g. Understand how system structure drives behavior — not external events."
+              rows={3}
+              className="minerva-input w-full resize-none text-sm"
+            />
+          </div>
+
+          {/* Learning outcomes */}
+          <div className="space-y-2">
+            <label className="minerva-label" htmlFor="learningOutcomes">
+              Learning outcomes to assess
+            </label>
+            <p className="text-xs text-[var(--dim-grey)]">
+              The specific skills or understandings you want to track. The tutor will assess each learner against
+              these and include formative ratings in the teaching brief.
+            </p>
+            <textarea
+              id="learningOutcomes"
+              value={session.learningOutcomes ?? ""}
+              onChange={(e) => updateSession({ learningOutcomes: e.target.value || null })}
+              placeholder={"1. Explain how feedback loops sustain system behavior.\n2. Distinguish between event-level and structural explanations."}
+              rows={4}
+              className="minerva-input w-full resize-none text-sm"
+            />
+          </div>
+
+          {/* Advanced settings */}
+          <div className="border-t border-[var(--rule)] pt-6">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)] hover:text-[var(--charcoal)]"
+            >
+              <svg
+                className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Advanced settings
+            </button>
+
+            {showAdvanced && (
+              <div className="mt-6 space-y-6">
+                {/* Tutor stance */}
+                <div className="space-y-2">
+                  <label className="minerva-label">Tutor stance</label>
+                  <p className="text-xs text-[var(--dim-grey)]">
+                    Directed: formal authority guiding comprehension. Mentor: collaborative inquiry, suited for
+                    professional learners.
+                  </p>
+                  <div className="flex gap-3">
+                    {(["directed", "mentor"] as const).map((stance) => (
+                      <button
+                        key={stance}
+                        type="button"
+                        onClick={() => updateSession({ stance })}
+                        className={`rounded-xl border px-4 py-2 text-sm capitalize transition-colors ${
+                          session.stance === stance
+                            ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)] text-[var(--teal)]"
+                            : "border-[var(--rule)] text-[var(--charcoal)] hover:border-[rgba(17,120,144,0.3)]"
+                        }`}
+                      >
+                        {stance}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Max exchanges */}
+                <div className="space-y-2">
+                  <label className="minerva-label" htmlFor="maxExchanges">
+                    Max exchanges
+                  </label>
+                  <p className="text-xs text-[var(--dim-grey)]">
+                    The session ends after this many back-and-forth turns. Default 20 (~15 min).
+                  </p>
+                  <input
+                    id="maxExchanges"
+                    type="number"
+                    min={4}
+                    max={100}
+                    value={session.maxExchanges}
+                    onChange={(e) => updateSession({ maxExchanges: Number(e.target.value) })}
+                    className="minerva-input w-32 text-sm"
+                  />
+                </div>
+
+                {/* Schedule */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="minerva-label" htmlFor="opensAt">
+                      Opens at
+                    </label>
+                    <input
+                      id="opensAt"
+                      type="datetime-local"
+                      value={session.opensAt ? session.opensAt.slice(0, 16) : ""}
+                      onChange={(e) => updateSession({ opensAt: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                      className="minerva-input w-full text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="minerva-label" htmlFor="closesAt">
+                      Closes at
+                    </label>
+                    <input
+                      id="closesAt"
+                      type="datetime-local"
+                      value={session.closesAt ? session.closesAt.slice(0, 16) : ""}
+                      onChange={(e) => updateSession({ closesAt: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                      className="minerva-input w-full text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Prerequisite map */}
+                {readingsCount > 0 && (
+                  <div className="space-y-2">
+                    <label className="minerva-label">Prerequisite concept map</label>
+                    <p className="text-xs text-[var(--dim-grey)]">
+                      JSON map of concept dependencies. The tutor checks prerequisites before advancing topics.
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={actions.onGenerateSuggestedMap}
+                        disabled={generatingMap}
+                        className="minerva-button minerva-button-secondary text-sm"
+                      >
+                        {generatingMap ? "Generating…" : "Generate from reading"}
+                      </button>
+                    </div>
+                    {session.prerequisiteMap && (
+                      <textarea
+                        value={session.prerequisiteMap}
+                        onChange={(e) => updateSession({ prerequisiteMap: e.target.value || null })}
+                        rows={6}
+                        className="minerva-input w-full resize-y font-mono text-xs"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Save button */}
+          <div className="flex items-center gap-4 border-t border-[var(--rule)] pt-6">
+            <button
+              onClick={actions.onSaveTeachingContext}
+              disabled={savingConfig}
+              className="minerva-button"
+            >
+              {savingConfig ? "Saving…" : "Save settings"}
+            </button>
+            {showSavedState && configSavedAt && (
+              <p className="text-xs text-[var(--teal)]">Saved at {formatSavedTime(configSavedAt)}</p>
+            )}
+          </div>
         </div>
-      </div>
-    </CollapsibleSection>
+      )}
+    </div>
   );
 }
 
-export function AssessmentsSection(props: {
+// ─── AssessmentsSection ────────────────────────────────────────────────────────
+
+interface AssessmentsSectionProps {
   open: boolean;
   onToggle: () => void;
   assessments: FileInfo[];
-  uiState: UploadUiState;
-  assessmentInputRef: RefObject<HTMLInputElement | null>;
-  handlers: UploadHandlers;
-}) {
-  const {
-    open,
-    onToggle,
-    assessments,
-    uiState,
-    assessmentInputRef,
-    handlers,
-  } = props;
+  uiState: {
+    dragActive: "reading" | "assessment" | null;
+    uploadingCategory: "reading" | "assessment" | null;
+    recentUploadCategory: "reading" | "assessment" | null;
+    recentUploadName: string | null;
+  };
+  assessmentInputRef: React.RefObject<HTMLInputElement>;
+  handlers: {
+    onDrop: (e: React.DragEvent, category: "reading" | "assessment") => void;
+    onDragOver: (e: React.DragEvent, category: "reading" | "assessment") => void;
+    onDragLeave: () => void;
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, category: "reading" | "assessment") => void;
+    onRemoveFile: (fileId: string, category: string) => void;
+  };
+}
+
+export function AssessmentsSection({
+  open,
+  onToggle,
+  assessments,
+  uiState,
+  assessmentInputRef,
+  handlers,
+}: AssessmentsSectionProps) {
   const { dragActive, uploadingCategory, recentUploadCategory, recentUploadName } = uiState;
-  const { onDrop, onDragOver, onDragLeave, onFileChange, onRemoveFile } = handlers;
 
   return (
-    <CollapsibleSection
-      title="Assessments"
-      description="Upload your assignments or exam questions. The tutor reads them to understand what learners are working toward, but will never reveal or directly answer them."
-      open={open}
-      onToggle={onToggle}
-      summary={
-        <p className="text-sm text-[var(--dim-grey)]">
-          {assessments.length > 0
-            ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} uploaded`
-            : "No assessments uploaded"}
-        </p>
-      }
-    >
-      <div
-        onDrop={(event) => onDrop(event, "assessment")}
-        onDragOver={(event) => onDragOver(event, "assessment")}
-        onDragLeave={onDragLeave}
-        onClick={() => assessmentInputRef.current?.click()}
-        className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-          dragActive === "assessment"
-            ? "border-[var(--rose)] bg-[rgba(165,65,125,0.08)]"
-            : "border-[var(--light-grey)] hover:border-[var(--rose)] hover:bg-[rgba(255,255,255,0.55)]"
-        }`}
+    <div className="minerva-card overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-6 text-left md:p-8"
       >
-        <input
-          ref={assessmentInputRef}
-          type="file"
-          accept=".pdf,.docx,.txt,.md"
-          onChange={(event) => onFileChange(event, "assessment")}
-          className="hidden"
-        />
-        <p className="text-sm text-[var(--charcoal)]">
-          {uploadingCategory === "assessment"
-            ? "Uploading assessment..."
-            : "Drag and drop files here, or click to browse"}
-        </p>
-        <p className="mt-1 text-xs text-[var(--dim-grey)]">
-          PDF, DOCX, TXT, or Markdown up to 10MB
-        </p>
-        <p className="mt-1 text-xs text-[var(--dim-grey)]">
-          Scanned PDFs will not work. Use a text-based PDF or upload DOCX, TXT, or Markdown instead.
-        </p>
-        {recentUploadCategory === "assessment" && recentUploadName ? (
-          <p className="mt-3 text-xs font-medium text-[var(--rose)]">
-            Uploaded: {recentUploadName}
-          </p>
-        ) : null}
-      </div>
-
-      {assessments.length > 0 ? (
-        <div className="space-y-2">
-          {assessments.map((file) => (
-            <div
-              key={file.id}
-              className="flex items-center justify-between border p-3 transition-colors"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-[var(--charcoal)]">
-                  {file.filename}
-                </p>
-                <p className="mt-1 truncate text-xs text-[var(--dim-grey)]">{file.preview}</p>
-              </div>
-              <button
-                onClick={() => onRemoveFile(file.id, "assessment")}
-                className="minerva-button minerva-button-secondary ml-4"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
+        <div>
+          <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
+            Assessments
+          </h2>
+          {!open && assessments.length > 0 && (
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">
+              {assessments.length} assessment{assessments.length !== 1 ? "s" : ""} uploaded
+            </p>
+          )}
+          {!open && assessments.length === 0 && (
+            <p className="mt-2 text-sm text-[var(--dim-grey)]">Optional — protects your assessment answers</p>
+          )}
         </div>
-      ) : null}
-    </CollapsibleSection>
+        <ChevronIcon open={open} />
+      </button>
+
+      {open && (
+        <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
+          <p className="text-sm text-[var(--dim-grey)]">
+            Upload your assessment or exam questions. The tutor will coach students without revealing the answers.
+            Optional.
+          </p>
+
+          {/* Drop zone */}
+          <div
+            onDrop={(e) => handlers.onDrop(e, "assessment")}
+            onDragOver={(e) => handlers.onDragOver(e, "assessment")}
+            onDragLeave={handlers.onDragLeave}
+            className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+              dragActive === "assessment"
+                ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
+                : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.4)] hover:bg-[rgba(17,120,144,0.02)]"
+            }`}
+            onClick={() => assessmentInputRef.current?.click()}
+          >
+            {uploadingCategory === "assessment" ? (
+              <p className="text-sm text-[var(--dim-grey)]">Uploading…</p>
+            ) : (
+              <>
+                <svg className="h-7 w-7 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-sm text-[var(--dim-grey)]">
+                  <span className="font-medium text-[var(--teal)]">Click to upload</span> or drag and drop
+                </p>
+              </>
+            )}
+            <input
+              ref={assessmentInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,.md"
+              className="sr-only"
+              onChange={(e) => handlers.onFileChange(e, "assessment")}
+            />
+          </div>
+
+          {recentUploadCategory === "assessment" && recentUploadName && (
+            <p className="text-xs text-[var(--teal)]">✓ {recentUploadName} uploaded</p>
+          )}
+
+          {assessments.length > 0 && (
+            <ul className="space-y-2">
+              {assessments.map((file) => (
+                <li
+                  key={file.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--rule)] px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileIcon />
+                    <span className="truncate text-sm text-[var(--charcoal)]">{file.filename}</span>
+                  </div>
+                  <button
+                    onClick={() => handlers.onRemoveFile(file.id, "assessment")}
+                    className="flex-shrink-0 text-xs text-[var(--dim-grey)] hover:text-[var(--signal)]"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

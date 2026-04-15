@@ -6,21 +6,22 @@ It is designed for instructors, adult learners, and professional learners who wa
 
 ## What the App Does
 
-An instructor creates a learning session, uploads readings and optional assessment materials, and shares a learner link. Learners then chat with the tutor about the material. The tutor pushes them to explain their thinking, identify misunderstandings, and build stronger understanding step by step. Afterward, the instructor can review learner activity, misconception patterns, teaching recommendations, and reports.
+An instructor creates a learning session, selects a session purpose (pre-class, in-class preparation, in-class reflection, or after-class), uploads readings and optional assessment materials, and shares a learner link. Learners then chat with the tutor about the material. The tutor pushes them to explain their thinking, identify misunderstandings, and build stronger understanding step by step. Afterward, the instructor can review learner activity, misconception patterns, teaching recommendations, and reports — all framed to match the cognitive goal of that session.
 
-This is not a generic chatbot. It is meant to behave like a guided tutor.
+This is not a generic chatbot. It is meant to behave like a guided tutor calibrated to where students are in the learning cycle.
 
 ## How the Tutoring Approach Works
 
-The app is built around a Socratic approach:
+The app is built around a Socratic approach calibrated to the session purpose:
 
 - It starts with guiding questions, prompts, and follow-up checks instead of immediately giving away answers.
 - It asks learners to explain what they already know before moving deeper into a topic.
 - It tracks repeated attempts so the tutor can respond differently when a learner is genuinely stuck.
 - It can probe confidence, surface misconceptions, and revisit weak areas later in the session.
 - It protects uploaded assessment materials by avoiding direct answer-giving on those protected questions.
+- The session purpose shapes the tutor's cognitive target for the whole conversation. Pre-class sessions focus on comprehension and corrected understanding. In-class preparation sessions target activation and retrieval. In-class reflection sessions aim at consolidation and self-explanation. After-class sessions push toward transfer and application to novel contexts.
 
-In short: the app is designed to support learning, not shortcut it.
+In short: the app is designed to support learning, not shortcut it — and the type of support adjusts based on where in the learning cycle the session sits.
 
 ## Core Features
 
@@ -67,6 +68,12 @@ In short: the app is designed to support learning, not shortcut it.
 - Memoized chat message rendering and reduced scroll thrashing during streaming for smoother learner chat performance
 - AI-generated teaching briefs with readiness heatmaps, next-step recommendations, and per-learner notes
 - PDF export for instructor reports
+- Session purpose system with four modes — Pre-class, In-class Prep, In-class Reflection, After Class — selectable at session creation and editable in the workspace
+- Purpose-adaptive tutor behavior where the cognitive target, question emphasis, resolution standard, and wrap-up guidance all shift based on the selected session purpose
+- Purpose-adaptive teaching briefs with mode-specific section titles, heatmap names (Readiness, Activation, Consolidation, Transfer), framing language, and instructional recommendations
+- Purpose badge visible on all instructor views — session workspace, learner progress, common misunderstandings, and teaching brief — so the session's learning goal is always in context
+- Robust heatmap parsing with three-tier fallback that supports both structured and freeform model output, using app-native status colors for green/yellow/red indicators
+- Teaching brief rendering with priority ordering — action items and the heatmap surface first, then gaps and strengths, then per-student notes
 
 ## Who It Is For
 
@@ -78,19 +85,20 @@ In short: the app is designed to support learning, not shortcut it.
 
 ### Instructor flow
 
-1. Create a session.
+1. Create a session and select a session purpose from the four-card purpose selector.
 2. Add a title and an optional note learners will see before they begin.
 3. Upload one or more readings.
 4. Optionally upload assessments the tutor should treat as protected.
 5. Add 2-4 key questions to define the important understandings learners should reach, or generate suggested questions from the reading and accept the ones you want.
 6. Use the built-in question feedback tool if a prompt feels too recall-heavy or under-specified.
 7. Add optional teaching context such as course framing, session goals, institutional learning outcomes, and interaction style.
-8. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
-9. Share the learner link and access code.
-10. Monitor learner progress live, including engagement concerns and learners who have been waiting several minutes to reply.
-11. Review clustered misconception patterns, checkpoint difficulty, and teaching recommendations built from those patterns.
-12. Generate a teaching brief afterward, including readiness signals, next-step moves, and formative learning outcome assessments for each learner.
-13. Review learner-resolution progress, confidence checks, topic mastery, and cleaned interaction traces without needing raw internal model tags.
+8. Change the session purpose at any time from the teaching context panel — the tutor and teaching brief will adapt automatically.
+9. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
+10. Share the learner link and access code.
+11. Monitor learner progress live, including engagement concerns and learners who have been waiting several minutes to reply. The purpose badge in the header keeps the session's cognitive goal visible while monitoring.
+12. Review clustered misconception patterns, checkpoint difficulty, and teaching recommendations built from those patterns. The purpose badge here reflects the learning context for those patterns.
+13. Generate a teaching brief afterward. The brief title, heatmap name, section headings, and instructional framing all adapt to the session purpose. Action items and the heatmap surface at the top so the most actionable signals appear first.
+14. Review learner-resolution progress, confidence checks, topic mastery, and cleaned interaction traces without needing raw internal model tags.
 
 ### Learner flow
 
@@ -195,7 +203,7 @@ That keeps Prisma CLI on the path Prisma documents for Turso while still allowin
 
 Once the app is running:
 
-1. Create an instructor session.
+1. Create an instructor session. Select a session purpose from the four-card selector on the create page — try "Pre-class" to start.
 2. Upload a reading in the session workspace.
 3. Add a few key questions manually or use the reading-based suggestion tool.
 4. Open the learner link in a second browser window.
@@ -205,7 +213,8 @@ Once the app is running:
 8. Watch the learner-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
 9. Return to the instructor area and use the collapsible workspace sections to review readings, questions, teaching context, and assessments.
 10. Open the misconception dashboard, mark any acceptable interpretations, and generate teaching recommendations if you want lesson-ready follow-up moves.
-11. Monitor learner progress live if needed, then generate a teaching brief with session-level insights plus per-learner learning outcome assessments.
+11. Monitor learner progress live if needed. Notice the purpose badge in the headers of the learner progress and common misunderstandings views.
+12. Generate a teaching brief and notice the heatmap title, section headings, and instructional framing have adapted to the session purpose. Action items appear at the top.
 12. End the session and review the formatted summary screen with copy support.
 
 ## Caveats
@@ -226,6 +235,8 @@ Once the app is running:
 - When recommendation generation cannot be parsed into the preferred structured format, the app now falls back to deterministic recommendation cards so the dashboard remains usable.
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.
 - Learning outcome assessments are instructor-facing formative signals, not final grades or official learner records.
+- Session purpose defaults to `pre_class` when not explicitly set. Changing the purpose after a session is already active will affect the teaching brief framing but will not retroactively alter conversations already recorded.
+- The four session purposes target different cognitive levels: comprehension (pre-class), activation (in-class prep), consolidation (in-class reflection), and transfer (after-class). Choosing the wrong purpose for the learning context will produce a teaching brief with mismatched framing and recommendations.
 - The app depends on Anthropic API availability and valid credentials.
 - Fast-path AI features rely on a current Anthropic Haiku model alias. If you override `ANTHROPIC_MODEL_FAST`, make sure the chosen model is still available in your Anthropic account.
 - Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.
