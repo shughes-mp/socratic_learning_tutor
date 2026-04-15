@@ -74,6 +74,7 @@ const SECTION_PATTERNS: Array<{ key: string; patterns: string[] }> = [
 ];
 
 interface ParsedSections {
+  [key: string]: string;
   snapshot: string;
   what_to_do: string;
   heatmap: string;
