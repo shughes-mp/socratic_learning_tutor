@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { getSessionPurposeBadgeClasses, getSessionPurposeOption } from "@/lib/session-purpose";
+import { LoadingState } from "@/components/ui/loading-state";
 import type {
   ApiError,
   MisconceptionClusterRecord,
@@ -421,8 +422,8 @@ export default function MisconceptionDashboardPage() {
         </div>
 
         {loading ? (
-          <div className="minerva-card p-8 text-sm text-[var(--dim-grey)]">
-            Loading misconception data...
+          <div className="minerva-card p-8">
+            <LoadingState message="Loading misconception data…" />
           </div>
         ) : error ? (
           <div className="border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-sm text-[var(--signal)]">
@@ -792,7 +793,7 @@ export default function MisconceptionDashboardPage() {
                     <div className="minerva-card p-6">
                       <p className="text-sm text-[var(--dim-grey)]">
                         {loadingRecommendations
-                          ? "Analyzing misconceptions and drafting active learning moves..."
+                          ? "Analyzing misconceptions and drafting active learning moves…"
                           : recommendationMessage ||
                             "No teaching recommendations have been generated yet."}
                       </p>

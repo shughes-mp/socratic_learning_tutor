@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { LoadingState } from "@/components/ui/loading-state";
 import { SESSION_PURPOSE_OPTIONS, getSessionPurposeBadgeClasses } from "@/lib/session-purpose";
 
 export default function InstructorCreatePage() {
@@ -158,7 +159,7 @@ export default function InstructorCreatePage() {
                     disabled={loading}
                     className="minerva-button"
                   >
-                    {loading ? "Creating…" : "Continue"}
+                    {loading ? <LoadingState variant="button" message="Creating…" /> : "Continue"}
                   </button>
                 </div>
               </div>

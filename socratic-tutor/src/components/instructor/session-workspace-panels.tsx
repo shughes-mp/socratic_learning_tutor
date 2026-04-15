@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { LoadingState } from "@/components/ui/loading-state";
 import {
   getSessionPurposeBadgeClasses,
   getSessionPurposeOption,
@@ -450,7 +451,7 @@ export function ReadingsSection({
             onClick={() => readingInputRef.current?.click()}
           >
             {uploadingCategory === "reading" ? (
-              <p className="text-sm text-[var(--dim-grey)]">Uploading…</p>
+              <LoadingState message="Uploading…" />
             ) : (
               <>
                 <svg className="h-7 w-7 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -704,7 +705,7 @@ export function QuestionsSection({
 
           {/* Existing checkpoints */}
           {loadingCheckpoints ? (
-            <p className="text-sm text-[var(--dim-grey)]">Loading questions…</p>
+            <LoadingState message="Loading questions…" />
           ) : checkpoints.length > 0 ? (
             <ul className="space-y-2">
               {checkpoints.map((checkpoint, index) => (
@@ -1148,7 +1149,7 @@ export function AssessmentsSection({
             onClick={() => assessmentInputRef.current?.click()}
           >
             {uploadingCategory === "assessment" ? (
-              <p className="text-sm text-[var(--dim-grey)]">Uploading…</p>
+              <LoadingState message="Uploading…" />
             ) : (
               <>
                 <svg className="h-7 w-7 text-[var(--dim-grey)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

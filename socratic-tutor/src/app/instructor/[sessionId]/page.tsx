@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingState } from "@/components/ui/loading-state";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -678,18 +680,7 @@ export default function SessionManagementPage() {
           : null;
 
   if (loading) {
-    return (
-      <main className="minerva-page">
-        <div className="minerva-shell">
-          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
-            <div className="hidden border-r border-[var(--rule)] md:block" />
-            <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
-              Loading session...
-            </div>
-          </section>
-        </div>
-      </main>
-    );
+    return <LoadingState variant="page" message="Loading session…" />;
   }
 
   if (!session) {

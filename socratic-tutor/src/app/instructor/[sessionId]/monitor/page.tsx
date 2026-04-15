@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ExchangeReplay } from "@/components/instructor/exchange-replay";
+import { LoadingState } from "@/components/ui/loading-state";
 import { getSessionPurposeBadgeClasses, getSessionPurposeOption } from "@/lib/session-purpose";
 import type { ConfidenceCheck, Message, Misconception } from "@prisma/client";
 
@@ -103,18 +104,7 @@ export default function StudentMonitorPage() {
   };
 
   if (isLoading) {
-    return (
-      <main className="minerva-page">
-        <div className="minerva-shell">
-          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
-            <div className="hidden border-r border-[var(--rule)] md:block" />
-            <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
-              Loading learner progress...
-            </div>
-          </section>
-        </div>
-      </main>
-    );
+    return <LoadingState variant="page" message="Loading learner progress…" />;
   }
 
   return (
@@ -332,9 +322,8 @@ export default function StudentMonitorPage() {
                               <div className="mx-6 my-5 max-w-4xl border-l-2 border-[var(--teal)] bg-white p-8">
                                 <h4 className="eyebrow eyebrow-teal mb-6">Full Conversation</h4>
                                 {loadingDetail ? (
-                                  <div className="flex items-center gap-2 py-4 text-sm text-[var(--dim-grey)]">
-                                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-[var(--teal)]" />
-                                    Loading conversation...
+                                  <div className="py-4">
+                                    <LoadingState message="Loading conversation…" />
                                   </div>
                                 ) : expandedDetail?.id === student.id ? (
                                   <>

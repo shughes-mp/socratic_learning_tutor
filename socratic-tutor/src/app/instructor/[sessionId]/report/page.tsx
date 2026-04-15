@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { ReadinessHeatmap } from "@/components/instructor/readiness-heatmap";
+import { LoadingState } from "@/components/ui/loading-state";
 import { LOAssessmentCard } from "@/components/LOAssessmentCard";
 import { getSessionPurposeBadgeClasses, getSessionPurposeOption, getHeatmapTitle } from "@/lib/session-purpose";
 import type { LOAssessmentRecord } from "@/types";
@@ -183,18 +184,7 @@ export default function ReportPage() {
   };
 
   if (isLoading) {
-    return (
-      <main className="minerva-page">
-        <div className="minerva-shell">
-          <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
-            <div className="hidden border-r border-[var(--rule)] md:block" />
-            <div className="px-4 py-16 text-[var(--dim-grey)] md:px-8 md:py-20">
-              Building teaching brief…
-            </div>
-          </section>
-        </div>
-      </main>
-    );
+    return <LoadingState variant="page" message="Building teaching brief…" />;
   }
 
   if (error) {
