@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isValidSessionPurpose, normalizeSessionPurpose } from "@/lib/session-purpose";
 import type { ApiError } from "@/types";
 
 export async function PATCH(
@@ -20,6 +21,7 @@ export async function PATCH(
       opensAt,
       closesAt,
       stance,
+      sessionPurpose,
     } = body as {
       name?: string;
       description?: string | null;
@@ -31,6 +33,7 @@ export async function PATCH(
       opensAt?: string | null;
       closesAt?: string | null;
       stance?: string;
+      sessionPurpose?: string;
     };
 
     const session = await prisma.session.findUnique({
@@ -67,6 +70,19 @@ export async function PATCH(
       }
       updateData.stance = stance;
     }
+    if (sessionPurpose !== undefined) {
+      if (!isValidSessionPurpose(sessionPurpose)) {
+        return NextResponse.json<ApiError>(
+          {
+            error:
+              "sessionPurpose must be pre_class, during_class_prep, during_class_reflection, or after_class.",
+            code: "INVALID_SESSION_PURPOSE",
+          },
+          { status: 400 }
+        );
+      }
+      updateData.sessionPurpose = sessionPurpose;
+    }
 
     const updated = await prisma.session.update({
       where: { id: sessionId },
@@ -76,20 +92,4 @@ export async function PATCH(
     return NextResponse.json({
       id: updated.id,
       name: updated.name,
-      description: updated.description,
-      courseContext: updated.courseContext,
-      learningGoal: updated.learningGoal,
-      learningOutcomes: updated.learningOutcomes,
-      prerequisiteMap: updated.prerequisiteMap,
-      accessCode: updated.accessCode,
-      maxExchanges: updated.maxExchanges,
-      stance: updated.stance,
-    });
-  } catch (error) {
-    console.error("Error updating session config:", error);
-    return NextResponse.json<ApiError>(
-      { error: "Failed to update session.", code: "UPDATE_FAILED" },
-      { status: 500 }
-    );
-  }
-}
+      description: update

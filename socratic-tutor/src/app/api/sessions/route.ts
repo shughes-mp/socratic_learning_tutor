@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { generateUniqueAccessCode } from "@/lib/access-codes";
+import { normalizeSessionPurpose } from "@/lib/session-purpose";
 import type { CreateSessionRequest, CreateSessionResponse, ApiError } from "@/types";
 
 export async function POST(request: Request) {
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
         description: body.description?.trim() || null,
         courseContext: body.courseContext?.trim() || null,
         learningGoal: body.learningGoal?.trim() || null,
+        sessionPurpose: normalizeSessionPurpose(body.sessionPurpose),
         accessCode,
       },
     });
@@ -46,9 +48,4 @@ export async function POST(request: Request) {
           ? (error as Error & { cause?: unknown }).cause
           : undefined,
     });
-    return NextResponse.json<ApiError>(
-      { error: "Failed to create session.", code: "CREATE_FAILED" },
-      { status: 500 }
-    );
-  }
-}
+    return NextResponse.j

@@ -1,6 +1,11 @@
 // Shared TypeScript types for the Socratic Tutor application
 
 export type FileCategory = "reading" | "assessment";
+export type SessionPurpose =
+  | "pre_class"
+  | "during_class_prep"
+  | "during_class_reflection"
+  | "after_class";
 
 export interface CreateSessionRequest {
   name: string;
@@ -9,6 +14,7 @@ export interface CreateSessionRequest {
   learningGoal?: string;
   learningOutcomes?: string;
   stance?: "directed" | "mentor";
+  sessionPurpose?: SessionPurpose;
 }
 
 export interface CreateSessionResponse {
@@ -41,6 +47,9 @@ export interface SessionDetails {
   createdAt: string;
   maxExchanges: number;
   stance: "directed" | "mentor";
+  sessionPurpose: SessionPurpose;
+  opensAt: string | null;
+  closesAt: string | null;
   readingsCount: number;
   assessmentsCount: number;
 }
@@ -210,14 +219,3 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
-}
-
-export interface StudentSessionInfo {
-  id: string;
-  studentName: string;
-  startedAt: string;
-  endedAt: string | null;
-  exchangeCount: number;
-  misconceptionCount: number;
-  lastActive: string;
-}

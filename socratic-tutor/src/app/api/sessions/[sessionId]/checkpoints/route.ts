@@ -146,11 +146,4 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting checkpoint:", error);
-    return NextResponse.json<ApiError>(
-      { error: "Failed to delete checkpoint.", code: "CHECKPOINT_DELETE_FAILED" },
-      { status: 500 }
-    );
   }
-}
