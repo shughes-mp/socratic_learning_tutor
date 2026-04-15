@@ -21,6 +21,7 @@ model Session {
   closesAt        DateTime?
   maxExchanges    Int       @default(20)
   stance          String    @default("directed")
+  sessionPurpose  String    @default("pre_class")
   readings        Reading[]
   assessments     Assessment[]
   checkpoints     Checkpoint[]
@@ -257,5 +258,4 @@ model TopicMastery {
   updatedAt        DateTime @updatedAt
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
 
-  @@unique([studentSessionId, topicThread])
-}
+ 
