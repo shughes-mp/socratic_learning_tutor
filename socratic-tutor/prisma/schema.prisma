@@ -258,4 +258,5 @@ model TopicMastery {
   updatedAt        DateTime @updatedAt
   studentSession   StudentSession @relation(fields: [studentSessionId], references: [id], onDelete: Cascade)
 
- 
+  @@unique([studentSessionId, topicThread])
+}
