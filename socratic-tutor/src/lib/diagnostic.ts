@@ -1,5 +1,6 @@
 import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/db";
+import { MODEL_FAST } from "@/lib/models";
 
 interface DiagnosticInput {
   studentSessionId: string;
@@ -12,8 +13,6 @@ interface DiagnosticInput {
   checkpoints: Array<{
     id: string;
     prompt: string;
-    processLevel: string;
-    passageAnchors: string | null;
   }>;
   unresolvedMisconceptionIds: string[];
   conversationHistory: Array<{
@@ -79,9 +78,7 @@ function buildDiagnosticPrompt(input: DiagnosticInput): string {
       ? `\nCheckpoints for this session:\n${input.checkpoints
           .map(
             (cp) =>
-              `- [${cp.id}] (${cp.processLevel}): ${cp.prompt}${
-                cp.passageAnchors ? ` [anchors: ${cp.passageAnchors}]` : ""
-              }`
+              `- [${cp.id}]: ${cp.prompt}`
           )
           .join("\n")}`
       : "";
@@ -240,7 +237,7 @@ export async function runDiagnostic(input: DiagnosticInput): Promise<void> {
     const prompt = buildDiagnosticPrompt(input);
 
     const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-latest",
+      model: MODEL_FAST,
       max_tokens: 800,
       messages: [{ role: "user", content: prompt }],
     });

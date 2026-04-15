@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
+import { MODEL_PRIMARY } from "@/lib/models";
 import type {
   ApiError,
   MisconceptionClusterRecord,
@@ -401,7 +402,7 @@ SAMPLE TRANSCRIPTS
 ${transcriptContext || "No transcript excerpts available."}`;
 
     const { text } = await generateText({
-      model: anthropic("claude-sonnet-4-6"),
+      model: anthropic(MODEL_PRIMARY),
       system: RECOMMENDATION_SYSTEM_PROMPT,
       prompt,
     });

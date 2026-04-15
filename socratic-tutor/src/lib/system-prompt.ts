@@ -223,11 +223,7 @@ export function buildSystemPrompt(
     prompt += `\n\nCHECKPOINTS\nYou have ${checkpoints.length} checkpoints to cover in this session. Work through them adaptively - not as a sequential quiz, but by weaving them into natural Socratic dialogue. Each checkpoint is a target understanding, not a script.\n`;
 
     for (const [index, checkpoint] of checkpoints.entries()) {
-      prompt += `\nCheckpoint ${index + 1} [${checkpoint.processLevel.toUpperCase()}] (ID: ${checkpoint.id}): ${checkpoint.prompt}\n`;
-
-      if (checkpoint.passageAnchors) {
-        prompt += `  Passage anchor: ${checkpoint.passageAnchors}\n`;
-      }
+      prompt += `\nCheckpoint ${index + 1} (ID: ${checkpoint.id}): ${checkpoint.prompt}\n`;
 
       const expectations = parseStoredStringArray(checkpoint.expectations);
       if (expectations.length > 0) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@/lib/db";
+import { MODEL_PRIMARY } from "@/lib/models";
 
 function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: string[] }> }): boolean {
   const visiting = new Set<string>();
@@ -52,7 +53,7 @@ ${session.readings
 
   try {
     const { text } = await generateText({
-      model: anthropic("claude-sonnet-4-6"),
+      model: anthropic(MODEL_PRIMARY),
       prompt,
     });
 

@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
-import type { ApiError, CheckpointProcessLevel } from "@/types";
-
-const VALID_PROCESS_LEVELS: CheckpointProcessLevel[] = [
-  "retrieve",
-  "infer",
-  "integrate",
-  "evaluate",
-];
+import type { ApiError } from "@/types";
 
 export async function GET(
   _request: Request,
@@ -53,8 +46,6 @@ export async function POST(
     const { sessionId } = await params;
     const body = (await request.json()) as {
       prompt?: string;
-      processLevel?: string;
-      passageAnchors?: string | null;
       expectations?: string[] | null;
       misconceptionSeeds?: string[] | null;
     };
@@ -79,17 +70,6 @@ export async function POST(
       );
     }
 
-    const processLevel = body.processLevel?.trim() as CheckpointProcessLevel | undefined;
-    if (!processLevel || !VALID_PROCESS_LEVELS.includes(processLevel)) {
-      return NextResponse.json<ApiError>(
-        {
-          error: `Process level must be one of: ${VALID_PROCESS_LEVELS.join(", ")}.`,
-          code: "INVALID_PROCESS_LEVEL",
-        },
-        { status: 400 }
-      );
-    }
-
     const maxCheckpoint = await prisma.checkpoint.findFirst({
       where: { sessionId },
       orderBy: { orderIndex: "desc" },
@@ -101,8 +81,7 @@ export async function POST(
         sessionId,
         orderIndex: (maxCheckpoint?.orderIndex ?? -1) + 1,
         prompt,
-        processLevel,
-        passageAnchors: body.passageAnchors?.trim() || null,
+        processLevel: "infer",
         expectations:
           Array.isArray(body.expectations) && body.expectations.length > 0
             ? JSON.stringify(body.expectations)

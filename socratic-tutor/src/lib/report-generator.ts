@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "./db";
+import { MODEL_PRIMARY } from "./models";
 
 const VALID_LO_STATUSES = [
   "not_observed",
@@ -227,7 +228,7 @@ export async function generateInstructorReport(sessionId: string) {
       : `Analyze the following session data and generate the instructor report.\n\n${transcriptData}`;
 
   const { text } = await generateText({
-    model: anthropic("claude-sonnet-4-6"),
+    model: anthropic(MODEL_PRIMARY),
     system: REPORT_SYSTEM_PROMPT,
     prompt,
   });

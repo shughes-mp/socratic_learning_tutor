@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { anthropic } from "@/lib/anthropic";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
 import type { ApiError } from "@/types";
+import { MODEL_FAST } from "@/lib/models";
 
 function parseSuggestionResponse(text: string): {
   suggestions?: Array<{
     prompt?: string;
-    processLevel?: string;
-    passageAnchors?: string | null;
     expectations?: string[];
     misconceptions?: string[];
   }>;
@@ -21,8 +20,6 @@ function parseSuggestionResponse(text: string): {
   return JSON.parse(cleaned) as {
     suggestions?: Array<{
       prompt?: string;
-      processLevel?: string;
-      passageAnchors?: string | null;
       expectations?: string[];
       misconceptions?: string[];
     }>;
@@ -79,7 +76,7 @@ export async function POST(
         ? `\n\nThe instructor has already written these questions (do NOT duplicate them):\n${session.checkpoints
             .map(
               (checkpoint, index) =>
-                `${index + 1}. [${checkpoint.processLevel}] ${checkpoint.prompt}`
+                `${index + 1}. ${checkpoint.prompt}`
             )
             .join("\n")}`
         : "";
@@ -97,22 +94,13 @@ RULES:
 - Questions must require interpretation, inference, evaluation, or synthesis - NOT recall or lookup.
 - Each question should target a different key idea or passage in the reading.
 - Questions should be specific to this text - not generic questions that could apply to any reading.
-- For each question, assign a process level and identify the relevant passage.
 - A strong question makes the learner reconstruct the author's reasoning, not just locate a fact.
-
-Process levels:
-- retrieve: Locate specific information in the text (avoid this level - only use if essential)
-- infer: Draw conclusions the author implies but doesn't state directly
-- integrate: Link ideas across different parts of the reading
-- evaluate: Assess the strength or validity of the author's reasoning
 
 Respond ONLY with valid JSON:
 {
   "suggestions": [
     {
       "prompt": "The discussion question text",
-      "processLevel": "infer|integrate|evaluate",
-      "passageAnchors": "Section/paragraph reference or null",
       "expectations": ["What a strong answer would demonstrate", "Another evidence feature"],
       "misconceptions": ["A likely misreading", "Another common error"]
     }
@@ -120,7 +108,7 @@ Respond ONLY with valid JSON:
 }`;
 
     const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-latest",
+      model: MODEL_FAST,
       max_tokens: 1500,
       system: systemPrompt,
       messages: [
@@ -147,7 +135,6 @@ Respond ONLY with valid JSON:
 
     const parsed = parseSuggestionResponse(content.text);
 
-    const validLevels = ["retrieve", "infer", "integrate", "evaluate"];
     const suggestions = (parsed.suggestions ?? [])
       .filter(
         (suggestion) =>
@@ -156,13 +143,6 @@ Respond ONLY with valid JSON:
       )
       .map((suggestion) => ({
         prompt: suggestion.prompt!.trim(),
-        processLevel: validLevels.includes(suggestion.processLevel ?? "")
-          ? suggestion.processLevel!
-          : "infer",
-        passageAnchors:
-          typeof suggestion.passageAnchors === "string"
-            ? suggestion.passageAnchors
-            : null,
         expectations: Array.isArray(suggestion.expectations)
           ? suggestion.expectations.filter(
               (expectation): expectation is string =>

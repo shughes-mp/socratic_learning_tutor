@@ -6,7 +6,6 @@ import Link from "next/link";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import type {
   CheckpointLintResult,
-  CheckpointProcessLevel,
   CheckpointRecord,
   FileInfo,
   SessionDetails,
@@ -26,73 +25,6 @@ function formatSavedTime(date: Date) {
   });
 }
 
-function getProcessLevelTone(processLevel: CheckpointProcessLevel) {
-  switch (processLevel) {
-    case "retrieve":
-      return "bg-[rgba(17,120,144,0.12)] text-[var(--teal)]";
-    case "infer":
-      return "bg-[rgba(114,133,3,0.12)] text-[var(--olive)]";
-    case "integrate":
-      return "bg-[rgba(17,120,144,0.08)] text-[var(--charcoal)]";
-    case "evaluate":
-      return "bg-[rgba(223,47,38,0.08)] text-[var(--signal)]";
-  }
-}
-
-function formatProcessLevelLabel(processLevel: CheckpointProcessLevel) {
-  switch (processLevel) {
-    case "retrieve":
-      return "Find in the text";
-    case "infer":
-      return "Read between the lines";
-    case "integrate":
-      return "Connect ideas";
-    case "evaluate":
-      return "Judge the argument";
-  }
-}
-
-function suggestProcessLevel(prompt: string): CheckpointProcessLevel {
-  const lower = prompt.toLowerCase();
-
-  if (
-    lower.includes("strength of") ||
-    lower.includes("weakness") ||
-    lower.includes("how convincing") ||
-    lower.includes("assess") ||
-    lower.includes("evaluate") ||
-    lower.includes("valid") ||
-    lower.includes("justified")
-  ) {
-    return "evaluate";
-  }
-
-  if (
-    lower.includes("connect") ||
-    lower.includes("relationship between") ||
-    lower.includes("how does") ||
-    lower.includes("relate to") ||
-    lower.includes("compare") ||
-    lower.includes("contrast") ||
-    lower.includes("tension between") ||
-    lower.includes("across")
-  ) {
-    return "integrate";
-  }
-
-  if (
-    lower.includes("what does the author say") ||
-    lower.includes("according to") ||
-    lower.includes("find in the text") ||
-    lower.includes("what is the definition") ||
-    lower.includes("list the") ||
-    lower.includes("identify the")
-  ) {
-    return "retrieve";
-  }
-
-  return "infer";
-}
 
 export default function SessionManagementPage() {
   const params = useParams();
@@ -120,19 +52,10 @@ export default function SessionManagementPage() {
   const [showQuestionSavedState, setShowQuestionSavedState] = useState(false);
   const [editingCheckpointId, setEditingCheckpointId] = useState<string | null>(null);
   const [editingCheckpointPrompt, setEditingCheckpointPrompt] = useState("");
-  const [editingCheckpointProcessLevel, setEditingCheckpointProcessLevel] =
-    useState<CheckpointProcessLevel>("infer");
-  const [editingCheckpointPassageAnchors, setEditingCheckpointPassageAnchors] =
-    useState("");
   const [newCheckpointPrompt, setNewCheckpointPrompt] = useState("");
-  const [newCheckpointProcessLevel, setNewCheckpointProcessLevel] =
-    useState<CheckpointProcessLevel>("infer");
-  const [newCheckpointPassageAnchors, setNewCheckpointPassageAnchors] = useState("");
   const [suggestions, setSuggestions] = useState<
     Array<{
       prompt: string;
-      processLevel: string;
-      passageAnchors: string | null;
       expectations: string[];
       misconceptions: string[];
     }>
@@ -144,10 +67,10 @@ export default function SessionManagementPage() {
     checkpointId: string;
     result: CheckpointLintResult;
   } | null>(null);
-  const [showConfig, setShowConfig] = useState(true);
-  const [showQuestions, setShowQuestions] = useState(true);
+  const [showConfig, setShowConfig] = useState(false);
+  const [showQuestions, setShowQuestions] = useState(false);
   const [showReadings, setShowReadings] = useState(true);
-  const [showAssessments, setShowAssessments] = useState(true);
+  const [showAssessments, setShowAssessments] = useState(false);
   const [sectionsInitialized, setSectionsInitialized] = useState(false);
   const readingInputRef = useRef<HTMLInputElement>(null);
   const assessmentInputRef = useRef<HTMLInputElement>(null);
@@ -276,15 +199,6 @@ export default function SessionManagementPage() {
     const timeout = window.setTimeout(() => setShowQuestionSavedState(false), 2400);
     return () => window.clearTimeout(timeout);
   }, [showQuestionSavedState]);
-
-  useEffect(() => {
-    if (!newCheckpointPrompt.trim()) return;
-    const timeout = window.setTimeout(() => {
-      const suggested = suggestProcessLevel(newCheckpointPrompt);
-      setNewCheckpointProcessLevel(suggested);
-    }, 800);
-    return () => window.clearTimeout(timeout);
-  }, [newCheckpointPrompt]);
 
   useEffect(() => {
     if (!loading && !sectionsInitialized) {
@@ -477,8 +391,6 @@ export default function SessionManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: newCheckpointPrompt,
-          processLevel: newCheckpointProcessLevel,
-          passageAnchors: newCheckpointPassageAnchors || null,
         }),
       });
 
@@ -488,8 +400,6 @@ export default function SessionManagementPage() {
       }
 
       setNewCheckpointPrompt("");
-      setNewCheckpointProcessLevel("infer");
-      setNewCheckpointPassageAnchors("");
       await fetchCheckpoints();
       setShowQuestionSavedState(true);
       setToast({ tone: "success", message: "Question added." });
@@ -544,8 +454,6 @@ export default function SessionManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: suggestion.prompt,
-          processLevel: suggestion.processLevel,
-          passageAnchors: suggestion.passageAnchors || null,
           expectations: suggestion.expectations,
           misconceptionSeeds: suggestion.misconceptions,
         }),
@@ -575,16 +483,12 @@ export default function SessionManagementPage() {
   function startEditingCheckpoint(checkpoint: CheckpointRecord) {
     setEditingCheckpointId(checkpoint.id);
     setEditingCheckpointPrompt(checkpoint.prompt);
-    setEditingCheckpointProcessLevel(checkpoint.processLevel);
-    setEditingCheckpointPassageAnchors(checkpoint.passageAnchors ?? "");
     setCheckpointLintResult(null);
   }
 
   function cancelEditingCheckpoint() {
     setEditingCheckpointId(null);
     setEditingCheckpointPrompt("");
-    setEditingCheckpointProcessLevel("infer");
-    setEditingCheckpointPassageAnchors("");
   }
 
   async function saveCheckpointEdit(checkpointId: string) {
@@ -601,8 +505,6 @@ export default function SessionManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: editingCheckpointPrompt,
-          processLevel: editingCheckpointProcessLevel,
-          passageAnchors: editingCheckpointPassageAnchors || null,
         }),
       });
 
@@ -2178,20 +2080,6 @@ export default function SessionManagementPage() {
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
                           Suggestion {index + 1}
                         </span>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getProcessLevelTone(
-                            suggestion.processLevel as CheckpointProcessLevel
-                          )}`}
-                        >
-                          {formatProcessLevelLabel(
-                            suggestion.processLevel as CheckpointProcessLevel
-                          )}
-                        </span>
-                        {suggestion.passageAnchors && (
-                          <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
-                            {suggestion.passageAnchors}
-                          </span>
-                        )}
                       </div>
                       <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
                         {suggestion.prompt}
@@ -2270,18 +2158,6 @@ export default function SessionManagementPage() {
                           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
                             Question {index + 1}
                           </span>
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getProcessLevelTone(
-                              checkpoint.processLevel
-                            )}`}
-                          >
-                            {formatProcessLevelLabel(checkpoint.processLevel)}
-                          </span>
-                          {checkpoint.passageAnchors && (
-                            <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
-                              {checkpoint.passageAnchors}
-                            </span>
-                          )}
                         </div>
 
                         {isEditing ? (
@@ -2292,30 +2168,6 @@ export default function SessionManagementPage() {
                               rows={4}
                               className="minerva-textarea"
                             />
-                            <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
-                              <select
-                                value={editingCheckpointProcessLevel}
-                                onChange={(e) =>
-                                  setEditingCheckpointProcessLevel(
-                                    e.target.value as CheckpointProcessLevel
-                                  )
-                                }
-                                className="minerva-input"
-                              >
-                <option value="retrieve">Find in the text — Can the learner locate specific information?</option>
-                <option value="infer">Read between the lines — Can the learner draw conclusions the author implies but doesn&apos;t state?</option>
-                <option value="integrate">Connect ideas — Can the learner link ideas across different parts of the reading?</option>
-                <option value="evaluate">Judge the argument — Can the learner assess the strength of the author&apos;s reasoning?</option>
-                              </select>
-                              <input
-                                value={editingCheckpointPassageAnchors}
-                                onChange={(e) =>
-                                  setEditingCheckpointPassageAnchors(e.target.value)
-                                }
-                                placeholder="e.g., Section 2, paragraphs 3–5"
-                                className="minerva-input"
-                              />
-                            </div>
                           </div>
                         ) : (
                           <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
@@ -2465,35 +2317,6 @@ export default function SessionManagementPage() {
               placeholder="e.g. Why does the author's argument about system behavior depend on the claim that structure drives outcomes?"
               className="minerva-textarea"
             />
-
-            <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
-              <div className="space-y-2">
-                <label className="minerva-label">Process level</label>
-                <select
-                  value={newCheckpointProcessLevel}
-                  onChange={(e) =>
-                    setNewCheckpointProcessLevel(
-                      e.target.value as CheckpointProcessLevel
-                    )
-                  }
-                  className="minerva-input"
-                >
-                <option value="retrieve">Find in the text — Can the learner locate specific information?</option>
-                <option value="infer">Read between the lines — Can the learner draw conclusions the author implies but doesn&apos;t state?</option>
-                <option value="integrate">Connect ideas — Can the learner link ideas across different parts of the reading?</option>
-                <option value="evaluate">Judge the argument — Can the learner assess the strength of the author&apos;s reasoning?</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="minerva-label">Which part of the reading?</label>
-                <input
-                  value={newCheckpointPassageAnchors}
-                  onChange={(e) => setNewCheckpointPassageAnchors(e.target.value)}
-                  placeholder="e.g., Section 2, paragraphs 3–5"
-                  className="minerva-input"
-                />
-              </div>
-            </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button

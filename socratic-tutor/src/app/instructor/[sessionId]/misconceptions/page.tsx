@@ -25,8 +25,6 @@ type RecommendationsResponse = {
 type CheckpointDifficultyRecord = {
   checkpointId: string;
   prompt: string;
-  processLevel: string;
-  passageAnchors: string | null;
   totalStudents: number;
   addressedCount: number;
   masteredCount: number;
@@ -542,9 +540,6 @@ export default function MisconceptionDashboardPage() {
                                 </span>
                               )}
                               <span>Avg {checkpoint.averageTurnsSpent} turns</span>
-                              <span className="rounded bg-[rgba(34,34,34,0.05)] px-1.5 py-0.5 text-[10px] uppercase tracking-widest">
-                                {checkpoint.processLevel}
-                              </span>
                             </div>
                           </div>
                         </div>

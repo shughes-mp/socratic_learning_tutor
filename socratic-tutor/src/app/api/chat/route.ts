@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
+import { MODEL_PRIMARY } from "@/lib/models";
 import {
   buildContextInstruction,
   buildSystemPrompt,
@@ -255,7 +256,7 @@ export async function POST(req: Request) {
       async start(controller) {
         try {
           const anthropicStream = await anthropic.messages.create({
-            model: "claude-sonnet-4-6",
+            model: MODEL_PRIMARY,
             system: systemPrompt,
             messages: anthropicMessages,
             max_tokens: 1400,
@@ -324,8 +325,6 @@ export async function POST(req: Request) {
             checkpoints: checkpoints.map((checkpoint) => ({
               id: checkpoint.id,
               prompt: checkpoint.prompt,
-              processLevel: checkpoint.processLevel,
-              passageAnchors: checkpoint.passageAnchors,
             })),
             unresolvedMisconceptionIds: unresolvedMisconceptions.map(
               (misconception) => misconception.id

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
+import { MODEL_PRIMARY } from "@/lib/models";
 
 export async function POST(req: Request) {
   try {
@@ -62,7 +63,7 @@ Transcript:
 ${transcript}`;
 
     const { text } = await generateText({
-      model: anthropic("claude-sonnet-4-6"),
+      model: anthropic(MODEL_PRIMARY),
       prompt,
     });
 

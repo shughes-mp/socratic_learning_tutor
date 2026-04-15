@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { anthropic } from "@/lib/anthropic";
 import { ensureDatabaseReady, prisma } from "@/lib/db";
+import { MODEL_FAST } from "@/lib/models";
 import type {
   ApiError,
   EngagementSummary,
@@ -155,7 +156,7 @@ async function buildSemanticGroups(bin: Bin): Promise<SemanticGroup[]> {
     });
 
     const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-latest",
+      model: MODEL_FAST,
       max_tokens: 500,
       messages: [
         {

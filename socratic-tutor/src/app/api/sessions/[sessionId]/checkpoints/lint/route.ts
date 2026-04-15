@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/db";
 import type { ApiError, CheckpointLintResult } from "@/types";
+import { MODEL_FAST } from "@/lib/models";
 
 export async function POST(
   request: Request,
@@ -48,7 +49,7 @@ Respond ONLY with valid JSON:
 }`;
 
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: MODEL_FAST,
       max_tokens: 500,
       system: systemPrompt,
       messages: [

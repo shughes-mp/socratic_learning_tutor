@@ -50,8 +50,6 @@ export async function GET(
       return {
         checkpointId: checkpoint.id,
         prompt: checkpoint.prompt,
-        processLevel: checkpoint.processLevel,
-        passageAnchors: checkpoint.passageAnchors,
         totalStudents: total,
         addressedCount: addressed,
         masteredCount: mastered,

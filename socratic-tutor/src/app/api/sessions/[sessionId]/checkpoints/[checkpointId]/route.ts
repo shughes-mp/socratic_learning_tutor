@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { ApiError, CheckpointProcessLevel } from "@/types";
-
-const VALID_PROCESS_LEVELS: CheckpointProcessLevel[] = [
-  "retrieve",
-  "infer",
-  "integrate",
-  "evaluate",
-];
+import type { ApiError } from "@/types";
 
 export async function PATCH(
   request: Request,
@@ -19,8 +12,6 @@ export async function PATCH(
     const { sessionId, checkpointId } = await params;
     const body = (await request.json()) as {
       prompt?: string;
-      processLevel?: string | null;
-      passageAnchors?: string | null;
       expectations?: string[] | null;
       misconceptionSeeds?: string[] | null;
       orderIndex?: number;
@@ -49,26 +40,6 @@ export async function PATCH(
         );
       }
       updateData.prompt = prompt;
-    }
-
-    if (body.processLevel !== undefined) {
-      const processLevel = body.processLevel?.trim() as
-        | CheckpointProcessLevel
-        | undefined;
-      if (!processLevel || !VALID_PROCESS_LEVELS.includes(processLevel)) {
-        return NextResponse.json<ApiError>(
-          {
-            error: `Process level must be one of: ${VALID_PROCESS_LEVELS.join(", ")}.`,
-            code: "INVALID_PROCESS_LEVEL",
-          },
-          { status: 400 }
-        );
-      }
-      updateData.processLevel = processLevel;
-    }
-
-    if (body.passageAnchors !== undefined) {
-      updateData.passageAnchors = body.passageAnchors?.trim() || null;
     }
 
     if (body.expectations !== undefined) {
