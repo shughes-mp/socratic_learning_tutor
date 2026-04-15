@@ -14,7 +14,6 @@ import {
   WorkspaceHeader,
 } from "@/components/instructor/session-workspace-panels";
 import type {
-  CheckpointLintResult,
   CheckpointRecord,
   FileInfo,
   SessionDetails,
@@ -75,11 +74,8 @@ export default function SessionManagementPage() {
   >([]);
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   const [acceptingSuggestionIndex, setAcceptingSuggestionIndex] = useState<number | null>(null);
-  const [lintingCheckpointId, setLintingCheckpointId] = useState<string | null>(null);
-  const [checkpointLintResult, setCheckpointLintResult] = useState<{
-    checkpointId: string;
-    result: CheckpointLintResult;
-  } | null>(null);
+  const [draggedCheckpointId, setDraggedCheckpointId] = useState<string | null>(null);
+  const [dragTargetCheckpointId, setDragTargetCheckpointId] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [showQuestions, setShowQuestions] = useState(false);
   const [showReadings, setShowReadings] = useState(true);
@@ -497,7 +493,6 @@ export default function SessionManagementPage() {
   function startEditingCheckpoint(checkpoint: CheckpointRecord) {
     setEditingCheckpointId(checkpoint.id);
     setEditingCheckpointPrompt(checkpoint.prompt);
-    setCheckpointLintResult(null);
   }
 
   function cancelEditingCheckpoint() {
@@ -554,9 +549,6 @@ export default function SessionManagementPage() {
         throw new Error(data?.error || "Failed to remove question.");
       }
 
-      setCheckpointLintResult((prev) =>
-        prev?.checkpointId === checkpointId ? null : prev
-      );
       await fetchCheckpoints();
       setToast({ tone: "success", message: "Question removed." });
     } catch (err) {
@@ -567,11 +559,15 @@ export default function SessionManagementPage() {
     }
   }
 
-  async function moveCheckpoint(checkpointId: string, direction: -1 | 1) {
-    const currentIndex = checkpoints.findIndex((checkpoint) => checkpoint.id === checkpointId);
-    const targetIndex = currentIndex + direction;
+  async function reorderCheckpoints(fromCheckpointId: string, toCheckpointId: string) {
+    const currentIndex = checkpoints.findIndex((checkpoint) => checkpoint.id === fromCheckpointId);
+    const targetIndex = checkpoints.findIndex((checkpoint) => checkpoint.id === toCheckpointId);
 
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= checkpoints.length) {
+    if (
+      currentIndex < 0 ||
+      targetIndex < 0 ||
+      currentIndex === targetIndex
+    ) {
       return;
     }
 
@@ -608,79 +604,29 @@ export default function SessionManagementPage() {
     }
   }
 
-  async function improveCheckpoint(checkpoint: CheckpointRecord) {
-    setLintingCheckpointId(checkpoint.id);
-    setError("");
-    try {
-      const res = await fetch(`/api/sessions/${sessionId}/checkpoints/lint`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: checkpoint.prompt }),
-      });
+  function startDraggingCheckpoint(checkpointId: string) {
+    setDraggedCheckpointId(checkpointId);
+    setDragTargetCheckpointId(checkpointId);
+  }
 
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to get suggestions.");
-      }
-
-      setCheckpointLintResult({
-        checkpointId: checkpoint.id,
-        result: {
-          isRecallOnly: Boolean(data?.isRecallOnly),
-          suggestedRewrite:
-            typeof data?.suggestedRewrite === "string"
-              ? data.suggestedRewrite
-              : checkpoint.prompt,
-          suggestedExpectations: Array.isArray(data?.suggestedExpectations)
-            ? data.suggestedExpectations
-            : [],
-          suggestedMisconceptions: Array.isArray(data?.suggestedMisconceptions)
-            ? data.suggestedMisconceptions
-            : [],
-        },
-      });
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to get suggestions.";
-      setError(message);
-      setToast({ tone: "error", message });
-    } finally {
-      setLintingCheckpointId(null);
+  function dragOverCheckpoint(event: React.DragEvent, checkpointId: string) {
+    event.preventDefault();
+    if (draggedCheckpointId && draggedCheckpointId !== checkpointId) {
+      setDragTargetCheckpointId(checkpointId);
     }
   }
 
-  async function applyCheckpointSuggestions(checkpointId: string) {
-    if (checkpointLintResult?.checkpointId !== checkpointId) return;
+  async function dropCheckpoint(checkpointId: string) {
+    if (!draggedCheckpointId) return;
+    const sourceId = draggedCheckpointId;
+    setDraggedCheckpointId(null);
+    setDragTargetCheckpointId(null);
+    await reorderCheckpoints(sourceId, checkpointId);
+  }
 
-    setSavingCheckpoint(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/sessions/${sessionId}/checkpoints/${checkpointId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: checkpointLintResult.result.suggestedRewrite,
-          expectations: checkpointLintResult.result.suggestedExpectations,
-          misconceptionSeeds: checkpointLintResult.result.suggestedMisconceptions,
-        }),
-      });
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to apply suggestions.");
-      }
-
-      await fetchCheckpoints();
-      setCheckpointLintResult(null);
-      setToast({ tone: "success", message: "Suggestions applied." });
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to apply suggestions.";
-      setError(message);
-      setToast({ tone: "error", message });
-    } finally {
-      setSavingCheckpoint(false);
-    }
+  function endDraggingCheckpoint() {
+    setDraggedCheckpointId(null);
+    setDragTargetCheckpointId(null);
   }
 
   const readings = files.filter((f) => f.category === "reading");
@@ -810,8 +756,8 @@ export default function SessionManagementPage() {
             acceptingSuggestionIndex,
             editingCheckpointId,
             editingCheckpointPrompt,
-            lintingCheckpointId,
-            checkpointLintResult,
+            draggedCheckpointId,
+            dragTargetCheckpointId,
             showQuestionSavedState,
             newCheckpointPrompt,
           }}
@@ -822,12 +768,13 @@ export default function SessionManagementPage() {
             onAcceptSuggestion: acceptSuggestion,
             onDismissSuggestion: dismissSuggestion,
             onCreateCheckpoint: createCheckpoint,
-            onMoveCheckpoint: moveCheckpoint,
+            onDragStartCheckpoint: startDraggingCheckpoint,
+            onDragOverCheckpoint: dragOverCheckpoint,
+            onDropCheckpoint: dropCheckpoint,
+            onEndDragCheckpoint: endDraggingCheckpoint,
             onStartEditingCheckpoint: startEditingCheckpoint,
             onCancelEditingCheckpoint: cancelEditingCheckpoint,
             onSaveCheckpointEdit: saveCheckpointEdit,
-            onImproveCheckpoint: improveCheckpoint,
-            onApplyCheckpointSuggestions: applyCheckpointSuggestions,
             onRemoveCheckpoint: removeCheckpoint,
           }}
         />

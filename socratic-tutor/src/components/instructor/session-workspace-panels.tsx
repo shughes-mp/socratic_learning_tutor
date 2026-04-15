@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import { StepIndicator } from "@/components/ui/step-indicator";
-import type { CheckpointLintResult, CheckpointRecord, FileInfo, SessionDetails } from "@/types";
+import type { CheckpointRecord, FileInfo, SessionDetails } from "@/types";
 
 export interface QuestionSuggestion {
   prompt: string;
@@ -39,12 +39,13 @@ type QuestionActions = {
   onAcceptSuggestion: (index: number) => void | Promise<void>;
   onDismissSuggestion: (index: number) => void;
   onCreateCheckpoint: () => void | Promise<void>;
-  onMoveCheckpoint: (checkpointId: string, direction: -1 | 1) => void | Promise<void>;
+  onDragStartCheckpoint: (checkpointId: string) => void;
+  onDragOverCheckpoint: (event: React.DragEvent, checkpointId: string) => void;
+  onDropCheckpoint: (checkpointId: string) => void | Promise<void>;
+  onEndDragCheckpoint: () => void;
   onStartEditingCheckpoint: (checkpoint: CheckpointRecord) => void;
   onCancelEditingCheckpoint: () => void;
   onSaveCheckpointEdit: (checkpointId: string) => void | Promise<void>;
-  onImproveCheckpoint: (checkpoint: CheckpointRecord) => void | Promise<void>;
-  onApplyCheckpointSuggestions: (checkpointId: string) => void | Promise<void>;
   onRemoveCheckpoint: (checkpointId: string) => void | Promise<void>;
 };
 
@@ -56,11 +57,8 @@ type QuestionUiState = {
   acceptingSuggestionIndex: number | null;
   editingCheckpointId: string | null;
   editingCheckpointPrompt: string;
-  lintingCheckpointId: string | null;
-  checkpointLintResult: {
-    checkpointId: string;
-    result: CheckpointLintResult;
-  } | null;
+  draggedCheckpointId: string | null;
+  dragTargetCheckpointId: string | null;
   showQuestionSavedState: boolean;
   newCheckpointPrompt: string;
 };
@@ -402,24 +400,9 @@ function QuestionSuggestionCard(props: {
     <div className="space-y-3 rounded-2xl border-2 border-dashed border-[rgba(17,120,144,0.28)] bg-[rgba(17,120,144,0.04)] p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-              Suggestion {index + 1}
-            </span>
-            {suggestion.focusArea ? (
-              <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
-                {suggestion.focusArea}
-              </span>
-            ) : null}
-            {suggestion.qualityLabels.map((label) => (
-              <span
-                key={label}
-                className="rounded-full bg-[rgba(17,120,144,0.08)] px-2.5 py-1 text-[11px] font-medium text-[var(--teal)]"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
+            Suggestion {index + 1}
+          </span>
           <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
             {suggestion.prompt}
           </p>
@@ -474,48 +457,62 @@ function QuestionSuggestionCard(props: {
 function CheckpointCard(props: {
   checkpoint: CheckpointRecord;
   index: number;
-  total: number;
   isEditing: boolean;
   editingCheckpointPrompt: string;
   setEditingCheckpointPrompt: Dispatch<SetStateAction<string>>;
   savingCheckpoint: boolean;
-  lintingCheckpointId: string | null;
-  lintResult: CheckpointLintResult | null;
-  onMoveCheckpoint: (checkpointId: string, direction: -1 | 1) => void | Promise<void>;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onDragStartCheckpoint: (checkpointId: string) => void;
+  onDragOverCheckpoint: (event: React.DragEvent, checkpointId: string) => void;
+  onDropCheckpoint: (checkpointId: string) => void | Promise<void>;
+  onEndDragCheckpoint: () => void;
   onStartEditingCheckpoint: (checkpoint: CheckpointRecord) => void;
   onCancelEditingCheckpoint: () => void;
   onSaveCheckpointEdit: (checkpointId: string) => void | Promise<void>;
-  onImproveCheckpoint: (checkpoint: CheckpointRecord) => void | Promise<void>;
-  onApplyCheckpointSuggestions: (checkpointId: string) => void | Promise<void>;
   onRemoveCheckpoint: (checkpointId: string) => void | Promise<void>;
 }) {
   const {
     checkpoint,
     index,
-    total,
     isEditing,
     editingCheckpointPrompt,
     setEditingCheckpointPrompt,
     savingCheckpoint,
-    lintingCheckpointId,
-    lintResult,
-    onMoveCheckpoint,
+    isDragging,
+    isDropTarget,
+    onDragStartCheckpoint,
+    onDragOverCheckpoint,
+    onDropCheckpoint,
+    onEndDragCheckpoint,
     onStartEditingCheckpoint,
     onCancelEditingCheckpoint,
     onSaveCheckpointEdit,
-    onImproveCheckpoint,
-    onApplyCheckpointSuggestions,
     onRemoveCheckpoint,
   } = props;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-[var(--rule)] bg-[rgba(255,255,255,0.62)] p-4">
+    <div
+      draggable={!isEditing && !savingCheckpoint}
+      onDragStart={() => onDragStartCheckpoint(checkpoint.id)}
+      onDragOver={(event) => onDragOverCheckpoint(event, checkpoint.id)}
+      onDrop={() => onDropCheckpoint(checkpoint.id)}
+      onDragEnd={onEndDragCheckpoint}
+      className={`space-y-4 rounded-2xl border bg-[rgba(255,255,255,0.62)] p-4 transition-all ${
+        isDropTarget
+          ? "border-[var(--teal)] shadow-[0_0_0_2px_rgba(17,120,144,0.12)]"
+          : "border-[var(--rule)]"
+      } ${isDragging ? "cursor-grabbing opacity-60" : "cursor-grab"}`}
+    >
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
               Question {index + 1}
             </span>
+            {!isEditing ? (
+              <span className="text-xs text-[var(--dim-grey)]">Drag to reorder</span>
+            ) : null}
           </div>
 
           {isEditing ? (
@@ -533,20 +530,6 @@ function CheckpointCard(props: {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => onMoveCheckpoint(checkpoint.id, -1)}
-            disabled={index === 0 || savingCheckpoint}
-            className="minerva-button minerva-button-secondary"
-          >
-            Up
-          </button>
-          <button
-            onClick={() => onMoveCheckpoint(checkpoint.id, 1)}
-            disabled={index === total - 1 || savingCheckpoint}
-            className="minerva-button minerva-button-secondary"
-          >
-            Down
-          </button>
           {isEditing ? (
             <>
               <button
@@ -573,83 +556,17 @@ function CheckpointCard(props: {
                 Edit
               </button>
               <button
-                onClick={() => onImproveCheckpoint(checkpoint)}
-                disabled={lintingCheckpointId === checkpoint.id}
-                className="minerva-button minerva-button-secondary"
-              >
-                {lintingCheckpointId === checkpoint.id
-                  ? "Loading..."
-                  : "Get feedback on this question"}
-              </button>
-              <button
                 onClick={() => onRemoveCheckpoint(checkpoint.id)}
-                className="minerva-button minerva-button-secondary"
+                aria-label={`Delete question ${index + 1}`}
+                title="Delete question"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(223,47,38,0.24)] text-[20px] leading-none text-[var(--signal)] transition-colors hover:bg-[rgba(223,47,38,0.08)]"
               >
-                Delete
+                ×
               </button>
             </>
           )}
         </div>
       </div>
-
-      {lintResult ? (
-        <div className="space-y-4 rounded-xl border border-[rgba(17,120,144,0.18)] bg-[rgba(17,120,144,0.06)] p-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-                Question feedback
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[var(--charcoal)]">
-                {lintResult.isRecallOnly
-                  ? "This prompt looks too recall-heavy. Here is a stronger interpretive version."
-                  : "This prompt is viable. Here are refinements to make evidence and misconception tracking stronger."}
-              </p>
-            </div>
-            <button
-              onClick={() => onApplyCheckpointSuggestions(checkpoint.id)}
-              disabled={savingCheckpoint}
-              className="minerva-button"
-            >
-              {savingCheckpoint ? "Applying..." : "Apply suggestions"}
-            </button>
-          </div>
-
-          <div className="space-y-3 text-sm text-[var(--charcoal)]">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-                Suggested rewrite
-              </p>
-              <p className="mt-2 leading-6">{lintResult.suggestedRewrite}</p>
-            </div>
-
-            {lintResult.suggestedExpectations.length > 0 ? (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-                  Expected evidence
-                </p>
-                <ul className="mt-2 space-y-1.5 text-[var(--charcoal)]">
-                  {lintResult.suggestedExpectations.map((item) => (
-                    <li key={item}>- {item}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-
-            {lintResult.suggestedMisconceptions.length > 0 ? (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dim-grey)]">
-                  Likely misreadings
-                </p>
-                <ul className="mt-2 space-y-1.5 text-[var(--charcoal)]">
-                  {lintResult.suggestedMisconceptions.map((item) => (
-                    <li key={item}>- {item}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -684,8 +601,8 @@ export function QuestionsSection(props: {
     acceptingSuggestionIndex,
     editingCheckpointId,
     editingCheckpointPrompt,
-    lintingCheckpointId,
-    checkpointLintResult,
+    draggedCheckpointId,
+    dragTargetCheckpointId,
     showQuestionSavedState,
     newCheckpointPrompt,
   } = uiState;
@@ -694,12 +611,13 @@ export function QuestionsSection(props: {
     onAcceptSuggestion,
     onDismissSuggestion,
     onCreateCheckpoint,
-    onMoveCheckpoint,
+    onDragStartCheckpoint,
+    onDragOverCheckpoint,
+    onDropCheckpoint,
+    onEndDragCheckpoint,
     onStartEditingCheckpoint,
     onCancelEditingCheckpoint,
     onSaveCheckpointEdit,
-    onImproveCheckpoint,
-    onApplyCheckpointSuggestions,
     onRemoveCheckpoint,
   } = actions;
 
@@ -781,23 +699,19 @@ export function QuestionsSection(props: {
               key={checkpoint.id}
               checkpoint={checkpoint}
               index={index}
-              total={checkpoints.length}
               isEditing={editingCheckpointId === checkpoint.id}
               editingCheckpointPrompt={editingCheckpointPrompt}
               setEditingCheckpointPrompt={setEditingCheckpointPrompt}
               savingCheckpoint={savingCheckpoint}
-              lintingCheckpointId={lintingCheckpointId}
-              lintResult={
-                checkpointLintResult?.checkpointId === checkpoint.id
-                  ? checkpointLintResult.result
-                  : null
-              }
-              onMoveCheckpoint={onMoveCheckpoint}
+              isDragging={draggedCheckpointId === checkpoint.id}
+              isDropTarget={dragTargetCheckpointId === checkpoint.id}
+              onDragStartCheckpoint={onDragStartCheckpoint}
+              onDragOverCheckpoint={onDragOverCheckpoint}
+              onDropCheckpoint={onDropCheckpoint}
+              onEndDragCheckpoint={onEndDragCheckpoint}
               onStartEditingCheckpoint={onStartEditingCheckpoint}
               onCancelEditingCheckpoint={onCancelEditingCheckpoint}
               onSaveCheckpointEdit={onSaveCheckpointEdit}
-              onImproveCheckpoint={onImproveCheckpoint}
-              onApplyCheckpointSuggestions={onApplyCheckpointSuggestions}
               onRemoveCheckpoint={onRemoveCheckpoint}
             />
           ))}
