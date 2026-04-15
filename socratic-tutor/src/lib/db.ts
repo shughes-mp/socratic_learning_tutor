@@ -40,8 +40,7 @@ CREATE TABLE IF NOT EXISTS "Session" (
   "opensAt" DATETIME,
   "closesAt" DATETIME,
   "maxExchanges" INTEGER NOT NULL DEFAULT 20,
-  "stance" TEXT NOT NULL DEFAULT 'directed',
-  "sessionPurpose" TEXT NOT NULL DEFAULT 'pre_class'
+  "stance" TEXT NOT NULL DEFAULT 'directed'
 );
 CREATE TABLE IF NOT EXISTS "Reading" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -275,11 +274,6 @@ async function ensureTursoSchemaUpgrades(client: LibsqlClient) {
       `ALTER TABLE "Session" ADD COLUMN "stance" TEXT NOT NULL DEFAULT 'directed'`
     );
   }
-  if (!sessionCols.has("sessionPurpose")) {
-    alters.push(
-      `ALTER TABLE "Session" ADD COLUMN "sessionPurpose" TEXT NOT NULL DEFAULT 'pre_class'`
-    );
-  }
 
   const misconceptionNewCols: Array<[string, string]> = [
     ["canonicalClaim", "TEXT"],
@@ -360,4 +354,13 @@ export async function ensureDatabaseReady() {
       const { createClient } = require("@libsql/client");
       const client = createClient({
         url: remoteDatabaseUrl,
-        authToken: process.env.TURSO_AU
+        authToken: process.env.TURSO_AUTH_TOKEN,
+      });
+
+      await client.executeMultiple(TURSO_BOOTSTRAP_SQL);
+      await ensureTursoSchemaUpgrades(client as LibsqlClient);
+    })();
+  }
+
+  await globalForPrisma.tursoSchemaReady;
+}

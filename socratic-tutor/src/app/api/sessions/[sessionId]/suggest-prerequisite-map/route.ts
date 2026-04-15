@@ -87,4 +87,98 @@ function normalizeMapValue(mapValue: {
             : `concept_${index + 1}`;
 
       return {
- 
+        id: rawId || `concept_${index + 1}`,
+        label: rawLabel || `Concept ${index + 1}`,
+        level:
+          typeof concept.level === "string" && validLevels.has(concept.level)
+            ? concept.level
+            : index === 0
+              ? "foundational"
+              : "intermediate",
+        prerequisites: Array.isArray(concept.prerequisites)
+          ? concept.prerequisites.filter(
+              (prerequisite): prerequisite is string =>
+                typeof prerequisite === "string" && prerequisite.trim().length > 0
+            )
+          : [],
+      };
+    })
+    .filter((concept) => concept.label.length > 0);
+
+  const idSet = new Set(normalizedConcepts.map((concept) => concept.id));
+  return {
+    concepts: normalizedConcepts.map((concept) => ({
+      ...concept,
+      prerequisites: concept.prerequisites.filter((prerequisite) =>
+        idSet.has(prerequisite)
+      ),
+    })),
+  } as {
+    concepts: Array<{
+      id: string;
+      label: string;
+      level: string;
+      prerequisites: string[];
+    }>;
+  };
+}
+
+export async function POST(
+  _req: Request,
+  { params }: { params: Promise<{ sessionId: string }> }
+) {
+  await ensureDatabaseReady();
+  const { sessionId } = await params;
+
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+    include: { readings: true },
+  });
+
+  if (!session) {
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  if (session.readings.length === 0) {
+    return NextResponse.json(
+      { error: "Upload a reading before generating a concept map." },
+      { status: 400 }
+    );
+  }
+
+  const prompt = `Based on these readings, identify the key concepts and their prerequisite relationships.
+Return ONLY valid JSON matching this shape:
+{"concepts":[{"id":"string","label":"string","level":"foundational|intermediate|advanced","prerequisites":["string"]}]}
+
+Avoid circular prerequisites.
+
+Reading titles and excerpts:
+${session.readings
+  .map((reading) => `${reading.filename}: ${reading.content.slice(0, 500)}`)
+  .join("\n\n")}`;
+
+  try {
+    const { text } = await generateText({
+      model: anthropic(MODEL_FAST),
+      prompt,
+    });
+
+    const mapValue = normalizeMapValue(parseMapResponse(text));
+
+    if (!Array.isArray(mapValue.concepts) || mapValue.concepts.length === 0) {
+      throw new Error("Generated map was not valid.");
+    }
+
+    if (hasCycle(mapValue)) {
+      throw new Error("Generated prerequisite map contains a cycle.");
+    }
+
+    return NextResponse.json({ map: mapValue });
+  } catch (error) {
+    console.error("Failed to suggest prerequisite map:", error);
+    return NextResponse.json(
+      { error: "Failed to generate prerequisite map." },
+      { status: 500 }
+    );
+  }
+}

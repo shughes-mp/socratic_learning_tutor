@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isValidSessionPurpose, normalizeSessionPurpose } from "@/lib/session-purpose";
+import { normalizeSessionPurpose, isValidSessionPurpose } from "@/lib/session-purpose";
 import type { ApiError } from "@/types";
 
 export async function PATCH(
@@ -72,12 +72,8 @@ export async function PATCH(
     }
     if (sessionPurpose !== undefined) {
       if (!isValidSessionPurpose(sessionPurpose)) {
-        return NextResponse.json<ApiError>(
-          {
-            error:
-              "sessionPurpose must be pre_class, during_class_prep, during_class_reflection, or after_class.",
-            code: "INVALID_SESSION_PURPOSE",
-          },
+        return NextResponse.json(
+          { error: "Invalid sessionPurpose value." },
           { status: 400 }
         );
       }
@@ -92,4 +88,21 @@ export async function PATCH(
     return NextResponse.json({
       id: updated.id,
       name: updated.name,
-      description: update
+      description: updated.description,
+      courseContext: updated.courseContext,
+      learningGoal: updated.learningGoal,
+      learningOutcomes: updated.learningOutcomes,
+      prerequisiteMap: updated.prerequisiteMap,
+      accessCode: updated.accessCode,
+      maxExchanges: updated.maxExchanges,
+      stance: updated.stance,
+      sessionPurpose: updated.sessionPurpose,
+    });
+  } catch (error) {
+    console.error("Error updating session config:", error);
+    return NextResponse.json<ApiError>(
+      { error: "Failed to update session.", code: "UPDATE_FAILED" },
+      { status: 500 }
+    );
+  }
+}

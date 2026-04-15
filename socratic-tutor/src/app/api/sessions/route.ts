@@ -48,4 +48,9 @@ export async function POST(request: Request) {
           ? (error as Error & { cause?: unknown }).cause
           : undefined,
     });
-    return NextResponse.j
+    return NextResponse.json<ApiError>(
+      { error: "Failed to create session.", code: "CREATE_FAILED" },
+      { status: 500 }
+    );
+  }
+}

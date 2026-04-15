@@ -22,4 +22,8 @@ export const MODEL_PRIMARY =
  * misconception clustering, and prerequisite-map suggestions.
  *
  * `claude-3-5-haiku-latest` has been retired by Anthropic and now returns 404s.
- * Use the current Haiku 4.5 alias by default so fa
+ * Use the current Haiku 4.5 alias by default so fast-path features keep working
+ * in both local dev and Vercel unless an explicit override is set.
+ */
+export const MODEL_FAST =
+  process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5";
