@@ -1,11 +1,12 @@
 // Shared TypeScript types for the Socratic Tutor application
 
-export type FileCategory = "reading" | "assessment";
 export type SessionPurpose =
   | "pre_class"
   | "during_class_prep"
   | "during_class_reflection"
   | "after_class";
+
+export type FileCategory = "reading" | "assessment";
 
 export interface CreateSessionRequest {
   name: string;
@@ -219,3 +220,14 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+}
+
+export interface StudentSessionInfo {
+  id: string;
+  studentName: string;
+  startedAt: string;
+  endedAt: string | null;
+  exchangeCount: number;
+  misconceptionCount: number;
+  lastActive: string;
+}
