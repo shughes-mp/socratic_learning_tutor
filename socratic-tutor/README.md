@@ -59,6 +59,7 @@ In short: the app is designed to support learning, not shortcut it.
 - Expanded learner traces include confidence checks and topic-mastery summaries so instructors can scan both participation and understanding quickly
 - Plain-language instructor navigation built around `Learner progress`, `Teaching brief`, and `Common misunderstandings`
 - A redesigned session workspace that prioritizes access code sharing, readings, key questions, teaching context, and assessments in setup order
+- A componentized session workspace with one canonical panel implementation per section, reducing duplicated UI paths and making instructor setup behavior easier to maintain
 - Collapsible workspace sections that default closed for active sessions so returning instructors can get to monitoring faster
 - Hidden scaffold messages are suppressed in instructor traces, and assistant trace messages render markdown instead of raw `*` / `**` syntax
 - Shared tag-stripping keeps internal tags and diagnostic notes out of both learner chat bubbles and instructor replay views
@@ -124,6 +125,8 @@ TURSO_AUTH_TOKEN=your_turso_auth_token
 What these are for:
 
 - `ANTHROPIC_API_KEY`: required for tutoring and report generation
+- `ANTHROPIC_MODEL_PRIMARY`: optional override for the main tutoring and report model. Defaults to `claude-sonnet-4-6`.
+- `ANTHROPIC_MODEL_FAST`: optional override for fast-path features such as diagnostics, question generation, and concept-map generation. Defaults to `claude-haiku-4-5`.
 - `NEXT_PUBLIC_APP_URL`: optional locally, useful for links
 - `LOCAL_DATABASE_URL`: used by Prisma CLI commands during local schema work
 - `DATABASE_URL`: local SQLite fallback
@@ -224,6 +227,7 @@ Once the app is running:
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.
 - Learning outcome assessments are instructor-facing formative signals, not final grades or official learner records.
 - The app depends on Anthropic API availability and valid credentials.
+- Fast-path AI features rely on a current Anthropic Haiku model alias. If you override `ANTHROPIC_MODEL_FAST`, make sure the chosen model is still available in your Anthropic account.
 - Assessment protection is designed to reduce answer leakage, but instructors should still review how they want the tool used in their course context.
 
 ## Tech Stack

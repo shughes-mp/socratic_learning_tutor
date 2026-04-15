@@ -11,15 +11,19 @@
  */
 
 /**
- * Primary model: used for tutoring, report generation, session summaries,
- * and prerequisite-map suggestions. Needs strong reasoning and instruction-following.
+ * Primary model: used for tutoring, report generation, and session summaries.
+ * Needs strong reasoning and instruction-following.
  */
 export const MODEL_PRIMARY =
   process.env.ANTHROPIC_MODEL_PRIMARY ?? "claude-sonnet-4-6";
 
 /**
  * Fast model: used for diagnostics, checkpoint linting, question suggestions,
- * and misconception clustering. Prioritizes speed and cost over depth.
+ * misconception clustering, and prerequisite-map suggestions.
+ *
+ * `claude-3-5-haiku-latest` has been retired by Anthropic and now returns 404s.
+ * Use the current Haiku 4.5 alias by default so fast-path features keep working
+ * in both local dev and Vercel unless an explicit override is set.
  */
 export const MODEL_FAST =
-  process.env.ANTHROPIC_MODEL_FAST ?? "claude-3-5-haiku-latest";
+  process.env.ANTHROPIC_MODEL_FAST ?? "claude-haiku-4-5";

@@ -32,7 +32,88 @@ function parseMapResponse(text: string) {
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/, "");
 
-  return JSON.parse(cleaned) as {
+  const directParse = () =>
+    JSON.parse(cleaned) as {
+      concepts: Array<{
+        id: string;
+        label: string;
+        level: string;
+        prerequisites: string[];
+      }>;
+    };
+
+  try {
+    return directParse();
+  } catch {
+    const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!objectMatch) {
+      throw new Error("Model did not return valid JSON.");
+    }
+
+    return JSON.parse(objectMatch[0]) as {
+      concepts: Array<{
+        id: string;
+        label: string;
+        level: string;
+        prerequisites: string[];
+      }>;
+    };
+  }
+}
+
+function normalizeMapValue(mapValue: {
+  concepts?: Array<{
+    id?: string;
+    label?: string;
+    level?: string;
+    prerequisites?: string[];
+  }>;
+}) {
+  const validLevels = new Set(["foundational", "intermediate", "advanced"]);
+  const normalizedConcepts = (Array.isArray(mapValue.concepts) ? mapValue.concepts : [])
+    .map((concept, index) => {
+      const rawLabel =
+        typeof concept.label === "string" && concept.label.trim().length > 0
+          ? concept.label.trim()
+          : null;
+      const rawId =
+        typeof concept.id === "string" && concept.id.trim().length > 0
+          ? concept.id.trim()
+          : rawLabel
+            ? rawLabel
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "_")
+                .replace(/^_+|_+$/g, "")
+            : `concept_${index + 1}`;
+
+      return {
+        id: rawId || `concept_${index + 1}`,
+        label: rawLabel || `Concept ${index + 1}`,
+        level:
+          typeof concept.level === "string" && validLevels.has(concept.level)
+            ? concept.level
+            : index === 0
+              ? "foundational"
+              : "intermediate",
+        prerequisites: Array.isArray(concept.prerequisites)
+          ? concept.prerequisites.filter(
+              (prerequisite): prerequisite is string =>
+                typeof prerequisite === "string" && prerequisite.trim().length > 0
+            )
+          : [],
+      };
+    })
+    .filter((concept) => concept.label.length > 0);
+
+  const idSet = new Set(normalizedConcepts.map((concept) => concept.id));
+  return {
+    concepts: normalizedConcepts.map((concept) => ({
+      ...concept,
+      prerequisites: concept.prerequisites.filter((prerequisite) =>
+        idSet.has(prerequisite)
+      ),
+    })),
+  } as {
     concepts: Array<{
       id: string;
       label: string;
@@ -82,9 +163,9 @@ ${session.readings
       prompt,
     });
 
-    const mapValue = parseMapResponse(text);
+    const mapValue = normalizeMapValue(parseMapResponse(text));
 
-    if (!Array.isArray(mapValue.concepts)) {
+    if (!Array.isArray(mapValue.concepts) || mapValue.concepts.length === 0) {
       throw new Error("Generated map was not valid.");
     }
 
