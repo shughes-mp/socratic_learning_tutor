@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { prisma } from "@/lib/db";
-import { MODEL_PRIMARY } from "@/lib/models";
+import { ensureDatabaseReady, prisma } from "@/lib/db";
+import { MODEL_FAST } from "@/lib/models";
 
 function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: string[] }> }): boolean {
   const visiting = new Set<string>();
@@ -25,10 +25,28 @@ function hasCycle(mapValue: { concepts: Array<{ id: string; prerequisites: strin
   return mapValue.concepts.some((item) => visit(item.id));
 }
 
+function parseMapResponse(text: string) {
+  const cleaned = text
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/, "");
+
+  return JSON.parse(cleaned) as {
+    concepts: Array<{
+      id: string;
+      label: string;
+      level: string;
+      prerequisites: string[];
+    }>;
+  };
+}
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
+  await ensureDatabaseReady();
   const { sessionId } = await params;
 
   const session = await prisma.session.findUnique({
@@ -38,6 +56,13 @@ export async function POST(
 
   if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  if (session.readings.length === 0) {
+    return NextResponse.json(
+      { error: "Upload a reading before generating a concept map." },
+      { status: 400 }
+    );
   }
 
   const prompt = `Based on these readings, identify the key concepts and their prerequisite relationships.
@@ -53,13 +78,11 @@ ${session.readings
 
   try {
     const { text } = await generateText({
-      model: anthropic(MODEL_PRIMARY),
+      model: anthropic(MODEL_FAST),
       prompt,
     });
 
-    const mapValue = JSON.parse(text) as {
-      concepts: Array<{ id: string; label: string; level: string; prerequisites: string[] }>;
-    };
+    const mapValue = parseMapResponse(text);
 
     if (!Array.isArray(mapValue.concepts)) {
       throw new Error("Generated map was not valid.");
