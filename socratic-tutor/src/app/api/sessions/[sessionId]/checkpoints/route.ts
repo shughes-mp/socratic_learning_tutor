@@ -46,6 +46,7 @@ export async function POST(
     const { sessionId } = await params;
     const body = (await request.json()) as {
       prompt?: string;
+      processLevel?: string;
       expectations?: string[] | null;
       misconceptionSeeds?: string[] | null;
     };
@@ -76,12 +77,20 @@ export async function POST(
       select: { orderIndex: true },
     });
 
+    const processLevel =
+      body.processLevel === "retrieve" ||
+      body.processLevel === "infer" ||
+      body.processLevel === "integrate" ||
+      body.processLevel === "evaluate"
+        ? body.processLevel
+        : "infer";
+
     const checkpoint = await prisma.checkpoint.create({
       data: {
         sessionId,
         orderIndex: (maxCheckpoint?.orderIndex ?? -1) + 1,
         prompt,
-        processLevel: "infer",
+        processLevel,
         expectations:
           Array.isArray(body.expectations) && body.expectations.length > 0
             ? JSON.stringify(body.expectations)

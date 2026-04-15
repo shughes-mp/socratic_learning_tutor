@@ -56,6 +56,10 @@ export default function SessionManagementPage() {
   const [suggestions, setSuggestions] = useState<
     Array<{
       prompt: string;
+      processLevel: string;
+      focusArea: string | null;
+      rationale: string;
+      qualityLabels: string[];
       expectations: string[];
       misconceptions: string[];
     }>
@@ -454,6 +458,7 @@ export default function SessionManagementPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: suggestion.prompt,
+          processLevel: suggestion.processLevel,
           expectations: suggestion.expectations,
           misconceptionSeeds: suggestion.misconceptions,
         }),
@@ -2080,9 +2085,25 @@ export default function SessionManagementPage() {
                         <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
                           Suggestion {index + 1}
                         </span>
+                        {suggestion.focusArea && (
+                          <span className="rounded-full bg-[rgba(0,0,0,0.04)] px-2.5 py-1 text-[11px] font-medium text-[var(--dim-grey)]">
+                            {suggestion.focusArea}
+                          </span>
+                        )}
+                        {suggestion.qualityLabels.map((label) => (
+                          <span
+                            key={label}
+                            className="rounded-full bg-[rgba(17,120,144,0.08)] px-2.5 py-1 text-[11px] font-medium text-[var(--teal)]"
+                          >
+                            {label}
+                          </span>
+                        ))}
                       </div>
                       <p className="max-w-[48rem] text-[15px] leading-7 text-[var(--charcoal)]">
                         {suggestion.prompt}
+                      </p>
+                      <p className="max-w-[42rem] text-sm leading-6 text-[var(--dim-grey)]">
+                        {suggestion.rationale}
                       </p>
                       {suggestion.expectations.length > 0 && (
                         <div>
