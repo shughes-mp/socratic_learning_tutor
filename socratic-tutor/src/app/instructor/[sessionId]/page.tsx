@@ -13,6 +13,7 @@ import {
   ReadingsSection,
   StatusBar,
   TeachingContextSection,
+  GoalsSection,
   WorkspaceHeader,
 } from "@/components/instructor/session-workspace-panels";
 import type {
@@ -90,6 +91,7 @@ export default function SessionManagementPage() {
   const [acceptingSuggestionIndex, setAcceptingSuggestionIndex] = useState<number | null>(null);
   const [draggedCheckpointId, setDraggedCheckpointId] = useState<string | null>(null);
   const [dragTargetCheckpointId, setDragTargetCheckpointId] = useState<string | null>(null);
+  const [showGoals, setShowGoals] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [showQuestions, setShowQuestions] = useState(false);
   const [showReadings, setShowReadings] = useState(true);
@@ -248,6 +250,7 @@ export default function SessionManagementPage() {
     if (!loading && !sectionsInitialized) {
       const hasActiveStudents = learnerCount > 0;
       if (hasActiveStudents) {
+        setShowGoals(false);
         setShowConfig(false);
         setShowQuestions(false);
         setShowReadings(false);
@@ -740,13 +743,6 @@ export default function SessionManagementPage() {
           </div>
         ) : null}
 
-        <AccessCodeCard
-          session={session}
-          isActive={isActive}
-          copied={copied}
-          onCopyLink={copyLink}
-        />
-
         {learnerCount > 0 && session ? (
           <SessionInsightsCard
             sessionId={sessionId}
@@ -755,6 +751,16 @@ export default function SessionManagementPage() {
             liveStatus={liveStatus}
           />
         ) : null}
+
+        <GoalsSection 
+          open={showGoals}
+          onToggle={() => setShowGoals((v) => !v)}
+          session={session}
+          setSession={setSession}
+          uiState={{ savingConfig, showSavedState, configSavedAt }}
+          actions={{ onSaveConfig: saveTeachingContext }}
+          formatSavedTime={formatSavedTime}
+        />
 
         <ReadingsSection
           open={showReadings}
@@ -854,6 +860,15 @@ export default function SessionManagementPage() {
             onRemoveFile: handleRemoveFile,
           }}
         />
+
+        <AccessCodeCard
+          session={session}
+          isActive={isActive}
+          copied={copied}
+          hasReadings={readings.length > 0}
+          onCopyLink={copyLink}
+        />
+
       </div>
     </main>
   );

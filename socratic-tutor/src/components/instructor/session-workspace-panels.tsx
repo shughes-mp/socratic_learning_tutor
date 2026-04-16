@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import {
   getSessionPurposeBadgeClasses,
   getSessionPurposeOption,
+  SESSION_PURPOSE_OPTIONS,
 } from "@/lib/session-purpose";
 import type { CheckpointRecord, FileInfo, SessionDetails } from "@/types";
 
@@ -133,29 +134,43 @@ interface AccessCodeCardProps {
   isActive: boolean;
   copied: boolean;
   onCopyLink: () => void;
+  hasReadings: boolean;
 }
 
-export function AccessCodeCard({ session, isActive, copied, onCopyLink }: AccessCodeCardProps) {
+export function AccessCodeCard({ session, isActive, copied, onCopyLink, hasReadings }: AccessCodeCardProps) {
   const learnerUrl = typeof window !== "undefined"
     ? `${window.location.origin}/s/${session.accessCode}`
     : `/s/${session.accessCode}`;
 
+  const hasLearningOutcome = Boolean(session.learningOutcomes?.trim());
+
   return (
-    <div className="minerva-card p-6 md:p-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className={`minerva-card p-6 md:p-8 transition-colors duration-500 ${isActive ? "border-[rgba(17,120,144,0.3)] bg-[rgba(17,120,144,0.02)] shadow-sm" : ""}`}>
+      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="eyebrow eyebrow-teal">Learner link</p>
           <p className="mt-2 font-mono text-base text-[var(--charcoal)]">{learnerUrl}</p>
-          {!isActive && (
-            <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              Upload source materials and define learning outcomes to activate the AI Tutor before sharing.
-            </p>
-          )}
+          
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className={`flex h-4 w-4 items-center justify-center rounded-sm border ${hasReadings ? "border-[var(--teal)] bg-[var(--teal)]" : "border-[var(--rule)]"}`}>
+                {hasReadings && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              </div>
+              <span className={`text-xs ${hasReadings ? "text-[var(--charcoal)]" : "text-[var(--dim-grey)]"}`}>Upload at least one source material</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className={`flex h-4 w-4 items-center justify-center rounded-sm border ${hasLearningOutcome ? "border-[var(--teal)] bg-[var(--teal)]" : "border-[var(--rule)]"}`}>
+                {hasLearningOutcome && <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              </div>
+              <span className={`text-xs ${hasLearningOutcome ? "text-[var(--charcoal)]" : "text-[var(--dim-grey)]"}`}>Define at least one learning outcome</span>
+            </div>
+          </div>
         </div>
         <button
           onClick={onCopyLink}
           disabled={!isActive}
-          className={`minerva-button ${!isActive ? "opacity-40 cursor-not-allowed" : ""}`}
+          className={`minerva-button transition-all duration-300 ${!isActive ? "opacity-40 cursor-not-allowed" : "shadow-md hover:shadow-lg"}`}
         >
           {copied ? "Copied!" : "Copy link"}
         </button>
@@ -822,6 +837,140 @@ export function QuestionsSection({
   );
 }
 
+// ─── GoalsSection ──────────────────────────────────────────────────────────────
+
+interface GoalsSectionProps {
+  open: boolean;
+  onToggle: () => void;
+  session: SessionDetails | null;
+  setSession: React.Dispatch<React.SetStateAction<SessionDetails | null>>;
+  uiState: {
+    savingConfig: boolean;
+    showSavedState: boolean;
+    configSavedAt: Date | null;
+  };
+  actions: {
+    onSaveConfig: () => void;
+  };
+  formatSavedTime: (d: Date) => string;
+}
+
+export function GoalsSection({
+  open,
+  onToggle,
+  session,
+  setSession,
+  uiState: { savingConfig, showSavedState, configSavedAt },
+  actions,
+  formatSavedTime,
+}: GoalsSectionProps) {
+  if (!session) return null;
+
+  const updateSession = (updates: Partial<SessionDetails>) => {
+    setSession((prev) => (prev ? { ...prev, ...updates } : prev));
+  };
+
+  return (
+    <div className="section-rule border-t border-[var(--rule)]">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-5 transition-colors hover:bg-[rgba(34,34,34,0.02)] md:px-8"
+      >
+        <div className="flex items-center gap-4">
+          <ChevronIcon open={open} />
+          <h2 className="text-base font-medium text-[var(--charcoal)] tracking-[-0.01em]">
+            Step 1: Session Purpose & Outcomes
+          </h2>
+        </div>
+        {session.learningOutcomes && session.learningOutcomes.trim().length > 0 ? (
+          <span className="text-[11px] font-semibold text-[var(--teal)] uppercase tracking-[0.06em]">
+            Configured
+          </span>
+        ) : (
+          <span className="text-[11px] font-semibold text-[var(--signal)] uppercase tracking-[0.06em]">
+            Required
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="border-t border-[var(--rule)] bg-[rgba(34,34,34,0.01)] px-4 py-8 md:px-14 md:py-10 space-y-8">
+          <div className="space-y-2">
+            <label className="minerva-label">Session Target</label>
+            <p className="text-xs text-[var(--dim-grey)]">
+              When does this session take place in the learning cycle?
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {SESSION_PURPOSE_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                    session.sessionPurpose === option.value
+                      ? "border-[rgba(17,120,144,0.5)] bg-[rgba(17,120,144,0.04)]"
+                      : "border-[var(--rule)] hover:border-[rgba(34,34,34,0.3)] bg-white"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="sessionPurpose"
+                    value={option.value}
+                    checked={session.sessionPurpose === option.value}
+                    onChange={(e) => updateSession({ sessionPurpose: e.target.value as any })}
+                    className="mt-1 minerva-radio"
+                  />
+                  <div>
+                    <span className="block text-sm font-medium text-[var(--charcoal)]">
+                      {option.label}
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-[var(--dim-grey)]">
+                      {option.description}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="minerva-label" htmlFor="learningOutcomes">
+              Learning outcomes to assess
+            </label>
+            <p className="text-xs text-[var(--dim-grey)]">
+              The specific skills or understandings you want to track. The tutor will assess each learner against
+              these and include formative ratings in the teaching brief.
+            </p>
+            <textarea
+              id="learningOutcomes"
+              value={session.learningOutcomes ?? ""}
+              onChange={(e) => updateSession({ learningOutcomes: e.target.value || null })}
+              placeholder={"#system-analysis: Observe and deconstruct systems into constituent parts to explain the characteristics, and relationships among, those parts at multiple levels of analysis"}
+              rows={4}
+              className="minerva-input w-full resize-none text-sm"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 border-t border-[var(--rule)] pt-6">
+            <button
+              onClick={actions.onSaveConfig}
+              disabled={savingConfig || !session.learningOutcomes?.trim()}
+              className="minerva-button"
+            >
+              {savingConfig ? (
+                <LoadingState variant="button" message="Saving" />
+              ) : (
+                "Save settings"
+              )}
+            </button>
+            {showSavedState && configSavedAt && (
+              <p className="text-xs text-[var(--teal)]">Saved at {formatSavedTime(configSavedAt)}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── TeachingContextSection ────────────────────────────────────────────────────
 
 interface TeachingContextSectionProps {
@@ -920,25 +1069,6 @@ export function TeachingContextSection({
               onChange={(e) => updateSession({ learningGoal: e.target.value || null })}
               placeholder="e.g. Understand how system structure drives behavior — not external events."
               rows={3}
-              className="minerva-input w-full resize-none text-sm"
-            />
-          </div>
-
-          {/* Learning outcomes */}
-          <div className="space-y-2">
-            <label className="minerva-label" htmlFor="learningOutcomes">
-              Learning outcomes to assess
-            </label>
-            <p className="text-xs text-[var(--dim-grey)]">
-              The specific skills or understandings you want to track. The tutor will assess each learner against
-              these and include formative ratings in the teaching brief.
-            </p>
-            <textarea
-              id="learningOutcomes"
-              value={session.learningOutcomes ?? ""}
-              onChange={(e) => updateSession({ learningOutcomes: e.target.value || null })}
-              placeholder={"#system-analysis: Observe and deconstruct systems into constituent parts to explain the characteristics, and relationships among, those parts at multiple levels of analysis"}
-              rows={4}
               className="minerva-input w-full resize-none text-sm"
             />
           </div>
@@ -1073,7 +1203,7 @@ export function TeachingContextSection({
           <div className="flex items-center gap-4 border-t border-[var(--rule)] pt-6">
             <button
               onClick={actions.onSaveTeachingContext}
-              disabled={savingConfig || !session.learningOutcomes?.trim()}
+              disabled={savingConfig}
               className="minerva-button"
             >
               {savingConfig ? (

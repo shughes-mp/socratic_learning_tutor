@@ -31,6 +31,14 @@ export async function GET(
           orderBy: { createdAt: "desc" as const },
           take: 5,
         },
+        loAssessments: {
+          select: {
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" as const },
+          take: 1,
+        },
       },
       orderBy: { startedAt: "desc" },
     });
@@ -66,6 +74,7 @@ export async function GET(
           hasRecentEngagementConcern: !!latestFlaggedMessage,
           isWaitingForStudentReply,
           secondsSinceLastMessage,
+          latestRubricScore: studentSession.loAssessments[0]?.status ?? null,
         };
       })
     );

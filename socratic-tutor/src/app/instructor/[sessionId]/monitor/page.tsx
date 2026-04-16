@@ -20,6 +20,7 @@ interface StudentSummary {
   hasRecentEngagementConcern: boolean;
   isWaitingForStudentReply: boolean;
   secondsSinceLastMessage: number | null;
+  latestRubricScore?: string | null;
 }
 
 interface StudentSessionData {
@@ -230,9 +231,9 @@ export default function StudentMonitorPage() {
                 <thead className="border-b border-[var(--rule)] bg-[rgba(34,34,34,0.02)]">
                   <tr>
                     <th className="px-6 py-4">Learner</th>
-                    <th className="px-6 py-4">Turns</th>
-                    <th className="px-6 py-4">Misconceptions detected</th>
-                    <th className="px-6 py-4">Engagement</th>
+                    <th className="px-6 py-4">Action Flags</th>
+                    <th className="px-6 py-4">Rubric projection</th>
+                    <th className="px-6 py-4">Misconceptions</th>
                     <th className="px-6 py-4">Last active</th>
                     <th className="px-6 py-4 text-right">Conversation</th>
                   </tr>
@@ -254,36 +255,54 @@ export default function StudentMonitorPage() {
                             {student.studentName}
                           </td>
                           <td className="px-6 py-4">
-                            <span className="rounded-md bg-[rgba(34,34,34,0.05)] px-2.5 py-1 font-medium text-[var(--charcoal)]">
-                              {turns}
-                            </span>
+                            <div className="flex flex-col gap-1.5 items-start">
+                              {student.isWaitingForStudentReply &&
+                              student.secondsSinceLastMessage !== null &&
+                              student.secondsSinceLastMessage > 180 ? (
+                                <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(223,47,38,0.08)] px-2.5 py-1 text-xs font-medium text-[var(--signal)]">
+                                  <span className="h-2 w-2 rounded-full bg-[var(--signal)]" />
+                                  Needs help
+                                </span>
+                              ) : null}
+                              {student.hasRecentEngagementConcern ? (
+                                <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(144,111,18,0.10)] px-2.5 py-1 text-xs font-medium text-[#906f12]">
+                                  <span className="h-2 w-2 rounded-full bg-[#906f12]" />
+                                  Engagement block
+                                </span>
+                              ) : null}
+                              {!student.hasRecentEngagementConcern && (!student.isWaitingForStudentReply || (student.secondsSinceLastMessage && student.secondsSinceLastMessage <= 180)) ? (
+                                <span className="text-xs text-[var(--dim-grey)] text-opacity-60">—</span>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="px-6 py-4">
-                            {student.misconceptionCount > 0 ? (
-                              <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(223,47,38,0.08)] px-2.5 py-1 font-medium text-[var(--signal)]">
-                                <span className="h-2 w-2 rounded-full bg-[var(--signal)]" />
-                                {student.misconceptionCount}
-                              </span>
+                            {student.latestRubricScore ? (
+                               <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                                student.latestRubricScore === '0_no_submission' || student.latestRubricScore === 'not_observed' ? 'bg-[rgba(34,34,34,0.05)] text-[var(--dim-grey)]' :
+                                student.latestRubricScore === '1_beginning' || student.latestRubricScore === 'emerging' ? 'bg-[rgba(223,47,38,0.08)] text-[var(--signal)]' :
+                                student.latestRubricScore === '2_developing' || student.latestRubricScore === 'insufficient_evidence' ? 'bg-[rgba(144,111,18,0.10)] text-[#906f12]' :
+                                student.latestRubricScore === '3_proficient' || student.latestRubricScore === 'meets' ? 'bg-[rgba(17,120,144,0.10)] text-[var(--teal)]' :
+                                'bg-[rgba(114,133,3,0.12)] text-[var(--olive)]'
+                               }`}>
+                                 {student.latestRubricScore === '0_no_submission' ? 'Score: 0 / 4' :
+                                  student.latestRubricScore === '1_beginning' ? 'Score: 1 / 4' :
+                                  student.latestRubricScore === '2_developing' ? 'Score: 2 / 4' :
+                                  student.latestRubricScore === '3_proficient' ? 'Score: 3 / 4' :
+                                  student.latestRubricScore === '4_advanced' ? 'Score: 4 / 4' :
+                                  student.latestRubricScore.replace('_', ' ')}
+                               </span>
                             ) : (
-                              <span className="text-[var(--dim-grey)]">0</span>
+                               <span className="text-xs text-[var(--dim-grey)] opacity-60 italic">Pending report</span>
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            {student.hasRecentEngagementConcern ? (
+                            {student.misconceptionCount > 0 ? (
                               <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(144,111,18,0.10)] px-2.5 py-1 text-xs font-medium text-[#906f12]">
                                 <span className="h-2 w-2 rounded-full bg-[#906f12]" />
-                                {student.latestEngagementFlag === "disengaged"
-                                  ? "Disengaged"
-                                  : student.latestEngagementFlag === "shallow"
-                                    ? "Low effort"
-                                    : student.latestEngagementFlag === "off_topic"
-                                      ? "Off topic"
-                                      : student.latestEngagementFlag === "hostile"
-                                        ? "Hostile"
-                                        : "Needs attention"}
+                                {student.misconceptionCount} unresolved
                               </span>
                             ) : (
-                              <span className="text-xs text-[var(--teal)]">On task</span>
+                              <span className="text-xs text-[var(--dim-grey)] text-opacity-60">—</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-[var(--dim-grey)]">
@@ -294,14 +313,6 @@ export default function StudentMonitorPage() {
                                   minute: "2-digit",
                                 })}
                               </span>
-                              {student.isWaitingForStudentReply &&
-                                student.secondsSinceLastMessage !== null &&
-                                student.secondsSinceLastMessage > 180 && (
-                                  <span className="mt-0.5 text-[10px] font-medium text-[#906f12]">
-                                    Waiting {Math.floor(student.secondsSinceLastMessage / 60)}m
-                                    {" "}for reply
-                                  </span>
-                                )}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
