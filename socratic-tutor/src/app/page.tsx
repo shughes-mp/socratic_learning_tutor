@@ -3,39 +3,39 @@ import Link from "next/link";
 const steps = [
   {
     step: "01",
-    title: "Create the session",
-    body: "Name it, choose when learners will use it, upload your reading, and set a learning goal.",
+    title: "Ground the session",
+    body: "Select your cognitive target—from readiness to transfer—and upload your primary source materials.",
   },
   {
     step: "02",
-    title: "Share the link",
-    body: "Learners join with an access code — no account needed. The tutor guides them through questions that demand reasoning, not recall.",
+    title: "Reveal the reasoning",
+    body: "Learners join with a code and work through Socratic questions that demand reasoning and self-explanation, not recall.",
   },
   {
     step: "03",
-    title: "Review the evidence",
-    body: "See how each learner reasoned, where misconceptions surfaced, and what to prioritize when you teach.",
+    title: "Inform instruction",
+    body: "Receive a custom teaching brief that identifies misconceptions and recommends the specific teaching moves you should take next.",
   },
 ];
 
 const capabilities = [
   {
-    label: "Grounded in your materials",
+    label: "Actionable Teaching Briefs",
     accent: "var(--teal)",
     description:
-      "The tutor draws exclusively from the readings you upload. Learners engage with your content — not generic AI output.",
+      "Move from raw data to instructional insight. Every session produces a guide on exactly what to address in your next lesson.",
   },
   {
-    label: "Assessments stay protected",
+    label: "Precision Misconception Mapping",
     accent: "var(--olive)",
     description:
-      "Upload exam or assessment questions separately. The tutor coaches learners toward understanding without surfacing the answer.",
+      "Surface the 'why' behind the broken reasoning. Identify exactly where student models fail and where they remain fragile.",
   },
   {
-    label: "Actionable after every session",
+    label: "Calibrate student confidence",
     accent: "var(--rose)",
     description:
-      "Misconceptions, confidence patterns, topic mastery, and a teaching brief — generated for every learner, ready before your next class.",
+      "Identify the 'illusion of competence' by comparing student self-reports with actual reasoning depth before you teach your next lesson.",
   },
 ];
 
@@ -64,14 +64,13 @@ export default function HomePage() {
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-16 md:px-8 md:py-24 lg:py-32">
             <p className="eyebrow eyebrow-teal">For Instructors</p>
-            <h1 className="lead-copy mt-5 max-w-[16ch]">
-              See how your learners think — then teach accordingly.
+            <h1 className="lead-copy mt-5 max-w-[20ch]">
+              Evidence-led teaching for every stage of the learning cycle.
             </h1>
             <p className="body-copy mt-6 max-w-[38rem]">
-              Socratic Tutor runs guided conversations with your learners,
-              grounded in your own materials. You get a clear picture of what
-              they understand, where misconceptions live, and what needs your
-              attention next.
+              From pre-class retrieval to after-class transfer. Socratic AI 
+              grounded in your materials that reveals the &apos;why&apos; behind 
+              student reasoning.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
@@ -102,7 +101,7 @@ export default function HomePage() {
           <div className="px-4 py-14 md:px-8 md:py-20">
             <p className="eyebrow eyebrow-teal">How It Works</p>
             <h2 className="section-title mt-5 max-w-[14ch]">
-              Three steps to a clear picture of your class.
+              From primary source to teaching insight.
             </h2>
 
             <div className="proof-grid mt-12 grid grid-cols-1 md:grid-cols-3">
@@ -127,7 +126,7 @@ export default function HomePage() {
         <section className="section-rule grid grid-cols-1 md:grid-cols-[156px_minmax(0,1fr)]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-14 md:px-8 md:py-20">
-            <p className="eyebrow eyebrow-olive">What Sets This Apart</p>
+            <p className="eyebrow eyebrow-olive">Pedagogical Principles</p>
             <div className="mt-8 grid grid-cols-1 gap-0 divide-y divide-[var(--rule)] md:grid-cols-3 md:gap-0 md:divide-x md:divide-y-0">
               {capabilities.map((item) => (
                 <div key={item.label} className="px-5 py-6 md:first:pl-0">
