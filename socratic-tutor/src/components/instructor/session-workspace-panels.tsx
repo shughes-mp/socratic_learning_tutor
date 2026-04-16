@@ -42,9 +42,9 @@ interface WorkspaceHeaderProps {
 }
 
 function getPurposeLinks(sessionId: string, purpose: string) {
-  const monitor = { href: `/instructor/${sessionId}/monitor`, label: "Learner progress" };
-  const misconceptions = { href: `/instructor/${sessionId}/misconceptions`, label: "Misunderstandings" };
-  const report = { href: `/instructor/${sessionId}/report`, label: "Teaching brief" };
+  const monitor = { href: `/instructor/${sessionId}/monitor`, label: "Engagement monitor" };
+  const misconceptions = { href: `/instructor/${sessionId}/misconceptions`, label: "Misconceptions" };
+  const report = { href: `/instructor/${sessionId}/report`, label: "Instructor Recommendations" };
 
   switch (purpose) {
     case "during_class_prep":
@@ -72,7 +72,7 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
               Sessions
             </Link>
             <span>/</span>
-            <span className="text-[var(--charcoal)]">Workspace</span>
+            <span className="text-[var(--charcoal)]">Setup</span>
           </nav>
           <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
             {session.name}
@@ -86,7 +86,7 @@ export function WorkspaceHeader({ sessionId, session, isActive, setupStep }: Wor
             {setupStep !== null && (
               <span className="text-xs text-[var(--dim-grey)]">
                 Step {setupStep} of 4 —{" "}
-                {setupStep === 2 ? "Add a reading" : setupStep === 3 ? "Add questions" : "Share with learners"}
+                {setupStep === 2 ? "Add source materials" : setupStep === 3 ? "Define outcomes" : "Share with learners"}
               </span>
             )}
           </div>
@@ -118,14 +118,10 @@ interface StatusBarProps {
   assessmentsCount: number;
 }
 
-export function StatusBar({ learnerCount, readingsCount, assessmentsCount }: StatusBarProps) {
+ export function StatusBar({ learnerCount, readingsCount, assessmentsCount, checkpointsCount, purposeLabel }: StatusBarProps & { checkpointsCount: number, purposeLabel: string }) {
   return (
     <div className="border border-[var(--rule)] bg-[rgba(17,120,144,0.04)] px-6 py-3 text-sm text-[var(--dim-grey)]">
-      {readingsCount === 0
-        ? "Upload at least one reading to activate this session."
-        : learnerCount === 0
-          ? `Ready: ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""} uploaded. No learners yet.`
-          : `Active: ${learnerCount} learner${learnerCount !== 1 ? "s" : ""} connected. ${readingsCount} reading${readingsCount !== 1 ? "s" : ""}, ${assessmentsCount} assessment${assessmentsCount !== 1 ? "s" : ""}.`}
+      Status: {readingsCount} reading{readingsCount !== 1 ? "s" : ""}, {checkpointsCount} key question{checkpointsCount !== 1 ? "s" : ""}, {assessmentsCount} assignment{assessmentsCount !== 1 ? "s" : ""}. AI tutor set to {purposeLabel}.
     </div>
   );
 }
@@ -152,7 +148,7 @@ export function AccessCodeCard({ session, isActive, copied, onCopyLink }: Access
           <p className="mt-2 font-mono text-base text-[var(--charcoal)]">{learnerUrl}</p>
           {!isActive && (
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              Upload a reading to activate this session before sharing.
+              Upload source materials to activate the AI Tutor before sharing.
             </p>
           )}
         </div>
@@ -217,7 +213,7 @@ export function SessionInsightsCard({
             className={`h-2.5 w-2.5 rounded-full ${hasConcerns ? "bg-[#906f12]" : "bg-[var(--teal)]"}`}
           />
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--dim-grey)]">
-            Live monitoring
+            Real-time monitoring
           </p>
         </div>
 
@@ -310,11 +306,11 @@ export function SessionInsightsCard({
   const participationLabel =
     sessionPurpose === "pre_class"
       ? "Learner readiness"
-      : "Session results";
+      : "Learning outcome summary";
   const contextLine =
     sessionPurpose === "pre_class"
-      ? "Review what learners know before class."
-      : "Review how learners applied the material.";
+      ? "Identify readiness and misconceptions before class began."
+      : "Review how learners translated understanding into application.";
 
   return (
     <div className="minerva-card overflow-hidden">
@@ -418,15 +414,15 @@ export function ReadingsSection({
       >
         <div>
           <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-            Readings
+            Source Materials
           </h2>
           {!open && readings.length > 0 && (
             <p className="mt-2 text-sm text-[var(--dim-grey)]">
-              {readings.length} reading{readings.length !== 1 ? "s" : ""} uploaded
+              {readings.length} source file{readings.length !== 1 ? "s" : ""} uploaded
             </p>
           )}
           {!open && readings.length === 0 && (
-            <p className="mt-2 text-sm text-[#906f12]">No readings yet — upload to activate this session</p>
+            <p className="mt-2 text-sm text-[#906f12]">No source materials yet — upload to activate the AI Tutor</p>
           )}
         </div>
         <ChevronIcon open={open} />
@@ -435,10 +431,8 @@ export function ReadingsSection({
       {open && (
         <div className="space-y-4 px-6 pb-6 md:px-8 md:pb-8">
           <p className="text-sm text-[var(--dim-grey)]">
-            Upload the readings learners will work from. PDF, DOCX, TXT, or Markdown. Up to 50MB.
+            Ground the AI conversation in your primary materials. PDF, DOCX, TXT, or Markdown. Up to 50MB.
           </p>
-
-          {/* Drop zone */}
           <div
             onDrop={(e) => handlers.onDrop(e, "reading")}
             onDragOver={(e) => handlers.onDragOver(e, "reading")}
@@ -590,7 +584,7 @@ export function QuestionsSection({
       >
         <div>
           <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
-            Key questions
+            Key Questions
           </h2>
           {!open && checkpoints.length > 0 && (
             <p className="mt-2 text-sm text-[var(--dim-grey)]">
@@ -607,19 +601,18 @@ export function QuestionsSection({
       {open && (
         <div className="space-y-6 px-6 pb-6 md:px-8 md:pb-8">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <p className="max-w-[44rem] text-sm text-[var(--dim-grey)]">
-              These guide what the tutor focuses on. Aim for {recommendedCount}–{recommendedCount + 1} questions that
-              require interpretation, inference, or synthesis — not recall.
-            </p>
             <button
               onClick={actions.onGenerateSuggestions}
               disabled={generatingSuggestions || readingsCount === 0}
-              title={readingsCount === 0 ? "Upload a reading first" : undefined}
+              title={readingsCount === 0 ? "Upload source materials first" : undefined}
               className="minerva-button minerva-button-secondary flex-shrink-0 text-sm"
             >
-              {generatingSuggestions ? "Generating…" : "Suggest from reading"}
+              {generatingSuggestions ? "Generating…" : "Suggest from material"}
             </button>
           </div>
+
+          <div className="space-y-3 pt-2">
+            <label className="minerva-label">Choose 1-3 questions that will guide what the AI tutor focuses on. Aim for questions that require interpretation, inference, or synthesis - not merely recall.</label>
 
           {tooMany && (
             <p className="text-xs text-[#906f12]">
@@ -632,7 +625,7 @@ export function QuestionsSection({
           {suggestions.length > 0 && (
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-                Suggested questions — review and accept or dismiss
+                Suggested targets — review and accept or dismiss
               </p>
               {suggestions.map((suggestion, index) => (
                 <div
@@ -780,7 +773,7 @@ export function QuestionsSection({
 
           {/* Add new checkpoint */}
           <div className="space-y-3 border-t border-[var(--rule)] pt-5">
-            <label className="minerva-label">Add a question</label>
+            <label className="minerva-label">Add a precise learning outcome</label>
             <textarea
               value={newCheckpointPrompt}
               onChange={(e) => setNewCheckpointPrompt(e.target.value)}
@@ -1027,9 +1020,9 @@ export function TeachingContextSection({
                 {/* Prerequisite map */}
                 {readingsCount > 0 && (
                   <div className="space-y-2">
-                    <label className="minerva-label">Prerequisite concept map</label>
+                    <label className="minerva-label">Foundational concept map</label>
                     <p className="text-xs text-[var(--dim-grey)]">
-                      JSON map of concept dependencies. The tutor checks prerequisites before advancing topics.
+                      Identify the concepts learners must understand to master this reading. Helps the AI identify the &quot;illusion of competence.&quot;
                     </p>
                     <div className="flex gap-3">
                       <button
@@ -1038,7 +1031,7 @@ export function TeachingContextSection({
                         disabled={generatingMap}
                         className="minerva-button minerva-button-secondary text-sm"
                       >
-                        {generatingMap ? "Generating…" : "Generate from reading"}
+                        {generatingMap ? "Generating…" : "Generate from material"}
                       </button>
                     </div>
                     {session.prerequisiteMap && (

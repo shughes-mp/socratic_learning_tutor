@@ -292,7 +292,7 @@ export default function SessionManagementPage() {
       setRecentUploadCategory(category);
       setToast({
         tone: "success",
-        message: `${category === "reading" ? "Reading" : "Assessment"} uploaded successfully.`,
+        message: `${category === "reading" ? "Source material" : "Assessment"} uploaded successfully.`,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";
@@ -443,16 +443,16 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to add question.");
+        throw new Error(data?.error || "Failed to add outcome.");
       }
 
       setNewCheckpointPrompt("");
       await fetchCheckpoints();
       setShowQuestionSavedState(true);
-      setToast({ tone: "success", message: "Question added." });
+      setToast({ tone: "success", message: "Outcome added." });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to add question.";
+        err instanceof Error ? err.message : "Failed to add outcome.";
       setError(message);
       setShowQuestionSavedState(false);
       setToast({ tone: "error", message });
@@ -476,7 +476,7 @@ export default function SessionManagementPage() {
       if ((data?.suggestions ?? []).length === 0) {
         setToast({
           tone: "error",
-          message: "No suggestions were generated. Try adding more reading content.",
+          message: "No suggestions were generated. Try adding more source content.",
         });
       }
     } catch (err) {
@@ -509,14 +509,14 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to add question.");
+        throw new Error(data?.error || "Failed to add outcome.");
       }
 
       setSuggestions((prev) => prev.filter((_, suggestionIndex) => suggestionIndex !== index));
       await fetchCheckpoints();
-      setToast({ tone: "success", message: "Question added." });
+      setToast({ tone: "success", message: "Outcome added." });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to add question.";
+      const message = err instanceof Error ? err.message : "Failed to add outcome.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -557,15 +557,14 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to update question.");
+        throw new Error(data?.error || "Failed to update outcome.");
       }
 
       await fetchCheckpoints();
       cancelEditingCheckpoint();
-      setToast({ tone: "success", message: "Question updated." });
+      setToast({ tone: "success", message: "Outcome updated." });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to update question.";
+      const message = err instanceof Error ? err.message : "Failed to update outcome.";
       setError(message);
       setToast({ tone: "error", message });
     } finally {
@@ -584,14 +583,13 @@ export default function SessionManagementPage() {
 
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to remove question.");
+        throw new Error(data?.error || "Failed to remove outcome.");
       }
 
       await fetchCheckpoints();
-      setToast({ tone: "success", message: "Question removed." });
+      setToast({ tone: "success", message: "Outcome removed." });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to remove question.";
+      const message = err instanceof Error ? err.message : "Failed to remove outcome.";
       setError(message);
       setToast({ tone: "error", message });
     }
@@ -730,6 +728,8 @@ export default function SessionManagementPage() {
           learnerCount={learnerCount}
           readingsCount={readings.length}
           assessmentsCount={assessments.length}
+          checkpointsCount={checkpoints.length}
+          purposeLabel={getSessionPurposeOption(session.sessionPurpose).shortLabel}
         />
 
         {error ? (
