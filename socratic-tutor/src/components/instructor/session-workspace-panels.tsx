@@ -42,7 +42,7 @@ interface WorkspaceHeaderProps {
 }
 
 function getPurposeLinks(sessionId: string, purpose: string) {
-  const monitor = { href: `/instructor/${sessionId}/monitor`, label: "Engagement monitor" };
+  const monitor = { href: `/instructor/${sessionId}/monitor`, label: "Learner progress" };
   const misconceptions = { href: `/instructor/${sessionId}/misconceptions`, label: "Misconceptions" };
   const report = { href: `/instructor/${sessionId}/report`, label: "Instructor Recommendations" };
 
@@ -607,7 +607,11 @@ export function QuestionsSection({
               title={readingsCount === 0 ? "Upload source materials first" : undefined}
               className="minerva-button minerva-button-secondary flex-shrink-0 text-sm"
             >
-              {generatingSuggestions ? "Generating…" : "Suggest from material"}
+                {generatingSuggestions ? (
+                  <LoadingState variant="button" message="Generating" />
+                ) : (
+                  "Suggest from material"
+                )}
             </button>
           </div>
 
@@ -626,7 +630,7 @@ export function QuestionsSection({
           {suggestions.length > 0 && (
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--teal)]">
-                Suggested targets — review and accept or dismiss
+                Suggested questions - review then accept or dismiss
               </p>
               {suggestions.map((suggestion, index) => (
                 <div
@@ -774,7 +778,7 @@ export function QuestionsSection({
 
           {/* Add new checkpoint */}
           <div className="space-y-3 border-t border-[var(--rule)] pt-5">
-            <label className="minerva-label">Add a precise learning outcome</label>
+            <label className="minerva-label">Design your own question below</label>
             <textarea
               value={newCheckpointPrompt}
               onChange={(e) => setNewCheckpointPrompt(e.target.value)}
@@ -793,7 +797,11 @@ export function QuestionsSection({
                 disabled={savingCheckpoint || !newCheckpointPrompt.trim()}
                 className="minerva-button text-sm"
               >
-                {savingCheckpoint ? "Adding…" : "Add question"}
+                {savingCheckpoint ? (
+                  <LoadingState variant="button" message="Adding" />
+                ) : (
+                  "Add question"
+                )}
               </button>
               {showQuestionSavedState && (
                 <p className="text-xs text-[var(--teal)]">Question added.</p>
@@ -874,10 +882,10 @@ export function TeachingContextSection({
           {/* Course context */}
           <div className="space-y-2">
             <label className="minerva-label" htmlFor="courseContext">
-              Where this fits in your course
+              Where this session fits in your course
             </label>
             <p className="text-xs text-[var(--dim-grey)]">
-              Optional. Helps the tutor connect this reading to larger course themes and prior sessions.
+              Optional. Helps the tutor connect to larger course themes and prior sessions.
             </p>
             <textarea
               id="courseContext"
@@ -921,7 +929,7 @@ export function TeachingContextSection({
               id="learningOutcomes"
               value={session.learningOutcomes ?? ""}
               onChange={(e) => updateSession({ learningOutcomes: e.target.value || null })}
-              placeholder={"1. Explain how feedback loops sustain system behavior.\n2. Distinguish between event-level and structural explanations."}
+              placeholder={"#system-analysis: Observe and deconstruct systems into constituent parts to explain the characteristics, and relationships among, those parts at multiple levels of analysis"}
               rows={4}
               className="minerva-input w-full resize-none text-sm"
             />
@@ -1032,7 +1040,11 @@ export function TeachingContextSection({
                         disabled={generatingMap}
                         className="minerva-button minerva-button-secondary text-sm"
                       >
-                        {generatingMap ? "Generating…" : "Generate from material"}
+                        {generatingMap ? (
+                          <LoadingState variant="button" message="Generating" />
+                        ) : (
+                          "Generate from material"
+                        )}
                       </button>
                     </div>
                     {session.prerequisiteMap && (
@@ -1056,7 +1068,11 @@ export function TeachingContextSection({
               disabled={savingConfig}
               className="minerva-button"
             >
-              {savingConfig ? "Saving…" : "Save settings"}
+              {savingConfig ? (
+                <LoadingState variant="button" message="Saving" />
+              ) : (
+                "Save settings"
+              )}
             </button>
             {showSavedState && configSavedAt && (
               <p className="text-xs text-[var(--teal)]">Saved at {formatSavedTime(configSavedAt)}</p>

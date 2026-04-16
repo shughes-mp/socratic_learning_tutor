@@ -320,7 +320,6 @@ If course context is available, use it naturally in the first three exchanges.`,
         <header className="top-rule bottom-rule grid grid-cols-1 md:grid-cols-[156px_1fr_220px]">
           <div className="hidden border-r border-[var(--rule)] md:block" />
           <div className="px-4 py-5 md:px-8">
-            <p className="eyebrow eyebrow-teal">Reading Session</p>
             <h1 className="mt-2 font-serif text-[34px] leading-[0.96] tracking-[-0.03em]">
               {sessionName}
             </h1>
