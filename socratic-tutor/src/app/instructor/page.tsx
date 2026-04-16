@@ -57,11 +57,12 @@ export default function InstructorCreatePage() {
           <div className="px-4 py-12 md:px-8 md:py-16">
             <p className="eyebrow eyebrow-teal">Setup</p>
             <h1 className="section-title mt-5 max-w-[10ch]">
-              Create a session.
+              Set up your AI Tutor.
             </h1>
             <p className="body-copy muted-copy mt-6 max-w-[25rem]">
-              Three steps: name your session, upload a reading, then share the
-              link with your learners.
+              Upload your readings and choose a goal. Your AI Tutor will 
+              then guide students through reasoning-based conversations to 
+              reveal their depth of understanding.
             </p>
             <div className="mt-8">
               <StepIndicator currentStep={1} />
@@ -91,25 +92,24 @@ export default function InstructorCreatePage() {
                     htmlFor="session-description"
                     className="minerva-label"
                   >
-                    Instructions for learners
+                    Opening message for students
                   </label>
                   <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-                    Optional. Shown on the entry page before learners begin.
-                    Use this to set expectations — e.g. which sections to focus on,
-                    what context to keep in mind.
+                    Optional. Shown to students before the tutoring starts. 
+                    Use it to set the stage or provide context.
                   </p>
                   <textarea
                     id="session-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. Read the first two sections before starting. Pay attention to how the author defines core terms — the tutor will ask you about them."
+                    placeholder="e.g. Explain how the author's definition of X conflicts with Y—the tutor will push you on your reasoning."
                     rows={3}
                     className="minerva-textarea"
                   />
                 </div>
 
                 <div>
-                  <label className="minerva-label">Session Purpose</label>
+                  <label className="minerva-label">Session Target</label>
                   <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
                     When in the learning cycle will learners use this session? This shapes how the tutor questions and what the teaching brief measures.
                   </p>
@@ -152,7 +152,7 @@ export default function InstructorCreatePage() {
 
                 <div className="flex flex-col gap-3 border-t border-[var(--rule)] pt-5 md:flex-row md:items-center md:justify-between">
                   <p className="text-[12px] text-[var(--dim-grey)]">
-                    Next: upload a reading, then share the link.
+                    Next: Upload the readings your AI Tutor will use.
                   </p>
                   <button
                     type="submit"

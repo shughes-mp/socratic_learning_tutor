@@ -3,8 +3,8 @@ import Link from "next/link";
 const steps = [
   {
     step: "01",
-    title: "Ground the session",
-    body: "Select your cognitive target—from readiness to transfer—and upload your primary source materials.",
+    title: "Choose a goal",
+    body: "Select your target—from readiness to application—and upload your primary source materials.",
   },
   {
     step: "02",
@@ -32,10 +32,10 @@ const capabilities = [
       "Surface the 'why' behind the broken reasoning. Identify exactly where student models fail and where they remain fragile.",
   },
   {
-    label: "Calibrate student confidence",
+    label: "Confidence vs. Mastery",
     accent: "var(--rose)",
     description:
-      "Identify the 'illusion of competence' by comparing student self-reports with actual reasoning depth before you teach your next lesson.",
+      "Surface the 'illusion of competence'—where students think they understand but can't yet explain the reasoning.",
   },
 ];
 
@@ -68,9 +68,9 @@ export default function HomePage() {
               Evidence-led teaching for every stage of the learning cycle.
             </h1>
             <p className="body-copy mt-6 max-w-[38rem]">
-              From pre-class retrieval to after-class transfer. Socratic AI 
-              grounded in your materials that reveals the &apos;why&apos; behind 
-              student reasoning.
+              From pre-class retrieval to after-class transfer. Guided Socratic 
+              conversations grounded in your materials that reveal the &apos;why&apos; 
+              behind student reasoning.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
