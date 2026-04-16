@@ -20,6 +20,7 @@ import type {
   FileInfo,
   SessionDetails,
 } from "@/types";
+import { getSessionPurposeOption } from "@/lib/session-purpose";
 
 function getRecommendedCheckpoints(maxExchanges: number): number {
   if (maxExchanges < 8) {
