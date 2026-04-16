@@ -47,6 +47,15 @@ In short: the app is designed to support learning, not shortcut it — and the t
 - Non-blocking post-response diagnostics scheduled after the response completes, so learners can type again as soon as the tutor finishes streaming
 - Parallelized hot-path database reads in chat startup to reduce pre-stream latency before the model begins responding
 - Instructor-side misconception dashboard with clustered patterns, learner-based prevalence, learner-based resolution rates, turn-based time-to-resolution metrics, and class-discussion triage
+- Redesigned session analysis page structured as a three-section narrative — What happened, What it means, What to do — so instructors see evidence before recommendations
+- A Quick Brief tab on the session analysis page that gives busy instructors the key finding and two action items in under two minutes, with a link to the full analysis for deeper review
+- Consolidated recommendations section that merges previously separate recommendation areas into a single "What to do" section with timing badges and collapsible rationale
+- Clear button affordances on misconception cards with verb-first labels ("Mark as acceptable" / "Flag for class discussion"), tooltips explaining consequences, and visual confirmation of instructor overrides
+- Consistent status vocabulary across the session analysis page: severity uses High/Medium/Low with red/amber/green; readiness uses "Ready for class" / "Gaps remain" / "Not yet ready" with the same color scale
+- Learning outcome scores now display rubric context showing what the current score means and what the next score level requires, plus an explained AI confidence indicator
+- Session metadata (student count, exchange count) displayed as inline header text instead of hero-number dashboard cards, avoiding false statistical authority at low learner counts
+- Dismissable orientation banner for first-time users explaining how to read the session analysis page
+- Deduplicated key findings stated once authoritatively in a highlighted card, with other sections referencing rather than restating the same insight
 - Checkpoint difficulty analysis that shows which instructor-authored key questions were easy, moderate, or hard for the class
 - Engagement tracking on learner messages, with audit logs for each post-response diagnostic pass
 - AI-generated teaching recommendations with 5-minute, 15-minute, and 30-minute active learning moves tied to misconception clusters, plus a fallback generation path when structured model output is incomplete
@@ -67,7 +76,7 @@ In short: the app is designed to support learning, not shortcut it — and the t
 - Prompt-side protections suppress visible meta-reasoning, so the tutor does not narrate its own internal handling decisions to learners
 - Memoized chat message rendering and reduced scroll thrashing during streaming for smoother learner chat performance
 - AI-generated teaching briefs with readiness heatmaps, next-step recommendations, and per-learner notes
-- PDF export for instructor reports
+- PDF export for instructor reports and session analysis
 - Session purpose system with four modes — Pre-class, In-class Prep, In-class Reflection, After Class — selectable at session creation and editable in the workspace
 - Purpose-adaptive tutor behavior where the cognitive target, question emphasis, resolution standard, and wrap-up guidance all shift based on the selected session purpose
 - Purpose-adaptive teaching briefs with mode-specific section titles, heatmap names (Readiness, Activation, Consolidation, Transfer), framing language, and instructional recommendations
@@ -96,7 +105,7 @@ In short: the app is designed to support learning, not shortcut it — and the t
 9. Get clear visual confirmation when readings, assessments, settings, or key questions are saved.
 10. Share the learner link and access code.
 11. Monitor learner progress live, including engagement concerns and learners who have been waiting several minutes to reply. The purpose badge in the header keeps the session's cognitive goal visible while monitoring.
-12. Review clustered misconception patterns, checkpoint difficulty, and teaching recommendations built from those patterns. The purpose badge here reflects the learning context for those patterns.
+12. Review the session analysis page, which walks through What happened (key finding, strengths, per-student notes), What it means (class readiness, misconception patterns with override controls, question difficulty, learning outcomes with rubric context), and What to do (consolidated, timing-tagged recommendations). Use the Quick Brief tab for a two-minute pre-class scan.
 13. Generate a teaching brief afterward. The brief title, heatmap name, section headings, and instructional framing all adapt to the session purpose. Action items and the heatmap surface at the top so the most actionable signals appear first.
 14. Review learner-resolution progress, confidence checks, topic mastery, and cleaned interaction traces without needing raw internal model tags.
 
@@ -212,10 +221,12 @@ Once the app is running:
 7. Have a short tutoring conversation and notice that each tutor question is visually separated from the surrounding explanation.
 8. Watch the learner-facing phase indicator move from "Getting started" toward wrap-up instead of showing a stressful countdown.
 9. Return to the instructor area and use the collapsible workspace sections to review readings, questions, teaching context, and assessments.
-10. Open the misconception dashboard, mark any acceptable interpretations, and generate teaching recommendations if you want lesson-ready follow-up moves.
-11. Monitor learner progress live if needed. Notice the purpose badge in the headers of the learner progress and common misunderstandings views.
-12. Generate a teaching brief and notice the heatmap title, section headings, and instructional framing have adapted to the session purpose. Action items appear at the top.
-12. End the session and review the formatted summary screen with copy support.
+10. Open the session analysis page. Notice it walks through three numbered sections — What happened, What it means, What to do — with the key finding stated once at the top. Try the Quick Brief tab for a fast pre-class scan.
+11. In the misconception patterns, use "Mark as acceptable" or "Flag for class discussion" on each pattern and notice the visual confirmation of your override. Expand the reading anchor to see the source text.
+12. Check the learning outcome card — notice the rubric context showing what the current score means and what the next level requires.
+13. Monitor learner progress live if needed. Notice the purpose badge in the headers of the learner progress and common misunderstandings views.
+14. Generate a teaching brief and notice the heatmap title, section headings, and instructional framing have adapted to the session purpose. Action items appear at the top.
+15. End the session and review the formatted summary screen with copy support.
 
 ## Caveats
 
@@ -224,7 +235,7 @@ Once the app is running:
 - Scanned or image-based PDFs should be converted or replaced with DOCX, TXT, or Markdown when possible.
 - The quality of tutoring depends heavily on the quality of the uploaded source material.
 - Structured misconception logging is captured in the database and surfaced in an instructor dashboard that groups related misconceptions into broader themes for review.
-- The three main instructor surfaces now serve different jobs: `Learner progress` for live monitoring, `Teaching brief` for forward-looking synthesis, and `Common misunderstandings` for class-level diagnostic patterns.
+- The main instructor surfaces serve different jobs: `Session analysis` for post-session review (three-section narrative with Quick Brief option), `Learner progress` for live monitoring, `Teaching brief` for forward-looking synthesis, and `Common misunderstandings` for class-level diagnostic patterns.
 - Misconception detection now runs in a separate post-response diagnostic pass. The tutor no longer needs to emit misconception tags for the dashboard to work.
 - Resolution tracking now reflects whether affected learners actually corrected a misconception, not just whether a tutor response claimed it was resolved.
 - The tutor prompt now explicitly forbids unbracketed meta-reasoning such as "the learner is disengaged" from appearing in learner-visible responses.
@@ -234,7 +245,8 @@ Once the app is running:
 - Teaching recommendations are AI-generated planning aids based on misconception clusters and should still be reviewed and adapted by the instructor.
 - When recommendation generation cannot be parsed into the preferred structured format, the app now falls back to deterministic recommendation cards so the dashboard remains usable.
 - Key question coverage is now tracked per learner session, and instructor reports now include formative AI-generated learning outcome assessments.
-- Learning outcome assessments are instructor-facing formative signals, not final grades or official learner records.
+- Learning outcome assessments are instructor-facing formative signals, not final grades or official learner records. The session analysis page now shows rubric context alongside scores so instructors can meaningfully evaluate the AI's assessment.
+- The session analysis Quick Brief tab is designed for instructors checking in before class. It condenses the full analysis into a key finding and two actions. Instructors who want detail should use the Full Analysis tab.
 - Session purpose defaults to `pre_class` when not explicitly set. Changing the purpose after a session is already active will affect the teaching brief framing but will not retroactively alter conversations already recorded.
 - The four session purposes target different cognitive levels: comprehension (pre-class), activation (in-class prep), consolidation (in-class reflection), and transfer (after-class). Choosing the wrong purpose for the learning context will produce a teaching brief with mismatched framing and recommendations.
 - The app depends on Anthropic API availability and valid credentials.
