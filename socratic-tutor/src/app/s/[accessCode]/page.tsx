@@ -42,6 +42,7 @@ export default async function StudentEntryPage({ params }: PageProps) {
       description: true,
       closesAt: true,
       sessionPurpose: true,
+      learningOutcomes: true,
       _count: {
         select: { readings: true },
       },
@@ -66,7 +67,7 @@ export default async function StudentEntryPage({ params }: PageProps) {
     );
   }
 
-  if (session._count.readings === 0) {
+  if (session._count.readings === 0 || !session.learningOutcomes || session.learningOutcomes.trim().length === 0) {
     return (
       <SessionMessage
         title="Session Not Ready Yet"

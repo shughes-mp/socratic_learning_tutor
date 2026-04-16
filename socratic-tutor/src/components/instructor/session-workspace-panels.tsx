@@ -148,7 +148,7 @@ export function AccessCodeCard({ session, isActive, copied, onCopyLink }: Access
           <p className="mt-2 font-mono text-base text-[var(--charcoal)]">{learnerUrl}</p>
           {!isActive && (
             <p className="mt-1 text-xs text-[var(--dim-grey)]">
-              Upload source materials to activate the AI Tutor before sharing.
+              Upload source materials and define learning outcomes to activate the AI Tutor before sharing.
             </p>
           )}
         </div>
@@ -1073,7 +1073,7 @@ export function TeachingContextSection({
           <div className="flex items-center gap-4 border-t border-[var(--rule)] pt-6">
             <button
               onClick={actions.onSaveTeachingContext}
-              disabled={savingConfig}
+              disabled={savingConfig || !session.learningOutcomes?.trim()}
               className="minerva-button"
             >
               {savingConfig ? (

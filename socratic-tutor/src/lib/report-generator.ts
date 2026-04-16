@@ -4,11 +4,11 @@ import { prisma } from "./db";
 import { MODEL_PRIMARY } from "./models";
 
 const VALID_LO_STATUSES = [
-  "not_observed",
-  "insufficient_evidence",
-  "emerging",
-  "meets",
-  "exceeds",
+  "0_no_submission",
+  "1_beginning",
+  "2_developing",
+  "3_proficient",
+  "4_advanced",
 ] as const;
 
 const VALID_LO_CONFIDENCE = ["low", "medium", "high"] as const;
@@ -24,15 +24,23 @@ LEARNING OUTCOME ASSESSMENT
 - Do not use the pipe character inside the evidence summary.
 
 For each learning outcome assessment:
-- status must be one of: not_observed, insufficient_evidence, emerging, meets, exceeds
+- status must be exactly one of: 0_no_submission, 1_beginning, 2_developing, 3_proficient, 4_advanced
 - confidence must be one of: low, medium, high
 - evidence summary should be 2-4 short sentences with exchange references, brief quotes under 20 words, and question-type cues where possible
 
+RUBRIC RATING RULES:
+Use this exact rubric to determine the status value:
+0_no_submission - No submission: No evidence of engagement.
+1_beginning - Beginning: Does not apply the skill or concept when prompted, or does so mostly/entirely inaccurately.
+2_developing - Developing: Recalls or uses the skill/concept only somewhat accurately, or fails to address relevant problems/goals.
+3_proficient - Proficient: Accurately/effectively uses the skill/concept in a way that addresses relevant problems/goals.
+4_advanced - Advanced: Accurately/effectively uses the skill/concept addressing problems/goals AND demonstrates deep grasp by analyzing, explaining, or justifying application appropriately contextually.
+
 CRITICAL RATING RULES
-- insufficient_evidence is always valid. Do not force a stronger rating.
-- Require at least two distinct question-type opportunities before rating meets or exceeds.
+- 0_no_submission or 1_beginning is always valid if evidence is lacking. Do not force a stronger rating.
+- Require at least two distinct question-type opportunities before rating 3_proficient or 4_advanced.
 - Score text grounding and reasoning quality, not polish or vocabulary.
-- If unresolved high-severity misconceptions remain on a topic related to the learning outcome, the maximum rating is emerging.
+- If unresolved high-severity misconceptions remain on a topic related to the learning outcome, the maximum rating is 2_developing.
 - These assessments are formative and instructor-facing, not summative records.`;
 
 interface ReportPurposeFraming {

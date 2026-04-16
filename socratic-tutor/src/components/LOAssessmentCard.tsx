@@ -4,6 +4,13 @@ import { useMemo, useState } from "react";
 import type { LOAssessmentRecord } from "@/types";
 
 const statusColors: Record<string, string> = {
+  // New 0-4 Rubric
+  "0_no_submission": "bg-[rgba(34,34,34,0.05)] text-[var(--dim-grey)]",
+  "1_beginning": "bg-[rgba(223,47,38,0.08)] text-[var(--signal)]",
+  "2_developing": "bg-[rgba(144,111,18,0.10)] text-[#906f12]",
+  "3_proficient": "bg-[rgba(17,120,144,0.10)] text-[var(--teal)]",
+  "4_advanced": "bg-[rgba(114,133,3,0.12)] text-[var(--olive)]",
+  // Legacy backups
   not_observed: "bg-[rgba(34,34,34,0.05)] text-[var(--dim-grey)]",
   insufficient_evidence: "bg-[rgba(144,111,18,0.10)] text-[#906f12]",
   emerging: "bg-[rgba(223,47,38,0.08)] text-[var(--signal)]",
@@ -12,6 +19,13 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
+  // New 0-4 Rubric
+  "0_no_submission": "Score: 0 / 4 (No Submission)",
+  "1_beginning": "Score: 1 / 4 (Beginning)",
+  "2_developing": "Score: 2 / 4 (Developing)",
+  "3_proficient": "Score: 3 / 4 (Proficient)",
+  "4_advanced": "Score: 4 / 4 (Advanced)",
+  // Legacy backups
   not_observed: "Not Observed",
   insufficient_evidence: "Insufficient Evidence",
   emerging: "Emerging",

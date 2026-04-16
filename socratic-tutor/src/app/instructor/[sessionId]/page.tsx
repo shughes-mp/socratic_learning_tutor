@@ -668,11 +668,12 @@ export default function SessionManagementPage() {
 
   const readings = files.filter((f) => f.category === "reading");
   const assessments = files.filter((f) => f.category === "assessment");
-  const isActive = readings.length > 0;
+  const isActive = readings.length > 0 && Boolean(session?.learningOutcomes?.trim());
+  const hasLearningOutcome = Boolean(session?.learningOutcomes?.trim());
   const setupStep: 2 | 3 | 4 | null =
     readings.length === 0
       ? 2
-      : checkpoints.length === 0
+      : (checkpoints.length === 0 || !hasLearningOutcome)
         ? 3
         : learnerCount === 0
           ? 4
