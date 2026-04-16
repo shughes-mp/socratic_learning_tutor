@@ -184,7 +184,7 @@ export default function ReportPage() {
   };
 
   if (isLoading) {
-    return <LoadingState variant="page" message="Building teaching brief…" />;
+    return <LoadingState variant="page" message="Building instructor recommendations…" />;
   }
 
   if (error) {
@@ -195,7 +195,7 @@ export default function ReportPage() {
             {error}
           </div>
           <Link href={`/instructor/${params.sessionId}`} className="minerva-button minerva-button-secondary w-max">
-            Back to session workspace
+            Back to setup
           </Link>
         </div>
       </main>
@@ -232,13 +232,13 @@ export default function ReportPage() {
                 </Link>
                 <span>/</span>
                 <Link href={`/instructor/${params.sessionId}`} className="transition-colors hover:text-[var(--teal)]">
-                  Session workspace
+                  Setup
                 </Link>
                 <span>/</span>
-                <span className="text-[var(--charcoal)]">Teaching brief</span>
+                <span className="text-[var(--charcoal)]">Instructor recommendations</span>
               </nav>
               <h1 className="mt-4 font-serif text-[42px] leading-[0.96] tracking-[-0.03em] text-[var(--charcoal)]">
-                Teaching brief
+                Instructor recommendations
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span
@@ -253,10 +253,10 @@ export default function ReportPage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href={`/instructor/${params.sessionId}`} className="minerva-button minerva-button-secondary">
-                Back to workspace
+                Back to setup
               </Link>
               <button onClick={() => fetchReport(true)} className="minerva-button minerva-button-secondary" disabled={isRefreshing}>
-                {isRefreshing ? "Refreshing…" : "Refresh brief"}
+                {isRefreshing ? "Refreshing…" : "Refresh recommendations"}
               </button>
               <button onClick={handleExport} className="minerva-button">
                 Export PDF

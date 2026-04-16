@@ -122,7 +122,7 @@ export default function StudentMonitorPage() {
                   href={`/instructor/${params.sessionId}`}
                   className="transition-colors hover:text-[var(--teal)]"
                 >
-                  Session workspace
+                  Setup
                 </Link>
                 <span>/</span>
                 <span className="text-[var(--charcoal)]">Learner progress</span>
@@ -146,7 +146,7 @@ export default function StudentMonitorPage() {
                 href={`/instructor/${params.sessionId}`}
                 className="minerva-button minerva-button-secondary"
               >
-                Back to session workspace
+                Back to setup
               </Link>
               <button
                 type="button"
@@ -164,7 +164,7 @@ export default function StudentMonitorPage() {
                   mode === "live" ? "" : "minerva-button-secondary"
                 }`}
               >
-                Live monitoring
+                Real-time monitoring
               </button>
             </div>
           </div>

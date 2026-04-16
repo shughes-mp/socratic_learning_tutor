@@ -378,7 +378,7 @@ export default function MisconceptionDashboardPage() {
                   href={`/instructor/${sessionId}`}
                   className="hover:text-[var(--teal)] transition-colors"
                 >
-                  Session workspace
+                  Setup
                 </Link>
                 <span>/</span>
                 <span className="text-[var(--charcoal)]">Common misunderstandings</span>
@@ -399,6 +399,12 @@ export default function MisconceptionDashboardPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/instructor/${sessionId}`}
+                className="minerva-button minerva-button-secondary"
+              >
+                Back to setup
+              </Link>
               <button
                 type="button"
                 onClick={() => setMode("post-session")}
