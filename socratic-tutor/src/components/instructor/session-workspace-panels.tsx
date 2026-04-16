@@ -892,39 +892,39 @@ export function GoalsSection({
 
       {open && (
         <div className="border-t border-[var(--rule)] bg-[rgba(34,34,34,0.01)] px-4 py-8 md:px-14 md:py-10 space-y-8">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="minerva-label">Session Target</label>
             <p className="text-xs text-[var(--dim-grey)]">
-              When does this session take place in the learning cycle?
+              When in the learning cycle will learners use this session? This shapes how the tutor questions and what the teaching brief measures.
             </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {SESSION_PURPOSE_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                    session.sessionPurpose === option.value
-                      ? "border-[rgba(17,120,144,0.5)] bg-[rgba(17,120,144,0.04)]"
-                      : "border-[var(--rule)] hover:border-[rgba(34,34,34,0.3)] bg-white"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="sessionPurpose"
-                    value={option.value}
-                    checked={session.sessionPurpose === option.value}
-                    onChange={(e) => updateSession({ sessionPurpose: e.target.value as any })}
-                    className="mt-1 minerva-radio"
-                  />
-                  <div>
-                    <span className="block text-sm font-medium text-[var(--charcoal)]">
-                      {option.label}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {SESSION_PURPOSE_OPTIONS.map((option) => {
+                const isSelected = session.sessionPurpose === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => updateSession({ sessionPurpose: option.value })}
+                    className={`rounded-xl border p-3 text-left transition-colors ${
+                      isSelected
+                        ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
+                        : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.3)] bg-white"
+                    }`}
+                  >
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(option.value)}`}
+                    >
+                      {option.shortLabel}
                     </span>
-                    <span className="mt-1 block text-xs leading-5 text-[var(--dim-grey)]">
+                    <p className="mt-1.5 text-xs font-medium text-[var(--charcoal)]">
+                      {option.cognitiveLevel}
+                    </p>
+                    <p className="mt-0.5 text-[11px] leading-4 text-[var(--dim-grey)]">
                       {option.description}
-                    </span>
-                  </div>
-                </label>
-              ))}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -942,6 +942,23 @@ export function GoalsSection({
               onChange={(e) => updateSession({ learningOutcomes: e.target.value || null })}
               placeholder={"#system-analysis: Observe and deconstruct systems into constituent parts to explain the characteristics, and relationships among, those parts at multiple levels of analysis"}
               rows={4}
+              className="minerva-input w-full resize-none text-sm"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="minerva-label" htmlFor="sessionDescription">
+              Opening message for students
+            </label>
+            <p className="text-xs text-[var(--dim-grey)]">
+              Optional. Shown to students before the tutoring conversation begins. Use it to set the stage or provide context.
+            </p>
+            <textarea
+              id="sessionDescription"
+              value={session.description ?? ""}
+              onChange={(e) => updateSession({ description: e.target.value || null })}
+              placeholder="e.g. Explain how the author's definition of X conflicts with Y—the tutor will push you on your reasoning."
+              rows={3}
               className="minerva-input w-full resize-none text-sm"
             />
           </div>

@@ -4,13 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { LoadingState } from "@/components/ui/loading-state";
-import { SESSION_PURPOSE_OPTIONS, getSessionPurposeBadgeClasses } from "@/lib/session-purpose";
 
 export default function InstructorCreatePage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [sessionPurpose, setSessionPurpose] = useState("pre_class");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,8 +27,7 @@ export default function InstructorCreatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          description: description.trim() || undefined,
-          sessionPurpose,
+          sessionPurpose: "pre_class",
         }),
       });
 
@@ -60,9 +56,9 @@ export default function InstructorCreatePage() {
               Set up your AI Tutor.
             </h1>
             <p className="body-copy muted-copy mt-6 max-w-[25rem]">
-              Upload your readings and choose a goal. Your AI Tutor will 
-              then guide students through reasoning-based conversations to 
-              reveal their depth of understanding.
+              Name your session and we&apos;ll take you to the workspace where
+              you can upload readings, set learning goals, and choose when in
+              the learning cycle students will use the tutor.
             </p>
             <div className="mt-8">
               <StepIndicator currentStep={1} />
@@ -83,65 +79,9 @@ export default function InstructorCreatePage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Week 3: Systems Thinking"
                     className="minerva-input"
+                    autoFocus
                     required
                   />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="session-description"
-                    className="minerva-label"
-                  >
-                    Opening message for students
-                  </label>
-                  <p className="mt-0.5 mb-2 text-xs text-[var(--dim-grey)]">
-                    Optional. Shown to students before the tutoring starts. 
-                    Use it to set the stage or provide context.
-                  </p>
-                  <textarea
-                    id="session-description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. Explain how the author's definition of X conflicts with Y—the tutor will push you on your reasoning."
-                    rows={3}
-                    className="minerva-textarea"
-                  />
-                </div>
-
-                <div>
-                  <label className="minerva-label">Session Target</label>
-                  <p className="mt-0.5 mb-3 text-xs text-[var(--dim-grey)]">
-                    When in the learning cycle will learners use this session? This shapes how the tutor questions and what the teaching brief measures.
-                  </p>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {SESSION_PURPOSE_OPTIONS.map((option) => {
-                      const isSelected = sessionPurpose === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setSessionPurpose(option.value)}
-                          className={`rounded-xl border p-3 text-left transition-colors ${
-                            isSelected
-                              ? "border-[var(--teal)] bg-[rgba(17,120,144,0.06)]"
-                              : "border-[var(--rule)] hover:border-[rgba(17,120,144,0.3)]"
-                          }`}
-                        >
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${getSessionPurposeBadgeClasses(option.value)}`}
-                          >
-                            {option.shortLabel}
-                          </span>
-                          <p className="mt-1.5 text-xs font-medium text-[var(--charcoal)]">
-                            {option.cognitiveLevel}
-                          </p>
-                          <p className="mt-0.5 text-[11px] leading-4 text-[var(--dim-grey)]">
-                            {option.description}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 {error && (
@@ -150,16 +90,13 @@ export default function InstructorCreatePage() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-3 border-t border-[var(--rule)] pt-5 md:flex-row md:items-center md:justify-between">
-                  <p className="text-[12px] text-[var(--dim-grey)]">
-                    Next: Upload the readings your AI Tutor will use.
-                  </p>
+                <div className="flex items-center justify-end border-t border-[var(--rule)] pt-5">
                   <button
                     type="submit"
                     disabled={loading}
                     className="minerva-button"
                   >
-                    {loading ? <LoadingState variant="button" message="Creating…" /> : "Continue"}
+                    {loading ? <LoadingState variant="button" message="Creating…" /> : "Create session"}
                   </button>
                 </div>
               </div>

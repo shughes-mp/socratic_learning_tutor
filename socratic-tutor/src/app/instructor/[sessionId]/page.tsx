@@ -365,6 +365,7 @@ export default function SessionManagementPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          description: session.description ?? null,
           courseContext: session.courseContext,
           learningGoal: session.learningGoal,
           learningOutcomes: session.learningOutcomes,
