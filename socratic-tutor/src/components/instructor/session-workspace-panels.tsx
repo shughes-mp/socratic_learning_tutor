@@ -44,19 +44,16 @@ interface WorkspaceHeaderProps {
 
 function getPurposeLinks(sessionId: string, purpose: string) {
   const monitor = { href: `/instructor/${sessionId}/monitor`, label: "Learner progress" };
-  const misconceptions = { href: `/instructor/${sessionId}/misconceptions`, label: "Misconceptions" };
-  const report = { href: `/instructor/${sessionId}/report`, label: "Instructor Recommendations" };
+  const analysis = { href: `/instructor/${sessionId}/analysis`, label: "Session analysis" };
 
   switch (purpose) {
     case "during_class_prep":
-      return [monitor, misconceptions, report];
     case "during_class_reflection":
-      return [misconceptions, monitor, report];
+      return [monitor, analysis];
     case "after_class":
-      return [report, misconceptions, monitor];
     case "pre_class":
     default:
-      return [report, misconceptions, monitor];
+      return [analysis, monitor];
   }
 }
 
