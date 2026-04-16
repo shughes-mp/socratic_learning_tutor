@@ -686,7 +686,11 @@ export function QuestionsSection({
                         disabled={acceptingSuggestionIndex === index}
                         className="minerva-button text-sm"
                       >
-                        {acceptingSuggestionIndex === index ? "Adding…" : "Accept"}
+                        {acceptingSuggestionIndex === index ? (
+                          <LoadingState variant="button" message="Adding" />
+                        ) : (
+                          "Accept"
+                        )}
                       </button>
                       <button
                         onClick={() => actions.onDismissSuggestion(index)}
@@ -737,7 +741,11 @@ export function QuestionsSection({
                           disabled={savingCheckpoint}
                           className="minerva-button text-sm"
                         >
-                          {savingCheckpoint ? "Saving…" : "Save"}
+                          {savingCheckpoint ? (
+                            <LoadingState variant="button" message="Saving" />
+                          ) : (
+                            "Save"
+                          )}
                         </button>
                         <button
                           onClick={actions.onCancelEditingCheckpoint}
