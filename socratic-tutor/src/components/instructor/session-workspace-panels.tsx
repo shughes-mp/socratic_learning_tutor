@@ -613,6 +613,7 @@ export function QuestionsSection({
 
           <div className="space-y-3 pt-2">
             <label className="minerva-label">Choose 1-3 questions that will guide what the AI tutor focuses on. Aim for questions that require interpretation, inference, or synthesis - not merely recall.</label>
+          </div>
 
           {tooMany && (
             <p className="text-xs text-[#906f12]">
