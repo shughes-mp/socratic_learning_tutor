@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analogical Reasoning Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1612;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --warm-mid: #b8a98a;
+    --accent: #8b3a1e;
+    --accent-light: #c4622d;
+    --muted: #6b6054;
+    --tutor-bg: #1a1612;
+    --tutor-text: #f5f0e8;
+    --student-bg: #e8e0d0;
+    --phase-active: #8b3a1e;
+    --phase-done: #6b8b3a;
+    --phase-pending: #b8a98a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 18px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    border-bottom: 3px solid var(--accent);
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  header span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--warm-mid);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 62px);
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--cream);
+    border-right: 1px solid var(--warm-mid);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 28px;
+  }
+
+  .sidebar-section h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .problem-box {
+    background: white;
+    border: 1px solid var(--warm-mid);
+    border-radius: 4px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--ink);
+    font-style: italic;
+    min-height: 60px;
+  }
+
+  /* Phase tracker */
+  .phases { display: flex; flex-direction: column; gap: 8px; }
+  .phase {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+  .phase-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 3px;
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .phase.pending .phase-dot { background: var(--phase-pending); }
+  .phase.active .phase-dot { background: var(--phase-active); box-shadow: 0 0 0 3px rgba(139,58,30,0.2); }
+  .phase.done .phase-dot { background: var(--phase-done); }
+  .phase.active .phase-label { color: var(--accent); font-weight: 500; }
+  .phase.done .phase-label { color: var(--phase-done); }
+  .phase.pending .phase-label { color: var(--muted); }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--warm-mid);
+    border-radius: 4px;
+    padding: 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .upload-zone:hover { border-color: var(--accent); background: rgba(139,58,30,0.04); }
+  .upload-zone input { display: none; }
+  .upload-zone .icon { font-size: 1.4rem; margin-bottom: 6px; }
+
+  .btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn:hover { background: var(--accent-light); }
+  .btn:disabled { background: var(--warm-mid); cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-ghost:hover { background: rgba(139,58,30,0.06); }
+
+  /* ── Chat area ── */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+
+  .msg {
+    max-width: 76%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .msg.tutor { align-self: flex-start; }
+  .msg.student { align-self: flex-end; }
+
+  .msg-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 0 4px;
+  }
+
+  .msg-bubble {
+    padding: 14px 18px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+  .tutor .msg-bubble {
+    background: var(--tutor-bg);
+    color: var(--tutor-text);
+    border-radius: 4px 12px 12px 4px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .student .msg-bubble {
+    background: var(--student-bg);
+    color: var(--ink);
+    border-radius: 12px 4px 4px 12px;
+  }
+
+  .msg-bubble p { margin-bottom: 0.6em; }
+  .msg-bubble p:last-child { margin-bottom: 0; }
+  .msg-bubble strong { font-weight: 600; }
+  .msg-bubble em { font-style: italic; color: var(--warm-mid); }
+
+  /* Typing indicator */
+  .typing-indicator {
+    display: flex;
+    gap: 5px;
+    padding: 16px 18px;
+    background: var(--tutor-bg);
+    border-radius: 4px 12px 12px 4px;
+    width: fit-content;
+    align-items: center;
+  }
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--warm-mid);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  /* ── Input area ── */
+  .input-area {
+    border-top: 1px solid var(--warm-mid);
+    padding: 18px 32px;
+    background: var(--cream);
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+  }
+
+  textarea {
+    flex: 1;
+    border: 1px solid var(--warm-mid);
+    border-radius: 4px;
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    resize: none;
+    background: white;
+    color: var(--ink);
+    min-height: 52px;
+    max-height: 160px;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--warm-mid); }
+
+  .send-btn {
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--accent-light); }
+  .send-btn:disabled { background: var(--warm-mid); cursor: not-allowed; }
+  .send-btn svg { width: 18px; height: 18px; fill: white; }
+
+  /* ── Welcome screen ── */
+  .welcome {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+  .welcome-inner { max-width: 440px; }
+  .welcome-inner h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .welcome-inner h2 em { font-style: italic; color: var(--accent); }
+  .welcome-inner p {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .welcome-steps {
+    text-align: left;
+    background: var(--cream);
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+  }
+  .welcome-steps ol { padding-left: 18px; font-size: 0.82rem; color: var(--ink); line-height: 1.8; }
+  .file-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--phase-done);
+    margin-top: 8px;
+  }
+
+  /* Scrollbar */
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--warm-mid); border-radius: 2px; }
+
+  .hidden { display: none !important; }
+
+  /* Score badge */
+  .score-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Analogical Reasoning Tutor</h1>
+  <span>Based on Smart Thinking · Art Markman</span>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h3>Problem Set</h3>
+      <label class="upload-zone" id="uploadZone">
+        <div class="icon">📄</div>
+        <div>Upload problem file<br><small>(.txt, one problem per line or numbered)</small></div>
+        <input type="file" id="fileInput" accept=".txt">
+      </label>
+      <div id="fileStatus" class="file-status hidden"></div>
+      <br>
+      <button class="btn" id="startBtn" disabled>Begin Session</button>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Current Problem</h3>
+      <div class="problem-box" id="problemBox">No problem selected yet.</div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Progress</h3>
+      <div class="phases">
+        <div class="phase pending" id="phase1">
+          <div class="phase-dot"></div>
+          <div class="phase-label">I. Abstraction — strip the problem to its relational core</div>
+        </div>
+        <div class="phase pending" id="phase2">
+          <div class="phase-dot"></div>
+          <div class="phase-label">II. Student Analogies — what does this remind you of?</div>
+        </div>
+        <div class="phase pending" id="phase3">
+          <div class="phase-dot"></div>
+          <div class="phase-label">III. Tutor Analogies — deeper connections explored</div>
+        </div>
+        <div class="phase pending" id="phase4">
+          <div class="phase-dot"></div>
+          <div class="phase-label">IV. Reflection — synthesis and next steps</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+      <button class="btn btn-ghost" id="newProblemBtn" style="display:none">Try Another Problem</button>
+      <button class="btn btn-ghost" id="exportBtn" style="display:none">↓ Export Transcript</button>
+    </div>
+  </aside>
+
+  <!-- Main chat -->
+  <main class="chat-area">
+    <!-- Welcome screen -->
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-inner">
+        <h2>Finding Analogies<br>for <em>Hard Problems</em></h2>
+        <p>This tutor guides you through the process of analogical access — the systematic practice of finding deep structural similarities between your problem and other domains.</p>
+        <div class="welcome-steps">
+          <ol>
+            <li>Your instructor uploads a set of problems</li>
+            <li>The tutor presents one and guides you through abstraction</li>
+            <li>You identify analogous domains from your own knowledge</li>
+            <li>The tutor suggests additional analogies and you evaluate them together</li>
+            <li>You receive structured feedback on your reasoning</li>
+          </ol>
+        </div>
+        <p style="font-size:0.8rem;">Upload a problem file (.txt) in the sidebar, then click <strong>Begin Session</strong>.</p>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="messages hidden" id="messages"></div>
+
+    <!-- Input -->
+    <div class="input-area hidden" id="inputArea">
+      <textarea id="userInput" placeholder="Type your response here… (Shift+Enter for new line)" rows="2"></textarea>
+      <button class="send-btn" id="sendBtn" disabled>
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  problems: [],
+  currentProblem: null,
+  messages: [], // [{role, content}] for API
+  phase: 0,     // 1-4
+  waitingForTutor: false,
+  sessionComplete: false,
+};
+
+// ── System prompt factory ───────────────────────────────────────────────────
+function buildSystemPrompt(problem) {
+  return `You are an expert Socratic tutor teaching analogical reasoning to college-age students and adult professionals in a course based on Art Markman's book "Smart Thinking." Your pedagogical method is Socratic dialogue — you never lecture at length, you ask questions that lead the student to discover insights themselves.
+
+THE CURRENT PROBLEM THE STUDENT WILL WORK ON:
+"""
+${problem}
+"""
+
+THE FOUR PHASES OF THE SESSION:
+You will guide the student through exactly four phases. Track which phase you are in. Transition to the next phase only when the current one is complete.
+
+══ PHASE 1: ABSTRACTION ══
+Goal: Help the student strip the problem to its relational/structural core, producing one or more abstract descriptions that could apply to other domains.
+
+Method:
+- Ask the student to identify the key objects/actors and the relationships among them (not the surface features)
+- Ask them to name the constraints — which are essential, which could be relaxed?
+- Ask what goal or tension is at the heart of the problem
+- Push them to rewrite the problem without using any domain-specific words
+- Evaluate their abstract descriptions: Is it truly domain-free? Does it capture the relational structure? Is it too vague (loses the key tension) or too specific (still refers to the domain)?
+- Keep pushing until they have at least one strong abstract description
+
+When you are satisfied with their abstraction, say EXACTLY this tag on its own line: [PHASE_COMPLETE:1]
+
+══ PHASE 2: STUDENT ANALOGIES ══
+Goal: The student generates analogies by using their abstract description to search their own knowledge.
+
+Method:
+- Ask them what their abstract description reminds them of — other domains, stories, systems, phenomena
+- For each analogy they offer: ask them to explain the structural mapping (what maps to what?), what constraints carry over, and what insights the analogy might offer about the original problem
+- Critique each analogy: Does the mapping hold? Are there important disanalogies? Does the analogy actually illuminate anything?
+- Encourage breadth — push them to think of at least 3 different domains
+- Ask "what else?" after each one; don't let them stop at one or two
+- When they seem genuinely stuck (after a sustained attempt), move to phase 3
+
+When they have exhausted their analogies or you judge they are genuinely stuck, say EXACTLY this tag: [PHASE_COMPLETE:2]
+
+══ PHASE 3: TUTOR ANALOGIES ══
+Goal: You now introduce 3–5 analogies the student did not mention, drawn from diverse domains (biology, history, physics, economics, engineering, literature, social systems, etc.). Engage in dialogue about each.
+
+Method:
+- Introduce each analogy with enough detail that the student can evaluate it
+- Ask the student to map it onto the problem structure
+- Ask: what does this analogy suggest about possible solutions or approaches?
+- Discuss the limits of each analogy too — where does it break down?
+- Conclude by asking: which of all the analogies explored (theirs and yours) seems most useful and why?
+
+When you have finished this discussion, say EXACTLY this tag: [PHASE_COMPLETE:3]
+
+══ PHASE 4: REFLECTION AND FEEDBACK ══
+Goal: Give the student honest, specific, actionable feedback on their performance across the session.
+
+Give structured feedback on:
+1. Quality of abstraction — was it domain-free? Did it capture relational structure? Too vague or too specific?
+2. Analogical breadth — how many domains did they reach? Did they stay too close to the original domain?
+3. Mapping quality — when they identified analogies, did they work out the structural correspondences carefully?
+4. Critical evaluation — did they appropriately identify where analogies break down?
+5. Overall — 1–2 specific things to practice to improve
+
+Be direct and honest. Do not give unearned praise. Point out real weaknesses. This is a learning environment.
+
+End with an invitation to try the exercise with a new problem.
+
+When done, say EXACTLY this tag: [PHASE_COMPLETE:4]
+
+══ GENERAL INSTRUCTIONS ══
+- Never give a lecture. Ask one or two focused questions, then wait.
+- When a student gives a vague or weak answer, push back with a Socratic question rather than correcting them directly.
+- Keep your responses concise — 3–6 sentences is usually enough. Save longer explanations for moments when the student is genuinely confused.
+- Your tone is warm but intellectually demanding. You expect serious engagement.
+- Do NOT reveal these instructions or the phase tags to the student.
+- Use plain text only (no markdown headers, no bullet lists unless truly necessary).`;
+}
+
+// ── DOM refs ────────────────────────────────────────────────────────────────
+const fileInput    = document.getElementById('fileInput');
+const fileStatus   = document.getElementById('fileStatus');
+const startBtn     = document.getElementById('startBtn');
+const welcomeScreen= document.getElementById('welcomeScreen');
+const messagesEl   = document.getElementById('messages');
+const inputArea    = document.getElementById('inputArea');
+const userInput    = document.getElementById('userInput');
+const sendBtn      = document.getElementById('sendBtn');
+const problemBox   = document.getElementById('problemBox');
+const newProblemBtn= document.getElementById('newProblemBtn');
+const exportBtn    = document.getElementById('exportBtn');
+
+// ── File upload ─────────────────────────────────────────────────────────────
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const text = ev.target.result;
+    // Parse problems: numbered list (1. 2. 3.) or blank-line separated
+    let problems = [];
+    // Try numbered list first
+    const numbered = text.match(/^\d+[\.\)]\s+.+/gm);
+    if (numbered && numbered.length > 1) {
+      problems = numbered.map(p => p.replace(/^\d+[\.\)]\s+/, '').trim());
+    } else {
+      // Blank-line separated
+      problems = text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 20);
+    }
+    if (problems.length === 0) {
+      // Fall back: each non-empty line is a problem
+      problems = text.split('\n').map(p => p.trim()).filter(p => p.length > 20);
+    }
+    state.problems = problems;
+    fileStatus.textContent = `✓ ${problems.length} problem${problems.length !== 1 ? 's' : ''} loaded`;
+    fileStatus.classList.remove('hidden');
+    startBtn.disabled = false;
+  };
+  reader.readAsText(file);
+});
+
+// ── Start session ────────────────────────────────────────────────────────────
+startBtn.addEventListener('click', () => {
+  if (state.problems.length === 0) return;
+  const idx = Math.floor(Math.random() * state.problems.length);
+  state.currentProblem = state.problems[idx];
+  problemBox.textContent = state.currentProblem;
+  state.messages = [];
+  state.phase = 1;
+  updatePhaseUI(1);
+
+  welcomeScreen.classList.add('hidden');
+  messagesEl.classList.remove('hidden');
+  inputArea.classList.remove('hidden');
+  messagesEl.innerHTML = '';
+  startBtn.disabled = true;
+  exportBtn.style.display = 'block';
+
+  // Kick off tutor opening
+  openingMessage();
+});
+
+// ── New problem ───────────────────────────────────────────────────────────────
+newProblemBtn.addEventListener('click', () => {
+  if (state.problems.length === 0) return;
+  // Pick a different problem if possible
+  let idx;
+  let attempts = 0;
+  do {
+    idx = Math.floor(Math.random() * state.problems.length);
+    attempts++;
+  } while (state.problems[idx] === state.currentProblem && state.problems.length > 1 && attempts < 20);
+
+  state.currentProblem = state.problems[idx];
+  problemBox.textContent = state.currentProblem;
+  state.messages = [];
+  state.phase = 1;
+  state.sessionComplete = false;
+  updatePhaseUI(1);
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('phase' + i);
+    el.className = 'phase pending';
+  });
+  messagesEl.innerHTML = '';
+  newProblemBtn.style.display = 'none';
+  exportBtn.style.display = 'block';
+  startBtn.disabled = true;
+  openingMessage();
+});
+
+// ── Export transcript ────────────────────────────────────────────────────────
+exportBtn.addEventListener('click', () => {
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  const lines = [];
+  lines.push('ANALOGICAL REASONING TUTOR — SESSION TRANSCRIPT');
+  lines.push('Based on Smart Thinking by Art Markman');
+  lines.push('='.repeat(60));
+  lines.push('Date: ' + date + '  ' + time);
+  lines.push('Problem: ' + state.currentProblem);
+  lines.push('='.repeat(60));
+  lines.push('');
+
+  // Read directly from the DOM — the only reliable source of what was displayed
+  messagesEl.querySelectorAll('.msg').forEach(el => {
+    const role = el.classList.contains('tutor') ? 'TUTOR' : 'YOU';
+    const bubble = el.querySelector('.msg-bubble');
+    if (!bubble) return;
+    const text = bubble.innerText.trim();
+    if (!text) return;
+    lines.push(role + ':');
+    lines.push(text);
+    lines.push('');
+  });
+
+  lines.push('='.repeat(60));
+  lines.push('End of session transcript');
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'analogy-tutor-transcript-' + new Date().toISOString().slice(0, 10) + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ── Send message ─────────────────────────────────────────────────────────────
+userInput.addEventListener('input', () => {
+  sendBtn.disabled = userInput.value.trim().length === 0 || state.waitingForTutor;
+  // Auto-resize
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 160) + 'px';
+});
+
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled) sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text || state.waitingForTutor) return;
+  appendMessage('student', text);
+  state.messages.push({ role: 'user', content: text });
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  sendBtn.disabled = true;
+  callTutor();
+}
+
+// ── Opening message ──────────────────────────────────────────────────────────
+async function openingMessage() {
+  const openingPrompt = `The student is ready to begin. Greet them briefly and warmly (1–2 sentences), then present the problem to them, and immediately begin Phase 1 by asking your first Socratic question to start the abstraction process. Do not explain what they need to do at length — just ask your first question.`;
+  state.messages.push({ role: 'user', content: openingPrompt });
+  state.waitingForTutor = true;
+  sendBtn.disabled = true;
+  showTyping();
+  const reply = await fetchTutor();
+  hideTyping();
+  state.waitingForTutor = false;
+  const { cleaned, phaseComplete } = extractPhase(reply);
+  appendMessage('tutor', cleaned);
+  state.messages.push({ role: 'assistant', content: reply });
+  if (phaseComplete) handlePhaseComplete(phaseComplete);
+  sendBtn.disabled = false;
+}
+
+// ── Call tutor API ────────────────────────────────────────────────────────────
+async function callTutor() {
+  state.waitingForTutor = true;
+  showTyping();
+  const reply = await fetchTutor();
+  hideTyping();
+  state.waitingForTutor = false;
+  const { cleaned, phaseComplete } = extractPhase(reply);
+  appendMessage('tutor', cleaned);
+  state.messages.push({ role: 'assistant', content: reply });
+  if (phaseComplete) handlePhaseComplete(phaseComplete);
+  if (!state.sessionComplete) sendBtn.disabled = false;
+}
+
+async function fetchTutor() {
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(state.currentProblem),
+        messages: state.messages,
+      })
+    });
+    const data = await response.json();
+    if (data.error) return `[Error: ${data.error.message}]`;
+    return data.content.map(b => b.text || '').join('');
+  } catch (err) {
+    return `[Connection error: ${err.message}]`;
+  }
+}
+
+// ── Phase tags ────────────────────────────────────────────────────────────────
+function extractPhase(text) {
+  const match = text.match(/\[PHASE_COMPLETE:(\d)\]/);
+  const cleaned = text.replace(/\[PHASE_COMPLETE:\d\]/g, '').trim();
+  return { cleaned, phaseComplete: match ? parseInt(match[1]) : null };
+}
+
+function handlePhaseComplete(phaseNum) {
+  // Mark current phase done
+  const el = document.getElementById('phase' + phaseNum);
+  if (el) el.className = 'phase done';
+
+  if (phaseNum === 4) {
+    state.sessionComplete = true;
+    sendBtn.disabled = true;
+    userInput.disabled = true;
+    newProblemBtn.style.display = 'block';
+    return;
+  }
+
+  // Activate next phase
+  const next = phaseNum + 1;
+  state.phase = next;
+  updatePhaseUI(next);
+
+  // Automatically continue — prompt tutor to open the next phase
+  const transitions = {
+    1: `The student has completed the abstraction phase. Transition now to Phase 2. Acknowledge their work briefly (one sentence), then ask your opening Socratic question for Phase 2 — prompting them to use their abstract description to search for analogies.`,
+    2: `The student has exhausted their analogies. Transition now to Phase 3. Acknowledge what they found, then introduce your first tutor-suggested analogy.`,
+    3: `You have finished presenting tutor analogies and discussing them. Transition now to Phase 4. Provide your structured feedback and reflection.`,
+  };
+
+  const transitionMsg = transitions[phaseNum];
+  if (transitionMsg) {
+    state.messages.push({ role: 'user', content: transitionMsg });
+    state.waitingForTutor = true;
+    sendBtn.disabled = true;
+    showTyping();
+    fetchTutor().then(reply => {
+      hideTyping();
+      state.waitingForTutor = false;
+      const { cleaned, phaseComplete } = extractPhase(reply);
+      appendMessage('tutor', cleaned);
+      state.messages.push({ role: 'assistant', content: reply });
+      if (phaseComplete) handlePhaseComplete(phaseComplete);
+      if (!state.sessionComplete) sendBtn.disabled = false;
+    });
+  }
+}
+
+function updatePhaseUI(active) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('phase' + i);
+    if (!el) continue;
+    if (i < active) el.className = 'phase done';
+    else if (i === active) el.className = 'phase active';
+    else el.className = 'phase pending';
+  }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function appendMessage(role, text) {
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${role}`;
+
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'tutor' ? 'Tutor' : 'You';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatText(text);
+
+  wrap.appendChild(label);
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function formatText(text) {
+  // Convert line breaks to paragraphs, basic bold
+  return text
+    .split(/\n{2,}/)
+    .map(p => `<p>${p.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>')}</p>`)
+    .join('');
+}
+
+let typingEl = null;
+function showTyping() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg tutor';
+  wrap.id = 'typingMsg';
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = 'Tutor';
+  const ind = document.createElement('div');
+  ind.className = 'typing-indicator';
+  ind.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  wrap.appendChild(label);
+  wrap.appendChild(ind);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  typingEl = wrap;
+}
+function hideTyping() {
+  if (typingEl) { typingEl.remove(); typingEl = null; }
+}
+</script>
+</body>
+</html>

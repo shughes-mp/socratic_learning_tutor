@@ -79,17 +79,17 @@ const STATUS_CONFIG = {
   green: {
     badge: "bg-[rgba(96,140,34,0.12)] text-[#5b7f22] border-[rgba(96,140,34,0.22)]",
     dot: "bg-[#5b7f22]",
-    label: "Ready",
+    label: "Ready for class",
   },
   yellow: {
     badge: "bg-[rgba(144,111,18,0.10)] text-[#906f12] border-[rgba(144,111,18,0.22)]",
     dot: "bg-[#906f12]",
-    label: "Partial",
+    label: "Gaps remain",
   },
   red: {
     badge: "bg-[rgba(223,47,38,0.08)] text-[var(--signal)] border-[rgba(223,47,38,0.20)]",
     dot: "bg-[var(--signal)]",
-    label: "Needs work",
+    label: "Not yet ready",
   },
 };
 
