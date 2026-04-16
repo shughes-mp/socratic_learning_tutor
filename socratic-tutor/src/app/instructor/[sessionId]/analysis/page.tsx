@@ -235,20 +235,53 @@ function SeverityBadge({ severity }: { severity: "low" | "medium" | "high" }) {
   );
 }
 
-/** Section header with number badge for the three-section narrative */
-function SectionHeader({ number, title, subtitle }: { number: number; title: string; subtitle: string }) {
+/** Animated chevron — rotates when open */
+function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <div className="flex items-start gap-4 mb-6 mt-2">
+    <svg
+      className={`h-5 w-5 flex-shrink-0 text-[var(--dim-grey)] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+/** Collapsible section header — matches setup workspace accordion style */
+function AccordionSectionHeader({
+  number,
+  title,
+  subtitle,
+  open,
+  onToggle,
+}: {
+  number: number;
+  title: string;
+  subtitle: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex w-full items-start gap-4 mb-6 mt-2 text-left group"
+    >
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--charcoal)] text-white text-sm font-semibold flex-shrink-0 mt-1">
         {number}
       </div>
-      <div>
+      <div className="flex-1 min-w-0">
         <h2 className="font-serif text-[34px] leading-[1] tracking-[-0.03em] text-[var(--charcoal)]">
           {title}
         </h2>
         <p className="mt-2 text-sm text-[var(--dim-grey)]">{subtitle}</p>
       </div>
-    </div>
+      <div className="mt-2 flex-shrink-0">
+        <ChevronIcon open={open} />
+      </div>
+    </button>
   );
 }
 
@@ -262,6 +295,11 @@ export default function SessionAnalysisPage() {
   const [sessionPurpose, setSessionPurpose] = useState<string>("pre_class");
   const [viewMode, setViewMode] = useState<"default" | "live" | "brief" | "quick">("default");
   const [showOrientation, setShowOrientation] = useState(true);
+
+  // ── Section accordion state (all open by default) ──
+  const [openWhat, setOpenWhat] = useState(true);
+  const [openMeans, setOpenMeans] = useState(true);
+  const [openDo, setOpenDo] = useState(true);
 
   // ── Misconception data (always loads immediately) ──
   const [clusters, setClusters] = useState<MisconceptionClusterRecord[]>([]);
@@ -834,69 +872,78 @@ export default function SessionAnalysisPage() {
             {/* ════════════════════════════════════════════════════════════════ */}
             {/* SECTION 1: WHAT HAPPENED                                        */}
             {/* ════════════════════════════════════════════════════════════════ */}
-            <SectionHeader
+            <AccordionSectionHeader
               number={1}
               title="What happened"
               subtitle="Summary of the session and what students demonstrated"
+              open={openWhat}
+              onToggle={() => setOpenWhat((v) => !v)}
             />
 
-            {/* Report sections (async) */}
-            {loadingReport ? (
-              <div className="minerva-card p-8">
-                <LoadingState message="Building instructor brief…" />
-              </div>
-            ) : reportError ? (
-              <div className="border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-sm text-[var(--signal)]">
-                {reportError}
-              </div>
-            ) : sections ? (
-              <>
-                {/* Key finding — stated ONCE authoritatively */}
-                {sections.snapshot && (
-                  <section className="minerva-card border-l-4 border-[#906f12] p-6 md:p-8">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#906f12] mb-3">Key finding</p>
-                    <div className="prose prose-slate max-w-none text-sm text-[var(--charcoal)]">
-                      <ReactMarkdown>{sections.snapshot}</ReactMarkdown>
-                    </div>
-                  </section>
-                )}
-
-                {/* Strengths — what went right */}
-                {sections.strengths && (
-                  <section className="minerva-card p-6 md:p-8">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--teal)] mb-3">What students got right</p>
-                    <div className="prose prose-slate max-w-none text-[var(--charcoal)]">
-                      <ReactMarkdown>{sections.strengths}</ReactMarkdown>
-                    </div>
-                  </section>
-                )}
-
-                {/* Per-student notes — collapsible */}
-                {sections.per_student && (
-                  <details className="minerva-card overflow-hidden">
-                    <summary className="cursor-pointer px-6 py-5 md:px-8 flex items-center justify-between hover:bg-[rgba(34,34,34,0.02)] transition-colors">
-                      <span className="text-sm font-semibold text-[var(--charcoal)]">Student notes</span>
-                      <span className="text-xs text-[var(--dim-grey)]">Click to expand</span>
-                    </summary>
-                    <div className="border-t border-[var(--rule)] px-6 py-5 md:px-8">
-                      <div className="prose prose-slate max-w-none text-[var(--charcoal)]">
-                        <ReactMarkdown>{sections.per_student}</ReactMarkdown>
+            {/* Report sections (async) — gated on openWhat */}
+            {openWhat && (
+              loadingReport ? (
+                <div className="minerva-card p-8">
+                  <LoadingState message="Building instructor brief…" />
+                </div>
+              ) : reportError ? (
+                <div className="border border-[rgba(223,47,38,0.24)] bg-[rgba(223,47,38,0.08)] px-4 py-3 text-sm text-[var(--signal)]">
+                  {reportError}
+                </div>
+              ) : sections ? (
+                <>
+                  {/* Key finding — stated ONCE authoritatively */}
+                  {sections.snapshot && (
+                    <section className="minerva-card border-l-4 border-[#906f12] p-6 md:p-8">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#906f12] mb-3">Key finding</p>
+                      <div className="prose prose-slate max-w-none text-sm text-[var(--charcoal)]">
+                        <ReactMarkdown>{sections.snapshot}</ReactMarkdown>
                       </div>
-                    </div>
-                  </details>
-                )}
-              </>
-            ) : null}
+                    </section>
+                  )}
+
+                  {/* Strengths — what went right */}
+                  {sections.strengths && (
+                    <section className="minerva-card p-6 md:p-8">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--teal)] mb-3">What students got right</p>
+                      <div className="prose prose-slate max-w-none text-[var(--charcoal)]">
+                        <ReactMarkdown>{sections.strengths}</ReactMarkdown>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Per-student notes — collapsible */}
+                  {sections.per_student && (
+                    <details className="minerva-card overflow-hidden">
+                      <summary className="cursor-pointer px-6 py-5 md:px-8 flex items-center justify-between hover:bg-[rgba(34,34,34,0.02)] transition-colors">
+                        <span className="text-sm font-semibold text-[var(--charcoal)]">Student notes</span>
+                        <span className="text-xs text-[var(--dim-grey)]">Click to expand</span>
+                      </summary>
+                      <div className="border-t border-[var(--rule)] px-6 py-5 md:px-8">
+                        <div className="prose prose-slate max-w-none text-[var(--charcoal)]">
+                          <ReactMarkdown>{sections.per_student}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </details>
+                  )}
+                </>
+              ) : null
+            )}
 
             {/* ════════════════════════════════════════════════════════════════ */}
             {/* SECTION 2: WHAT IT MEANS                                        */}
             {/* ════════════════════════════════════════════════════════════════ */}
-            <SectionHeader
+            <AccordionSectionHeader
               number={2}
               title="What it means"
               subtitle="How ready students are for class and the misconceptions they're carrying in"
+              open={openMeans}
+              onToggle={() => setOpenMeans((v) => !v)}
             />
 
+            {/* Readiness heatmap + misconceptions + difficulty + LO — gated on openMeans */}
+            {openMeans && (
+              <>
             {/* Readiness heatmap — renamed from "Readiness Heatmap" */}
             {report && (
               <section className="minerva-card p-6 md:p-8">
@@ -1216,16 +1263,23 @@ export default function SessionAnalysisPage() {
                 </div>
               </>
             )}
+            </>
+            )}
 
             {/* ════════════════════════════════════════════════════════════════ */}
             {/* SECTION 3: WHAT TO DO                                           */}
             {/* ════════════════════════════════════════════════════════════════ */}
-            <SectionHeader
+            <AccordionSectionHeader
               number={3}
               title="What to do"
               subtitle="Concrete actions for before and during class, drawn from the analysis above"
+              open={openDo}
+              onToggle={() => setOpenDo((v) => !v)}
             />
 
+            {/* Section 3 content — gated on openDo */}
+            {openDo && (
+              <>
             {/* Report-generated recommendations (from the brief) */}
             {sections?.what_to_do && (
               <section className="minerva-card border-l-4 border-[var(--teal)] p-6 md:p-8">
@@ -1420,6 +1474,8 @@ export default function SessionAnalysisPage() {
                   <ReactMarkdown>{sections.remainder}</ReactMarkdown>
                 </div>
               </section>
+            )}
+            </>
             )}
           </>
         )}
