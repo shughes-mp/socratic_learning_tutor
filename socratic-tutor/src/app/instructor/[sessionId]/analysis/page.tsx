@@ -293,13 +293,18 @@ export default function SessionAnalysisPage() {
 
   // ── Layout state ──
   const [sessionPurpose, setSessionPurpose] = useState<string>("pre_class");
-  const [viewMode, setViewMode] = useState<"default" | "live" | "brief" | "quick">("default");
+  const [viewMode, setViewMode] = useState<"default" | "live" | "brief" | "quick" | "students">("default");
   const [showOrientation, setShowOrientation] = useState(true);
 
   // ── Section accordion state (all open by default) ──
   const [openWhat, setOpenWhat] = useState(true);
   const [openMeans, setOpenMeans] = useState(true);
   const [openDo, setOpenDo] = useState(true);
+
+  // ── Student results data ──
+  const [studentsSummary, setStudentsSummary] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   // ── Misconception data (always loads immediately) ──
   const [clusters, setClusters] = useState<MisconceptionClusterRecord[]>([]);
@@ -411,6 +416,19 @@ export default function SessionAnalysisPage() {
     [sessionId]
   );
 
+  const fetchStudentsSummary = useCallback(async () => {
+    try {
+      setLoadingStudents(true);
+      const res = await fetch(`/api/sessions/${sessionId}/students/summary`);
+      const data = await res.json();
+      if (Array.isArray(data)) setStudentsSummary(data);
+    } catch (err) {
+      console.error("Failed to fetch student summary:", err);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [sessionId]);
+
   // ── Initial load ──
   useEffect(() => {
     fetch(`/api/sessions/${sessionId}`)
@@ -422,6 +440,7 @@ export default function SessionAnalysisPage() {
 
     fetchClusters();
     fetchRecommendations();
+    fetchStudentsSummary();
 
     fetch(`/api/sessions/${sessionId}/checkpoints/difficulty`)
       .then((res) => res.json())
@@ -429,7 +448,7 @@ export default function SessionAnalysisPage() {
         if (Array.isArray(data)) setCheckpointDifficulty(data);
       })
       .catch(() => {});
-  }, [fetchClusters, fetchRecommendations, sessionId]);
+  }, [fetchClusters, fetchRecommendations, fetchStudentsSummary, sessionId]);
 
   // ── Load report when in brief or quick view ──
   useEffect(() => {
@@ -697,31 +716,47 @@ export default function SessionAnalysisPage() {
           </div>
         )}
 
-        {/* ── Tab switcher (Full analysis / Quick brief) ── */}
+        {/* ── Tab switcher (Class Analysis / Individual Results) ── */}
         {effectiveView !== "live" && (
-          <div className="flex gap-1 rounded-full border border-[var(--rule)] bg-white p-1 w-fit">
-            <button
-              type="button"
-              onClick={() => setViewMode("brief")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                effectiveView === "brief"
-                  ? "bg-[var(--charcoal)] text-white"
-                  : "text-[var(--dim-grey)] hover:text-[var(--charcoal)]"
-              }`}
-            >
-              Full analysis
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("quick")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                effectiveView === "quick"
-                  ? "bg-[var(--charcoal)] text-white"
-                  : "text-[var(--dim-grey)] hover:text-[var(--charcoal)]"
-              }`}
-            >
-              Quick brief <span className="ml-1 text-[11px] opacity-60">2 min</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex gap-1 rounded-full border border-[var(--rule)] bg-white p-1 w-fit">
+              <button
+                type="button"
+                onClick={() => setViewMode("brief")}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  effectiveView === "brief"
+                    ? "bg-[var(--charcoal)] text-white"
+                    : "text-[var(--dim-grey)] hover:text-[var(--charcoal)]"
+                }`}
+              >
+                Class analysis
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("quick")}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  effectiveView === "quick"
+                    ? "bg-[var(--charcoal)] text-white"
+                    : "text-[var(--dim-grey)] hover:text-[var(--charcoal)]"
+                }`}
+              >
+                Quick brief <span className="ml-1 text-[11px] opacity-60">2 min</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("students")}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  effectiveView === "students"
+                    ? "bg-[var(--charcoal)] text-white"
+                    : "text-[var(--dim-grey)] hover:text-[var(--charcoal)]"
+                }`}
+              >
+                Individual results
+                <span className="rounded-full bg-[rgba(34,34,34,0.08)] px-1.5 py-0.5 text-[10px] font-bold">
+                  {stats?.totalStudents || studentsSummary.length || 0}
+                </span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -911,21 +946,6 @@ export default function SessionAnalysisPage() {
                       </div>
                     </section>
                   )}
-
-                  {/* Per-student notes — collapsible */}
-                  {sections.per_student && (
-                    <details className="minerva-card overflow-hidden">
-                      <summary className="cursor-pointer px-6 py-5 md:px-8 flex items-center justify-between hover:bg-[rgba(34,34,34,0.02)] transition-colors">
-                        <span className="text-sm font-semibold text-[var(--charcoal)]">Student notes</span>
-                        <span className="text-xs text-[var(--dim-grey)]">Click to expand</span>
-                      </summary>
-                      <div className="border-t border-[var(--rule)] px-6 py-5 md:px-8">
-                        <div className="prose prose-slate max-w-none text-[var(--charcoal)]">
-                          <ReactMarkdown>{sections.per_student}</ReactMarkdown>
-                        </div>
-                      </div>
-                    </details>
-                  )}
                 </>
               ) : null
             )}
@@ -955,6 +975,64 @@ export default function SessionAnalysisPage() {
                 </p>
                 <div className="mt-6">
                   <ReadinessHeatmap reportContent={report.content} sessionPurpose={sessionPurpose} />
+                </div>
+              </section>
+            )}
+
+            {/* Question difficulty — Moved from end of section 2 for better class-level flow */}
+            {checkpointDifficulty.length > 0 && (
+              <section className="minerva-card p-6 md:p-8">
+                <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h3 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
+                      Question difficulty
+                    </h3>
+                    <p className="mt-2 text-sm text-[var(--dim-grey)]">
+                      How each question performed. Hard questions may need more support.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {checkpointDifficulty.map((checkpoint) => (
+                    <div
+                      key={checkpoint.checkpointId}
+                      className={`rounded-xl border p-5 ${
+                        checkpoint.difficultySignal === "hard"
+                          ? "border-[rgba(223,47,38,0.20)] bg-[rgba(223,47,38,0.03)]"
+                          : "border-[var(--rule)] bg-white"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold leading-relaxed text-[var(--charcoal)]">
+                        {checkpoint.prompt}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-[var(--dim-grey)]">
+                        {checkpoint.addressedCount > 0 ? (
+                          <>
+                            <span className="flex items-center gap-1.5">
+                              <span className="font-medium text-[var(--charcoal)]">
+                                {checkpoint.addressedCount}/{checkpoint.totalStudents}
+                              </span>{" "}
+                              attempted
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="font-medium text-[var(--teal)]">
+                                {checkpoint.masteredCount}
+                              </span>{" "}
+                              mastered
+                            </span>
+                            {checkpoint.strugglingCount > 0 && (
+                              <span className="flex items-center gap-1.5 font-medium text-[var(--signal)]">
+                                {checkpoint.strugglingCount} struggling
+                              </span>
+                            )}
+                            <span className="opacity-60">Avg {checkpoint.averageTurnsSpent} turns</span>
+                          </>
+                        ) : (
+                          <span className="italic opacity-60">Not attempted</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
@@ -1181,89 +1259,9 @@ export default function SessionAnalysisPage() {
                     )}
                   </div>
                 )}
-
-                {/* Question difficulty + Learning outcomes side by side */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {/* Question difficulty */}
-                  {checkpointDifficulty.length > 0 && (
-                    <section className="minerva-card p-6">
-                      <h3 className="font-serif text-[26px] leading-[1.08] tracking-[-0.02em] text-[var(--charcoal)]">
-                        Question difficulty
-                      </h3>
-                      <p className="mt-2 text-sm text-[var(--dim-grey)]">
-                        How each question performed. Hard questions may need more support.
-                      </p>
-                      <div className="mt-4 space-y-3">
-                        {checkpointDifficulty.map((checkpoint) => (
-                          <div
-                            key={checkpoint.checkpointId}
-                            className={`rounded-lg border p-4 ${
-                              checkpoint.difficultySignal === "hard"
-                                ? "border-[rgba(223,47,38,0.20)] bg-[rgba(223,47,38,0.03)]"
-                                : "border-[var(--rule)]"
-                            }`}
-                          >
-                            <p className="text-sm font-medium text-[var(--charcoal)]">
-                              {checkpoint.prompt}
-                            </p>
-                            <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-[var(--dim-grey)]">
-                              {checkpoint.addressedCount > 0 ? (
-                                <>
-                                  <span>{checkpoint.addressedCount}/{checkpoint.totalStudents} attempted</span>
-                                  <span>{checkpoint.masteredCount} mastered</span>
-                                  {checkpoint.strugglingCount > 0 && (
-                                    <span className="text-[var(--signal)] font-medium">
-                                      {checkpoint.strugglingCount} struggling
-                                    </span>
-                                  )}
-                                  <span>Avg {checkpoint.averageTurnsSpent} turns</span>
-                                </>
-                              ) : (
-                                <span className="italic">Not attempted in this session</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Learning outcome assessments */}
-                  {Object.keys(loAssessmentsByStudent).length > 0 && (
-                    <section className="minerva-card p-6">
-                      <div className="flex items-start justify-between gap-2 mb-4">
-                        <div>
-                          <h3 className="font-serif text-[26px] leading-[1.08] tracking-[-0.02em] text-[var(--charcoal)]">
-                            Learning outcomes
-                          </h3>
-                          <p className="mt-2 text-sm text-[var(--dim-grey)]">
-                            AI-generated formative assessment. Review before using in any grading context.
-                          </p>
-                        </div>
-                        <span className="flex-shrink-0 rounded-full bg-[rgba(34,34,34,0.05)] px-2.5 py-1 text-[10px] font-medium text-[var(--dim-grey)]">
-                          AI-generated
-                        </span>
-                      </div>
-                      <div className="space-y-6">
-                        {Object.entries(loAssessmentsByStudent).map(([studentId, group]) => (
-                          <div key={studentId} className="space-y-3">
-                            <h4 className="text-base font-semibold text-[var(--charcoal)]">
-                              {group.studentName}
-                            </h4>
-                            <div className="space-y-3">
-                              {(group.assessments ?? []).map((assessment) => (
-                                <LOAssessmentCard key={assessment.id} assessment={assessment} />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </div>
+                  </>
+                )}
               </>
-            )}
-            </>
             )}
 
             {/* ════════════════════════════════════════════════════════════════ */}
@@ -1475,9 +1473,153 @@ export default function SessionAnalysisPage() {
                 </div>
               </section>
             )}
-            </>
-            )}
           </>
+        )}
+      </>
+    )}
+
+    {/* ──────────────────────────────────────────────────────────────────── */}
+        {/* INDIVIDUAL RESULTS — Student-by-student analysis                     */}
+        {/* ──────────────────────────────────────────────────────────────────── */}
+        {effectiveView === "students" && (
+          <div className="space-y-6">
+            <div className="minerva-card p-6 md:p-8">
+              <h3 className="font-serif text-[30px] leading-[1.02] tracking-[-0.03em] text-[var(--charcoal)]">
+                Learner outcomes
+              </h3>
+              <p className="mt-2 max-w-[42rem] text-sm text-[var(--dim-grey)]">
+                Individual assessments and specific notes for each student who participated in this session.
+              </p>
+            </div>
+
+            {loadingStudents ? (
+              <div className="minerva-card p-8">
+                <LoadingState message="Loading learner details…" />
+              </div>
+            ) : studentsSummary.length === 0 ? (
+              <div className="minerva-card p-8">
+                <p className="text-sm text-[var(--dim-grey)] text-center">No students have participated in this session yet.</p>
+              </div>
+            ) : (
+              <div className="minerva-card overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-[var(--dim-grey)]">
+                    <thead className="border-b border-[var(--rule)] bg-[rgba(34,34,34,0.02)]">
+                      <tr>
+                        <th className="px-6 py-4">Learner</th>
+                        <th className="px-6 py-4">Rubric projection</th>
+                        <th className="px-6 py-4">Misconceptions</th>
+                        <th className="px-6 py-4 text-right">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--rule)]">
+                      {studentsSummary.map((student) => {
+                        const isExpanded = expandedStudentId === student.id;
+                        const assessments = loAssessmentsByStudent[student.id]?.assessments || [];
+
+                        return (
+                          <React.Fragment key={student.id}>
+                            <tr
+                              className={`transition-colors hover:bg-[rgba(34,34,34,0.02)] ${
+                                isExpanded ? "bg-[rgba(17,120,144,0.05)]" : ""
+                              }`}
+                            >
+                              <td className="px-6 py-4 font-medium text-[var(--charcoal)]">
+                                {student.studentName}
+                              </td>
+                              <td className="px-6 py-4">
+                                {student.latestRubricScore ? (
+                                   <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                                    student.latestRubricScore === '0_no_submission' || student.latestRubricScore === 'not_observed' ? 'bg-[rgba(34,34,34,0.05)] text-[var(--dim-grey)]' :
+                                    student.latestRubricScore === '1_beginning' || student.latestRubricScore === 'emerging' ? 'bg-[rgba(223,47,38,0.08)] text-[var(--signal)]' :
+                                    student.latestRubricScore === '2_developing' || student.latestRubricScore === 'insufficient_evidence' ? 'bg-[rgba(144,111,18,0.10)] text-[#906f12]' :
+                                    student.latestRubricScore === '3_proficient' || student.latestRubricScore === 'meets' ? 'bg-[rgba(17,120,144,0.10)] text-[var(--teal)]' :
+                                    'bg-[rgba(114,133,3,0.12)] text-[var(--olive)]'
+                                   }`}>
+                                     {student.latestRubricScore === '0_no_submission' ? '0 / 4' :
+                                      student.latestRubricScore === '1_beginning' ? '1 / 4' :
+                                      student.latestRubricScore === '2_developing' ? '2 / 4' :
+                                      student.latestRubricScore === '3_proficient' ? '3 / 4' :
+                                      student.latestRubricScore === '4_advanced' ? '4 / 4' :
+                                      student.latestRubricScore.replace('_', ' ')}
+                                   </span>
+                                ) : (
+                                   <span className="text-xs text-[var(--dim-grey)] opacity-60 italic">—</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                {student.misconceptionCount > 0 ? (
+                                  <span className="flex w-max items-center gap-1.5 rounded-md bg-[rgba(144,111,18,0.10)] px-2.5 py-1 text-xs font-medium text-[#906f12]">
+                                    <span className="h-2 w-2 rounded-full bg-[#906f12]" />
+                                    {student.misconceptionCount} unresolved
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-[var(--dim-grey)] text-opacity-60">None reported</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <button
+                                  onClick={() => setExpandedStudentId(isExpanded ? null : student.id)}
+                                  className="text-sm font-medium text-[var(--teal)] transition-colors hover:text-[var(--charcoal)]"
+                                >
+                                  {isExpanded ? "Hide details" : "View details"}
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={4} className="bg-[rgba(34,34,34,0.01)] px-8 py-6">
+                                  <div className="grid gap-8 lg:grid-cols-2">
+                                    {/* Outcomes */}
+                                    <div>
+                                      <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--dim-grey)] mb-4">
+                                        Learning Outcomes
+                                      </h4>
+                                      {assessments.length > 0 ? (
+                                        <div className="space-y-4">
+                                          {assessments.map((assessment) => (
+                                            <LOAssessmentCard key={assessment.id} assessment={assessment} />
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm italic text-[var(--dim-grey)]">No learning outcomes assessed for this student yet.</p>
+                                      )}
+                                    </div>
+
+                                    {/* Notes & Actions */}
+                                    <div className="space-y-6">
+                                      <div>
+                                        <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--dim-grey)] mb-4">
+                                          Session Context
+                                        </h4>
+                                        <div className="rounded-xl border border-[var(--rule)] bg-white p-5">
+                                          <p className="text-sm leading-relaxed text-[var(--charcoal)]">
+                                            Individual student analysis and educator notes are available in the monitor view.
+                                          </p>
+                                          <div className="mt-4 pt-4 border-t border-[var(--rule)]">
+                                            <Link 
+                                              href={`/instructor/${sessionId}/monitor?studentSessionId=${student.id}`}
+                                              className="text-sm font-medium text-[var(--teal)] hover:underline"
+                                            >
+                                              View full student conversation →
+                                            </Link>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </main>
