@@ -3,8 +3,8 @@ import Link from "next/link";
 const steps = [
   {
     step: "01",
-    title: "Choose a goal",
-    body: "Select your target—from readiness to application—and upload your primary source materials.",
+    title: "Pick your focus",
+    body: "Choose what you want to focus on (e.g., initial understanding, real-world transfer) as well as the materials which will inform your learner's interactions with the AI tutor.",
   },
   {
     step: "02",
@@ -13,8 +13,8 @@ const steps = [
   },
   {
     step: "03",
-    title: "Inform instruction",
-    body: "Receive a custom teaching brief that identifies misconceptions and recommends the specific teaching moves you should take next.",
+    title: "Evidence based instruction",
+    body: "Receive a custom teaching brief that identifies misconceptions and reasoning gaps, providing the evidence you need to adapt your teaching in real-time.",
   },
 ];
 
@@ -68,9 +68,9 @@ export default function HomePage() {
               Evidence-led teaching for every stage of the learning cycle.
             </h1>
             <p className="body-copy mt-6 max-w-[38rem]">
-              From pre-class retrieval to after-class transfer. Guided Socratic 
-              conversations grounded in your materials that reveal the &apos;why&apos; 
-              behind student reasoning.
+              From pre-class readiness to after-class transfer. The Socratic AI 
+              Tutor surfaces your students&apos; reasoning - before, during, or 
+              after your sessions.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
@@ -152,11 +152,12 @@ export default function HomePage() {
             <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_260px] md:items-center">
               <div>
                 <p className="lead-copy max-w-[18ch]">
-                  Know where your learners stand before you teach next.
+                  Know where your learners stand, exactly when it matters most.
                 </p>
                 <p className="body-copy muted-copy mt-5 max-w-[36rem]">
-                  One session, one reading, one goal. Takes five minutes —
-                  and gives you evidence you can act on immediately.
+                  Whether it&apos;s pre-class prep, in-class reflection, or 
+                  after-class transfer - get tailored evidence on each 
+                  learner&apos;s strengths and areas for improvement.
                 </p>
               </div>
               <div className="md:justify-self-end">
